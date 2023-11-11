@@ -6,19 +6,6 @@ import (
    "testing"
 )
 
-var (
-   exts = []string{"one", "two"}
-   feats = []string{"one", "two"}
-   libs = []string{"one", "two"}
-)
-
-func Test_Proto(t *testing.T) {
-   a, b := message_old(), message_new()
-   if !bytes.Equal(a, b) {
-      t.Fatal(a, "\n", b)
-   }
-}
-
 func message_new() []byte {
    var m Message
    m.Add(4, func(m *Message) {
@@ -51,6 +38,19 @@ func message_new() []byte {
       })
    })
    return m.Append(nil)
+}
+
+var (
+   exts = []string{"one", "two"}
+   feats = []string{"one", "two"}
+   libs = []string{"one", "two"}
+)
+
+func Test_Proto(t *testing.T) {
+   a, b := message_old(), message_new()
+   if !bytes.Equal(a, b) {
+      t.Fatal(a, "\n", b)
+   }
 }
 
 func message_old() []byte {
