@@ -133,30 +133,6 @@ func (m *Message) Message(n Number) bool {
    return false
 }
 
-func (m Message) String(n Number) (string, bool) {
-   for _, f := range m {
-      if f.Number == n {
-         v, ok := f.Value.(Bytes)
-         if ok {
-            return string(v), true
-         }
-      }
-   }
-   return "", false
-}
-
-func (m Message) Varint(n Number) (uint64, bool) {
-   for _, f := range m {
-      if f.Number == n {
-         v, ok := f.Value.(Varint)
-         if ok {
-            return uint64(v), true
-         }
-      }
-   }
-   return 0, false
-}
-
 func (m *Message) add_fixed32(n Number, v uint32) {
    *m = append(*m, Field{
       Number: n,
@@ -180,4 +156,28 @@ func (m *Message) omit(n Number, v Message) {
       Value: Prefix(v),
       Omit: true,
    })
+}
+
+func (m Message) String(n Number) (string, bool) {
+   for _, f := range m {
+      if f.Number == n {
+         v, ok := f.Value.(Bytes)
+         if ok {
+            return string(v), true
+         }
+      }
+   }
+   return "", false
+}
+
+func (m Message) Varint(n Number) (uint64, bool) {
+   for _, f := range m {
+      if f.Number == n {
+         v, ok := f.Value.(Varint)
+         if ok {
+            return uint64(v), true
+         }
+      }
+   }
+   return 0, false
 }
