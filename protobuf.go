@@ -5,6 +5,14 @@ import (
    "google.golang.org/protobuf/encoding/protowire"
 )
 
+// we could infer the type, but the implementation becomes more verbose
+type Field struct {
+   Number Number
+   Type Type
+   Omit bool
+   Value Value
+}
+
 type Bytes []byte
 
 func (c Bytes) Append(b []byte) []byte {
@@ -13,14 +21,6 @@ func (c Bytes) Append(b []byte) []byte {
 
 func (c Bytes) GoString() string {
    return fmt.Sprintf("protobuf.Bytes(%q)", c)
-}
-
-// we could infer the type, but the implementation becomes more verbose
-type Field struct {
-   Number Number
-   Type Type
-   Omit bool
-   Value Value
 }
 
 // need this for Message.Append and Prefix.Append
