@@ -1,17 +1,11 @@
 package protobuf
 
 import (
+   "errors"
    "fmt"
    "google.golang.org/protobuf/encoding/protowire"
+   "io"
 )
-
-// we could infer the type, but the implementation becomes more verbose
-type Field struct {
-   Number Number
-   Type Type
-   Omit bool
-   Value Value
-}
 
 type Bytes []byte
 
@@ -21,15 +15,6 @@ func (c Bytes) Append(b []byte) []byte {
 
 func (c Bytes) GoString() string {
    return fmt.Sprintf("protobuf.Bytes(%q)", c)
-}
-
-// need this for Message.Append and Prefix.Append
-func (f Field) Append(b []byte) []byte {
-   if f.Omit {
-      return b
-   }
-   b = protowire.AppendTag(b, f.Number, f.Type)
-   return f.Value.Append(b)
 }
 
 func (f Field) Message() (Message, bool) {
@@ -62,11 +47,91 @@ func (f Fixed64) GoString() string {
 
 type Message []Field
 
+func Consume(b []byte) (Message, error) {
+   if len(b) == 0 {
+      return nil, io.ErrUnexpectedEOF
+   }
+   var mes Message
+   for len(b) >= 1 {
+      num, typ, length := protowire.ConsumeTag(b)
+      err := protowire.ParseError(length)
+      if err != nil {
+         return nil, err
+      }
+      b = b[length:]
+      switch typ {
+      case protowire.BytesType:
+         val, length := protowire.ConsumeBytes(b)
+         err := protowire.ParseError(length)
+         if err != nil {
+            return nil, err
+         }
+         b = b[length:]
+         mes.Add_Bytes(num, val)
+         con, err := Consume(val)
+         if err == nil {
+            mes.add_message(num, con)
+         }
+      case protowire.Fixed32Type:
+         val, length := protowire.ConsumeFixed32(b)
+         err := protowire.ParseError(length)
+         if err != nil {
+            return nil, err
+         }
+         b = b[length:]
+         mes.add_fixed32(num, val)
+      case protowire.Fixed64Type:
+         val, length := protowire.ConsumeFixed64(b)
+         err := protowire.ParseError(length)
+         if err != nil {
+            return nil, err
+         }
+         b = b[length:]
+         mes.add_fixed64(num, val)
+      case protowire.VarintType:
+         val, length := protowire.ConsumeVarint(b)
+         err := protowire.ParseError(length)
+         if err != nil {
+            return nil, err
+         }
+         b = b[length:]
+         mes.Add_Varint(num, val)
+      default:
+         return nil, errors.New("cannot parse reserved wire type")
+      }
+   }
+   return mes, nil
+}
+
 func (m Message) Append(b []byte) []byte {
    for _, f := range m {
       b = f.Append(b)
    }
    return b
+}
+
+func (m Message) Bytes(n protowire.Number) ([]byte, bool) {
+   for _, f := range m {
+      if f.Number == n {
+         v, ok := f.Value.(Bytes)
+         if ok {
+            return v, true
+         }
+      }
+   }
+   return nil, false
+}
+
+func (m Message) Fixed64(n protowire.Number) (uint64, bool) {
+   for _, f := range m {
+      if f.Number == n {
+         v, ok := f.Value.(Fixed64)
+         if ok {
+            return uint64(v), true
+         }
+      }
+   }
+   return 0, false
 }
 
 func (m Message) GoString() string {
@@ -78,7 +143,42 @@ func (m Message) GoString() string {
    return string(b)
 }
 
-type Number = protowire.Number
+func (m *Message) Message(n protowire.Number) bool {
+   for _, f := range *m {
+      if f.Number == n {
+         v, ok := f.Message()
+         if ok {
+            *m = v
+            return true
+         }
+      }
+   }
+   return false
+}
+
+func (m Message) String(n protowire.Number) (string, bool) {
+   for _, f := range m {
+      if f.Number == n {
+         v, ok := f.Value.(Bytes)
+         if ok {
+            return string(v), true
+         }
+      }
+   }
+   return "", false
+}
+
+func (m Message) Varint(n protowire.Number) (uint64, bool) {
+   for _, f := range m {
+      if f.Number == n {
+         v, ok := f.Value.(Varint)
+         if ok {
+            return uint64(v), true
+         }
+      }
+   }
+   return 0, false
+}
 
 type Prefix []Field
 
@@ -98,8 +198,6 @@ func (p Prefix) GoString() string {
    b = append(b, '}')
    return string(b)
 }
-
-type Type = protowire.Type
 
 type Value interface {
    Append([]byte) []byte
