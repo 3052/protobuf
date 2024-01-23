@@ -9,20 +9,153 @@
     <link rel="icon" type="image/png" sizes="32x32" href="_/icons/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="_/icons/favicon-16x16.png">
     <link rel="shortcut icon" href="_/icons/favicon.ico">
-    <title>154.pages.dev/protobuf</title>
+    <title>protobuf</title>
 </head>
   <body>
-    <main><h3 id="pkg-directories">Directories</h3>
-
-<table>
-  <tbody>
-    <tr>
-        <td><a href="v1.0.4">v1.0.4</a></td>
-        <td></td>
-      </tr>
-    </tbody>
-</table>
-</main>
+<nav>
+  154.pages.dev/protobuf<span class="navbar-right">
+  v1.0.4 | <a href="">Root</a> | <a href="#pkg-index">Index</a></span>
+  </nav>
+<main><h2 id="pkg-overview">package protobuf</h2>
+<pre class="chroma"><span class="kn">import</span> <span class="s">&#34;154.pages.dev/protobuf&#34;</span></pre>
+<h3 id="pkg-index">Index</h3>
+<ul>
+  <li>
+      <a href="#Bytes">type Bytes</a>
+      <ul>
+          <li><a href="#Bytes.Append">func (c Bytes) Append(b []byte) []byte</a></li>
+          <li><a href="#Bytes.GoString">func (c Bytes) GoString() string</a></li>
+          </ul>
+      </li>
+  <li>
+      <a href="#Field">type Field</a>
+      <ul>
+          <li><a href="#Field.Append">func (f Field) Append(b []byte) []byte</a></li>
+          <li><a href="#Field.Message">func (f Field) Message() (Message, bool)</a></li>
+          </ul>
+      </li>
+  <li>
+      <a href="#Fixed32">type Fixed32</a>
+      <ul>
+          <li><a href="#Fixed32.Append">func (f Fixed32) Append(b []byte) []byte</a></li>
+          <li><a href="#Fixed32.GoString">func (f Fixed32) GoString() string</a></li>
+          </ul>
+      </li>
+  <li>
+      <a href="#Fixed64">type Fixed64</a>
+      <ul>
+          <li><a href="#Fixed64.Append">func (f Fixed64) Append(b []byte) []byte</a></li>
+          <li><a href="#Fixed64.GoString">func (f Fixed64) GoString() string</a></li>
+          </ul>
+      </li>
+  <li>
+      <a href="#Message">type Message</a>
+      <ul>
+          <li><a href="#Consume">func Consume(b []byte) (Message, error)</a></li>
+          <li><a href="#Message.Add">func (m *Message) Add(n protowire.Number, f func(*Message))</a></li>
+          <li><a href="#Message.Add_Bytes">func (m *Message) Add_Bytes(n protowire.Number, v []byte)</a></li>
+          <li><a href="#Message.Add_String">func (m *Message) Add_String(n protowire.Number, v string)</a></li>
+          <li><a href="#Message.Add_Varint">func (m *Message) Add_Varint(n protowire.Number, v uint64)</a></li>
+          <li><a href="#Message.Append">func (m Message) Append(b []byte) []byte</a></li>
+          <li><a href="#Message.Bytes">func (m Message) Bytes(n protowire.Number) ([]byte, bool)</a></li>
+          <li><a href="#Message.Fixed64">func (m Message) Fixed64(n protowire.Number) (uint64, bool)</a></li>
+          <li><a href="#Message.GoString">func (m Message) GoString() string</a></li>
+          <li><a href="#Message.Message">func (m *Message) Message(n protowire.Number) bool</a></li>
+          <li><a href="#Message.String">func (m Message) String(n protowire.Number) (string, bool)</a></li>
+          <li><a href="#Message.Varint">func (m Message) Varint(n protowire.Number) (uint64, bool)</a></li>
+          </ul>
+      </li>
+  <li>
+      <a href="#Prefix">type Prefix</a>
+      <ul>
+          <li><a href="#Prefix.Append">func (p Prefix) Append(b []byte) []byte</a></li>
+          <li><a href="#Prefix.GoString">func (p Prefix) GoString() string</a></li>
+          </ul>
+      </li>
+  <li>
+      <a href="#Value">type Value</a>
+      </li>
+  <li>
+      <a href="#Varint">type Varint</a>
+      <ul>
+          <li><a href="#Varint.Append">func (v Varint) Append(b []byte) []byte</a></li>
+          <li><a href="#Varint.GoString">func (v Varint) GoString() string</a></li>
+          </ul>
+      </li>
+  </ul><h3 id="pkg-types">Types</h3>
+  <h3 id="Bytes">type Bytes</h3>
+    <pre class="chroma"><span class="kd">type</span> <span class="nx">Bytes</span> <span class="p">[]</span><a href="https://pkg.go.dev/builtin#byte"><span class="kt">byte</span></a></pre>
+    <h4 id="Bytes.Append">func (Bytes) Append</h4>
+  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">c</span> <a href="#Bytes"><span class="nx">Bytes</span></a><span class="p">)</span> <span class="nf">Append</span><span class="p">(</span><span class="nx">b</span> <span class="p">[]</span><a href="https://pkg.go.dev/builtin#byte"><span class="kt">byte</span></a><span class="p">)</span> <span class="p">[]</span><a href="https://pkg.go.dev/builtin#byte"><span class="kt">byte</span></a></pre>
+  <h4 id="Bytes.GoString">func (Bytes) GoString</h4>
+  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">c</span> <a href="#Bytes"><span class="nx">Bytes</span></a><span class="p">)</span> <span class="nf">GoString</span><span class="p">()</span> <a href="https://pkg.go.dev/builtin#string"><span class="kt">string</span></a></pre>
+  <h3 id="Field">type Field</h3>
+    <pre class="chroma"><span class="kd">type</span> <span class="nx">Field</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span id="Field.Number"><span class="nx">Number</span></span> <a href="https://pkg.go.dev/google.golang.org/protobuf/encoding/protowire"><span class="nx">protowire</span></a><span class="p">.</span><a href="https://pkg.go.dev/google.golang.org/protobuf/encoding/protowire#Number"><span class="nx">Number</span></a>
+	<span id="Field.Type"><span class="nx">Type</span></span>   <a href="https://pkg.go.dev/google.golang.org/protobuf/encoding/protowire"><span class="nx">protowire</span></a><span class="p">.</span><a href="https://pkg.go.dev/google.golang.org/protobuf/encoding/protowire#Type"><span class="nx">Type</span></a>
+	<span id="Field.Value"><span class="nx">Value</span></span>  <a href="#Value"><span class="nx">Value</span></a>
+<span class="p">}</span></pre>
+    <p>we could infer the type, but the implementation becomes more verbose
+<h4 id="Field.Append">func (Field) Append</h4>
+  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">f</span> <a href="#Field"><span class="nx">Field</span></a><span class="p">)</span> <span class="nf">Append</span><span class="p">(</span><span class="nx">b</span> <span class="p">[]</span><a href="https://pkg.go.dev/builtin#byte"><span class="kt">byte</span></a><span class="p">)</span> <span class="p">[]</span><a href="https://pkg.go.dev/builtin#byte"><span class="kt">byte</span></a></pre>
+  <p>need this for Message.Append and Prefix.Append
+<h4 id="Field.Message">func (Field) Message</h4>
+  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">f</span> <a href="#Field"><span class="nx">Field</span></a><span class="p">)</span> <span class="nf">Message</span><span class="p">()</span> <span class="p">(</span><a href="#Message"><span class="nx">Message</span></a><span class="p">,</span> <a href="https://pkg.go.dev/builtin#bool"><span class="kt">bool</span></a><span class="p">)</span></pre>
+  <h3 id="Fixed32">type Fixed32</h3>
+    <pre class="chroma"><span class="kd">type</span> <span class="nx">Fixed32</span> <a href="https://pkg.go.dev/builtin#uint32"><span class="kt">uint32</span></a></pre>
+    <h4 id="Fixed32.Append">func (Fixed32) Append</h4>
+  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">f</span> <a href="#Fixed32"><span class="nx">Fixed32</span></a><span class="p">)</span> <span class="nf">Append</span><span class="p">(</span><span class="nx">b</span> <span class="p">[]</span><a href="https://pkg.go.dev/builtin#byte"><span class="kt">byte</span></a><span class="p">)</span> <span class="p">[]</span><a href="https://pkg.go.dev/builtin#byte"><span class="kt">byte</span></a></pre>
+  <h4 id="Fixed32.GoString">func (Fixed32) GoString</h4>
+  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">f</span> <a href="#Fixed32"><span class="nx">Fixed32</span></a><span class="p">)</span> <span class="nf">GoString</span><span class="p">()</span> <a href="https://pkg.go.dev/builtin#string"><span class="kt">string</span></a></pre>
+  <h3 id="Fixed64">type Fixed64</h3>
+    <pre class="chroma"><span class="kd">type</span> <span class="nx">Fixed64</span> <a href="https://pkg.go.dev/builtin#uint64"><span class="kt">uint64</span></a></pre>
+    <h4 id="Fixed64.Append">func (Fixed64) Append</h4>
+  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">f</span> <a href="#Fixed64"><span class="nx">Fixed64</span></a><span class="p">)</span> <span class="nf">Append</span><span class="p">(</span><span class="nx">b</span> <span class="p">[]</span><a href="https://pkg.go.dev/builtin#byte"><span class="kt">byte</span></a><span class="p">)</span> <span class="p">[]</span><a href="https://pkg.go.dev/builtin#byte"><span class="kt">byte</span></a></pre>
+  <h4 id="Fixed64.GoString">func (Fixed64) GoString</h4>
+  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">f</span> <a href="#Fixed64"><span class="nx">Fixed64</span></a><span class="p">)</span> <span class="nf">GoString</span><span class="p">()</span> <a href="https://pkg.go.dev/builtin#string"><span class="kt">string</span></a></pre>
+  <h3 id="Message">type Message</h3>
+    <pre class="chroma"><span class="kd">type</span> <span class="nx">Message</span> <span class="p">[]</span><a href="#Field"><span class="nx">Field</span></a></pre>
+    <h4 id="Consume">func Consume</h4>
+  <pre class="chroma"><span class="kd">func</span> <span class="nf">Consume</span><span class="p">(</span><span class="nx">b</span> <span class="p">[]</span><a href="https://pkg.go.dev/builtin#byte"><span class="kt">byte</span></a><span class="p">)</span> <span class="p">(</span><a href="#Message"><span class="nx">Message</span></a><span class="p">,</span> <a href="https://pkg.go.dev/builtin#error"><span class="kt">error</span></a><span class="p">)</span></pre>
+  <h4 id="Message.Add">func (*Message) Add</h4>
+  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <span class="o">*</span><a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">Add</span><span class="p">(</span><span class="nx">n</span> <a href="https://pkg.go.dev/google.golang.org/protobuf/encoding/protowire"><span class="nx">protowire</span></a><span class="p">.</span><a href="https://pkg.go.dev/google.golang.org/protobuf/encoding/protowire#Number"><span class="nx">Number</span></a><span class="p">,</span> <span class="nx">f</span> <span class="kd">func</span><span class="p">(</span><span class="o">*</span><a href="#Message"><span class="nx">Message</span></a><span class="p">))</span></pre>
+  <h4 id="Message.Add_Bytes">func (*Message) Add_Bytes</h4>
+  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <span class="o">*</span><a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">Add_Bytes</span><span class="p">(</span><span class="nx">n</span> <a href="https://pkg.go.dev/google.golang.org/protobuf/encoding/protowire"><span class="nx">protowire</span></a><span class="p">.</span><a href="https://pkg.go.dev/google.golang.org/protobuf/encoding/protowire#Number"><span class="nx">Number</span></a><span class="p">,</span> <span class="nx">v</span> <span class="p">[]</span><a href="https://pkg.go.dev/builtin#byte"><span class="kt">byte</span></a><span class="p">)</span></pre>
+  <h4 id="Message.Add_String">func (*Message) Add_String</h4>
+  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <span class="o">*</span><a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">Add_String</span><span class="p">(</span><span class="nx">n</span> <a href="https://pkg.go.dev/google.golang.org/protobuf/encoding/protowire"><span class="nx">protowire</span></a><span class="p">.</span><a href="https://pkg.go.dev/google.golang.org/protobuf/encoding/protowire#Number"><span class="nx">Number</span></a><span class="p">,</span> <span class="nx">v</span> <a href="https://pkg.go.dev/builtin#string"><span class="kt">string</span></a><span class="p">)</span></pre>
+  <h4 id="Message.Add_Varint">func (*Message) Add_Varint</h4>
+  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <span class="o">*</span><a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">Add_Varint</span><span class="p">(</span><span class="nx">n</span> <a href="https://pkg.go.dev/google.golang.org/protobuf/encoding/protowire"><span class="nx">protowire</span></a><span class="p">.</span><a href="https://pkg.go.dev/google.golang.org/protobuf/encoding/protowire#Number"><span class="nx">Number</span></a><span class="p">,</span> <span class="nx">v</span> <a href="https://pkg.go.dev/builtin#uint64"><span class="kt">uint64</span></a><span class="p">)</span></pre>
+  <h4 id="Message.Append">func (Message) Append</h4>
+  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">Append</span><span class="p">(</span><span class="nx">b</span> <span class="p">[]</span><a href="https://pkg.go.dev/builtin#byte"><span class="kt">byte</span></a><span class="p">)</span> <span class="p">[]</span><a href="https://pkg.go.dev/builtin#byte"><span class="kt">byte</span></a></pre>
+  <h4 id="Message.Bytes">func (Message) Bytes</h4>
+  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">Bytes</span><span class="p">(</span><span class="nx">n</span> <a href="https://pkg.go.dev/google.golang.org/protobuf/encoding/protowire"><span class="nx">protowire</span></a><span class="p">.</span><a href="https://pkg.go.dev/google.golang.org/protobuf/encoding/protowire#Number"><span class="nx">Number</span></a><span class="p">)</span> <span class="p">([]</span><a href="https://pkg.go.dev/builtin#byte"><span class="kt">byte</span></a><span class="p">,</span> <a href="https://pkg.go.dev/builtin#bool"><span class="kt">bool</span></a><span class="p">)</span></pre>
+  <h4 id="Message.Fixed64">func (Message) Fixed64</h4>
+  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">Fixed64</span><span class="p">(</span><span class="nx">n</span> <a href="https://pkg.go.dev/google.golang.org/protobuf/encoding/protowire"><span class="nx">protowire</span></a><span class="p">.</span><a href="https://pkg.go.dev/google.golang.org/protobuf/encoding/protowire#Number"><span class="nx">Number</span></a><span class="p">)</span> <span class="p">(</span><a href="https://pkg.go.dev/builtin#uint64"><span class="kt">uint64</span></a><span class="p">,</span> <a href="https://pkg.go.dev/builtin#bool"><span class="kt">bool</span></a><span class="p">)</span></pre>
+  <h4 id="Message.GoString">func (Message) GoString</h4>
+  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">GoString</span><span class="p">()</span> <a href="https://pkg.go.dev/builtin#string"><span class="kt">string</span></a></pre>
+  <h4 id="Message.Message">func (*Message) Message</h4>
+  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <span class="o">*</span><a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">Message</span><span class="p">(</span><span class="nx">n</span> <a href="https://pkg.go.dev/google.golang.org/protobuf/encoding/protowire"><span class="nx">protowire</span></a><span class="p">.</span><a href="https://pkg.go.dev/google.golang.org/protobuf/encoding/protowire#Number"><span class="nx">Number</span></a><span class="p">)</span> <a href="https://pkg.go.dev/builtin#bool"><span class="kt">bool</span></a></pre>
+  <h4 id="Message.String">func (Message) String</h4>
+  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">String</span><span class="p">(</span><span class="nx">n</span> <a href="https://pkg.go.dev/google.golang.org/protobuf/encoding/protowire"><span class="nx">protowire</span></a><span class="p">.</span><a href="https://pkg.go.dev/google.golang.org/protobuf/encoding/protowire#Number"><span class="nx">Number</span></a><span class="p">)</span> <span class="p">(</span><a href="https://pkg.go.dev/builtin#string"><span class="kt">string</span></a><span class="p">,</span> <a href="https://pkg.go.dev/builtin#bool"><span class="kt">bool</span></a><span class="p">)</span></pre>
+  <h4 id="Message.Varint">func (Message) Varint</h4>
+  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">Varint</span><span class="p">(</span><span class="nx">n</span> <a href="https://pkg.go.dev/google.golang.org/protobuf/encoding/protowire"><span class="nx">protowire</span></a><span class="p">.</span><a href="https://pkg.go.dev/google.golang.org/protobuf/encoding/protowire#Number"><span class="nx">Number</span></a><span class="p">)</span> <span class="p">(</span><a href="https://pkg.go.dev/builtin#uint64"><span class="kt">uint64</span></a><span class="p">,</span> <a href="https://pkg.go.dev/builtin#bool"><span class="kt">bool</span></a><span class="p">)</span></pre>
+  <h3 id="Prefix">type Prefix</h3>
+    <pre class="chroma"><span class="kd">type</span> <span class="nx">Prefix</span> <span class="p">[]</span><a href="#Field"><span class="nx">Field</span></a></pre>
+    <h4 id="Prefix.Append">func (Prefix) Append</h4>
+  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">p</span> <a href="#Prefix"><span class="nx">Prefix</span></a><span class="p">)</span> <span class="nf">Append</span><span class="p">(</span><span class="nx">b</span> <span class="p">[]</span><a href="https://pkg.go.dev/builtin#byte"><span class="kt">byte</span></a><span class="p">)</span> <span class="p">[]</span><a href="https://pkg.go.dev/builtin#byte"><span class="kt">byte</span></a></pre>
+  <h4 id="Prefix.GoString">func (Prefix) GoString</h4>
+  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">p</span> <a href="#Prefix"><span class="nx">Prefix</span></a><span class="p">)</span> <span class="nf">GoString</span><span class="p">()</span> <a href="https://pkg.go.dev/builtin#string"><span class="kt">string</span></a></pre>
+  <h3 id="Value">type Value</h3>
+    <pre class="chroma"><span class="kd">type</span> <span class="nx">Value</span> <span class="kd">interface</span> <span class="p">{</span>
+	<span id="Value.Append"><span class="nf">Append</span></span><span class="p">([]</span><a href="https://pkg.go.dev/builtin#byte"><span class="kt">byte</span></a><span class="p">)</span> <span class="p">[]</span><a href="https://pkg.go.dev/builtin#byte"><span class="kt">byte</span></a>
+<span class="p">}</span></pre>
+    <h3 id="Varint">type Varint</h3>
+    <pre class="chroma"><span class="kd">type</span> <span class="nx">Varint</span> <a href="https://pkg.go.dev/builtin#uint64"><span class="kt">uint64</span></a></pre>
+    <h4 id="Varint.Append">func (Varint) Append</h4>
+  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">v</span> <a href="#Varint"><span class="nx">Varint</span></a><span class="p">)</span> <span class="nf">Append</span><span class="p">(</span><span class="nx">b</span> <span class="p">[]</span><a href="https://pkg.go.dev/builtin#byte"><span class="kt">byte</span></a><span class="p">)</span> <span class="p">[]</span><a href="https://pkg.go.dev/builtin#byte"><span class="kt">byte</span></a></pre>
+  <h4 id="Varint.GoString">func (Varint) GoString</h4>
+  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">v</span> <a href="#Varint"><span class="nx">Varint</span></a><span class="p">)</span> <span class="nf">GoString</span><span class="p">()</span> <a href="https://pkg.go.dev/builtin#string"><span class="kt">string</span></a></pre>
+  </main>
     <hr>
     <footer>
       <small id="generated-by-footer">
