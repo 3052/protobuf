@@ -18,8 +18,7 @@ func (c Bytes) GoString() string {
 }
 
 func (f Field) Message() (Message, bool) {
-   v, ok := f.Value.(Prefix)
-   if ok {
+   if v, ok := f.Value.(Prefix); ok {
       return Message(v), true
    }
    return nil, false
@@ -113,8 +112,7 @@ func (m Message) Append(b []byte) []byte {
 func (m Message) Bytes(n protowire.Number) ([]byte, bool) {
    for _, f := range m {
       if f.Number == n {
-         v, ok := f.Value.(Bytes)
-         if ok {
+         if v, ok := f.Value.(Bytes); ok {
             return v, true
          }
       }
@@ -125,8 +123,7 @@ func (m Message) Bytes(n protowire.Number) ([]byte, bool) {
 func (m Message) Fixed64(n protowire.Number) (uint64, bool) {
    for _, f := range m {
       if f.Number == n {
-         v, ok := f.Value.(Fixed64)
-         if ok {
+         if v, ok := f.Value.(Fixed64); ok {
             return uint64(v), true
          }
       }
@@ -146,8 +143,7 @@ func (m Message) GoString() string {
 func (m *Message) Message(n protowire.Number) bool {
    for _, f := range *m {
       if f.Number == n {
-         v, ok := f.Message()
-         if ok {
+         if v, ok := f.Message(); ok {
             *m = v
             return true
          }
@@ -159,8 +155,7 @@ func (m *Message) Message(n protowire.Number) bool {
 func (m Message) String(n protowire.Number) (string, bool) {
    for _, f := range m {
       if f.Number == n {
-         v, ok := f.Value.(Bytes)
-         if ok {
+         if v, ok := f.Value.(Bytes); ok {
             return string(v), true
          }
       }
@@ -171,8 +166,7 @@ func (m Message) String(n protowire.Number) (string, bool) {
 func (m Message) Varint(n protowire.Number) (uint64, bool) {
    for _, f := range m {
       if f.Number == n {
-         v, ok := f.Value.(Varint)
-         if ok {
+         if v, ok := f.Value.(Varint); ok {
             return uint64(v), true
          }
       }
