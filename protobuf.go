@@ -24,15 +24,6 @@ func (f Fixed64) GoString() string {
    return fmt.Sprintf("protobuf.Fixed64(%v)", f)
 }
 
-func (p Prefix) GoString() string {
-   b := []byte("protobuf.Prefix{\n")
-   for _, f := range p {
-      b = fmt.Appendf(b, "%#v,\n", f)
-   }
-   b = append(b, '}')
-   return string(b)
-}
-
 func (v Varint) GoString() string {
    return fmt.Sprintf("protobuf.Varint(%v)", v)
 }
@@ -76,8 +67,6 @@ type Value interface {
    Append([]byte) []byte
 }
 
-type Prefix []Field
-
 func (m Message) Encode() []byte {
    var b []byte
    for _, f := range m {
@@ -89,7 +78,7 @@ func (m Message) Encode() []byte {
    return b
 }
 
-func (p Prefix) Append(b []byte) []byte {
-   v := Message(p).Encode()
+func (m Message) Append(b []byte) []byte {
+   v := m.Encode()
    return protowire.AppendBytes(b, v)
 }

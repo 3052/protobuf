@@ -8,12 +8,6 @@ func (c Bytes) Append(b []byte) []byte {
    return protowire.AppendBytes(b, c)
 }
 
-type Field struct {
-   Number protowire.Number
-   Type protowire.Type
-   Value Value
-}
-
 type Fixed32 uint32
 
 func (f Fixed32) Append(b []byte) []byte {
@@ -45,9 +39,15 @@ func (m Message) Encode() []byte {
    return b
 }
 
-type Prefix []Field
-
-func (p Prefix) Append(b []byte) []byte {
-   v := Message(p).Encode()
+func (m Message) Append(b []byte) []byte {
+   v := m.Encode()
    return protowire.AppendBytes(b, v)
 }
+
+type Field struct {
+   Number Number
+   Type Type
+   Value Value
+}
+
+type Type = protowire.Type
