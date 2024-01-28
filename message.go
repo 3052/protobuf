@@ -110,8 +110,6 @@ func (m *Message) Message(n protowire.Number) bool {
    return false
 }
 
-/////////////////////////////
-
 func (m *Message) Add(n protowire.Number, f func(*Message)) {
    var v Message
    f(&v)

@@ -2,71 +2,20 @@ package protobuf
 
 import "google.golang.org/protobuf/encoding/protowire"
 
-func get[T any, U point[T]](v U, m Message, n Number) bool {
-   for _, record := range m {
-      if record.Number == n {
-         if rv, ok := record.Value.(U); ok {
-            *v = *rv
-            return true
-         }
-      }
-   }
-   return false
+type Field struct {
+   Number Number
+   Type Type
+   Value Value
 }
 
-func (v Bytes) Add(m *Message, n Number) {
-   *m = append(*m, Field{
-      Number: n,
-      Type: protowire.BytesType,
-      Value: &v,
-   })
-}
-
-func (v *Bytes) Get(m Message, n Number) bool {
-   return get(v, m, n)
-}
-
-func (v Fixed32) Add(m *Message, n Number) {
-   *m = append(*m, Field{
-      Number: n,
-      Type: protowire.Fixed32Type,
-      Value: &v,
-   })
-}
-
-func (v *Fixed32) Get(m Message, n Number) bool {
-   return get(v, m, n)
-}
-
-func (v Fixed64) Add(m *Message, n Number) {
-   *m = append(*m, Field{
-      Number: n,
-      Type: protowire.Fixed64Type,
-      Value: &v,
-   })
-}
-
-func (v *Fixed64) Get(m Message, n Number) bool {
-   return get(v, m, n)
-}
+type Type = protowire.Type
 
 type Number = protowire.Number
 
-func (v Varint) Add(m *Message, n Number) {
-   *m = append(*m, Field{
-      Number: n,
-      Type: protowire.VarintType,
-      Value: &v,
-   })
-}
+type Varint uint64
 
-func (v *Varint) Get(m Message, n Number) bool {
-   return get(v, m, n)
-}
-
-type point[T any] interface {
-   *T
-   Value
+func (v Varint) Append(b []byte) []byte {
+   return protowire.AppendVarint(b, uint64(v))
 }
 
 type Bytes []byte
@@ -87,12 +36,6 @@ func (f Fixed64) Append(b []byte) []byte {
    return protowire.AppendFixed64(b, uint64(f))
 }
 
-type Varint uint64
-
-func (v Varint) Append(b []byte) []byte {
-   return protowire.AppendVarint(b, uint64(v))
-}
-
 type Message []Field
 
 func (m Message) Encode() []byte {
@@ -106,35 +49,151 @@ func (m Message) Encode() []byte {
    return b
 }
 
-type Field struct {
-   Number Number
-   Type Type
-   Value Value
+func (m Message) Append(b []byte) []byte {
+   return protowire.AppendBytes(b, m.Encode())
 }
-
-type Type = protowire.Type
 
 type Value interface {
    Append([]byte) []byte
-   Get(Message, Number) bool
-   Add(*Message, Number)
 }
 
-func (v Message) Add(m *Message, n Number) {
+func (m Message) Varint(n Number) (Varint, bool) {
+   return get[Varint](m, n)
+}
+
+func get[T Value](m Message, n Number) (T, bool) {
+   for _, record := range m {
+      if record.Number == n {
+         if v, ok := record.Value.(T); ok {
+            return v, true
+         }
+      }
+   }
+   return *new(T), false
+}
+
+func (m Message) Fixed64(n Number) (Fixed64, bool) {
+   return get[Fixed64](m, n)
+}
+
+func (m Message) Fixed32(n Number) (Fixed32, bool) {
+   return get[Fixed32](m, n)
+}
+
+func (m Message) Bytes(n Number) (Bytes, bool) {
+   return get[Bytes](m, n)
+}
+
+func (m *Message) Message(n Number) bool {
+   if v, ok := get[Message](*m, n); ok {
+      *m = v
+      return true
+   }
+   return false
+}
+
+func (m *Message) AddVarint(n Number, v Varint) {
    *m = append(*m, Field{
       Number: n,
-      Type: protowire.BytesType,
-      Value: &v,
+      Type: protowire.VarintType,
+      Value: v,
    })
 }
 
-func (v *Message) Get(m Message, n Number) bool {
-   return get(v, m, n)
+func (m *Message) AddFixed64(n Number, v Fixed64) {
+   *m = append(*m, Field{
+      Number: n,
+      Type: protowire.Fixed64Type,
+      Value: v,
+   })
 }
 
-func (m Message) Append(b []byte) []byte {
-   v := m.Encode()
-   return protowire.AppendBytes(b, v)
+func (m *Message) AddFixed32(n Number, v Fixed32) {
+   *m = append(*m, Field{
+      Number: n,
+      Type: protowire.Fixed32Type,
+      Value: v,
+   })
 }
 
-type MessageFunc func(*Message)
+func (m *Message) AddBytes(n Number, v Bytes) {
+   *m = append(*m, Field{
+      Number: n,
+      Type: protowire.BytesType,
+      Value: v,
+   })
+}
+
+func (m *Message) Add(n Number, v Message) {
+   *m = append(*m, Field{
+      Number: n,
+      Type: protowire.BytesType,
+      Value: v,
+   })
+}
+
+func (m *Message) AddFunc(n Number, f func(*Message)) {
+   var v Message
+   f(&v)
+   *m = append(*m, Field{
+      Number: n,
+      Type: protowire.BytesType,
+      Value: v,
+   })
+}
+
+func Consume(b []byte) (Message, error) {
+   if len(b) == 0 {
+      return nil, io.ErrUnexpectedEOF
+   }
+   var mes Message
+   for len(b) >= 1 {
+      num, typ, length := protowire.ConsumeTag(b)
+      err := protowire.ParseError(length)
+      if err != nil {
+         return nil, err
+      }
+      b = b[length:]
+      switch typ {
+      case protowire.BytesType:
+         val, length := protowire.ConsumeBytes(b)
+         err := protowire.ParseError(length)
+         if err != nil {
+            return nil, err
+         }
+         b = b[length:]
+         mes.Add_Bytes(num, val)
+         embed, err := Consume(val)
+         if err == nil {
+            mes.add_message(num, embed)
+         }
+      case protowire.Fixed32Type:
+         val, length := protowire.ConsumeFixed32(b)
+         err := protowire.ParseError(length)
+         if err != nil {
+            return nil, err
+         }
+         b = b[length:]
+         mes.add_fixed32(num, val)
+      case protowire.Fixed64Type:
+         val, length := protowire.ConsumeFixed64(b)
+         err := protowire.ParseError(length)
+         if err != nil {
+            return nil, err
+         }
+         b = b[length:]
+         mes.add_fixed64(num, val)
+      case protowire.VarintType:
+         val, length := protowire.ConsumeVarint(b)
+         err := protowire.ParseError(length)
+         if err != nil {
+            return nil, err
+         }
+         b = b[length:]
+         mes.Add_Varint(num, val)
+      default:
+         return nil, errors.New("cannot parse reserved wire type")
+      }
+   }
+   return mes, nil
+}

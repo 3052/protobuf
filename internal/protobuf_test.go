@@ -5,15 +5,20 @@ import (
    "testing"
 )
 
+func Test_MessageFunc(t *testing.T) {
+   var m Message
+   m.AddFunc(1, func(m *Message) {
+      m.AddVarint(3, 2)
+   })
+   fmt.Printf("%+v\n", m)
+}
+
 func Test_Get(t *testing.T) {
-   a := Varint(1)
-   var b Varint
    m := Message{
       Field{
          Number: 1,
-         Value: &a,
+         Value: Varint(2),
       },
    }
-   ok := b.Get(m, 1)
-   fmt.Println(b, ok)
+   fmt.Println(m.Varint(1))
 }
