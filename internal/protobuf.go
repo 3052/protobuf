@@ -44,20 +44,6 @@ func (f *Fixed64) Consume(b []byte) int {
    return length
 }
 
-type Message []Field
-
-type Value interface {
-   Append([]byte) []byte
-   Consume([]byte) int
-}
-
-var (
-   _ Value = new(Bytes)
-   _ Value = new(Fixed32)
-   _ Value = new(Fixed64)
-   _ Value = new(Varint)
-)
-
 type Varint uint64
 
 func (v Varint) Append(b []byte) []byte {
@@ -68,4 +54,36 @@ func (v *Varint) Consume(b []byte) int {
    value, length := protowire.ConsumeVarint(b)
    *v = Varint(value)
    return length
+}
+
+type Message []Field
+
+func (m Message) Encode() []byte {
+   var b []byte
+   for _, f := range m {
+      if f.Type >= 0 {
+         b = protowire.AppendTag(b, f.Number, f.Type)
+         b = f.Value.Append(b)
+      }
+   }
+   return b
+}
+
+var (
+   _ Value = new(Bytes)
+   _ Value = new(Fixed32)
+   _ Value = new(Fixed64)
+   _ Value = new(Varint)
+)
+
+type Value interface {
+   Append([]byte) []byte
+   Consume([]byte) int
+}
+
+type Prefix []Field
+
+func (p Prefix) Append(b []byte) []byte {
+   value := Message(p).Encode()
+   return protowire.AppendBytes(b, value)
 }
