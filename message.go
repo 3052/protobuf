@@ -90,6 +90,38 @@ func (m *Message) add_fixed64(n protowire.Number, v uint64) {
    })
 }
 
+func (m *Message) add_message(n protowire.Number, v Message) {
+   *m = append(*m, Field{
+      Number: n,
+      Type: -protowire.BytesType,
+      Value: v,
+   })
+}
+
+func (m *Message) Message(n protowire.Number) bool {
+   for _, f := range *m {
+      if f.Number == n {
+         if v, ok := f.Value.(Message); ok {
+            *m = v
+            return true
+         }
+      }
+   }
+   return false
+}
+
+/////////////////////////////
+
+func (m *Message) Add(n protowire.Number, f func(*Message)) {
+   var v Message
+   f(&v)
+   *m = append(*m, Field{
+      Number: n,
+      Type: protowire.BytesType,
+      Value: v,
+   })
+}
+
 func Consume(b []byte) (Message, error) {
    if len(b) == 0 {
       return nil, io.ErrUnexpectedEOF
@@ -144,34 +176,4 @@ func Consume(b []byte) (Message, error) {
       }
    }
    return mes, nil
-}
-
-func (m *Message) Message(n protowire.Number) bool {
-   for _, f := range *m {
-      if f.Number == n {
-         if v, ok := f.Value.(Message); ok {
-            *m = v
-            return true
-         }
-      }
-   }
-   return false
-}
-
-func (m *Message) Add(n protowire.Number, f func(*Message)) {
-   var v Message
-   f(&v)
-   *m = append(*m, Field{
-      Number: n,
-      Type: protowire.BytesType,
-      Value: v,
-   })
-}
-
-func (m *Message) add_message(n protowire.Number, v Message) {
-   *m = append(*m, Field{
-      Number: n,
-      Type: -protowire.BytesType,
-      Value: v,
-   })
 }
