@@ -5,14 +5,6 @@ import (
    "testing"
 )
 
-func Test_MessageFunc(t *testing.T) {
-   var m Message
-   m.AddFunc(1, func(m *Message) {
-      m.AddVarint(3, 2)
-   })
-   fmt.Printf("%+v\n", m)
-}
-
 func Test_Get(t *testing.T) {
    m := Message{
       Field{
@@ -20,5 +12,8 @@ func Test_Get(t *testing.T) {
          Value: Varint(2),
       },
    }
-   fmt.Println(m.Varint(1))
+   m.GetVarint(1, func(v Varint) bool {
+      fmt.Println(v)
+      return false
+   })
 }
