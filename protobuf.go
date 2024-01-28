@@ -1,11 +1,30 @@
 package protobuf
 
 import (
-   "errors"
    "fmt"
    "google.golang.org/protobuf/encoding/protowire"
-   "io"
 )
+
+const (
+   message_mask = -1 << 7
+   type_mask = 0xFF >> 1
+)
+
+// we could infer the type, but the implementation becomes more verbose
+type Field struct {
+   Number protowire.Number
+   Type protowire.Type
+   Value Value
+}
+
+// need this for Message.Append and Prefix.Append
+func (f Field) Append(b []byte) []byte {
+   if f.Type & message_mask == 1 {
+      return b
+   }
+   b = protowire.AppendTag(b, f.Number, f.Type & type_mask)
+   return f.Value.Append(b)
+}
 
 type Bytes []byte
 
@@ -15,13 +34,6 @@ func (c Bytes) Append(b []byte) []byte {
 
 func (c Bytes) GoString() string {
    return fmt.Sprintf("protobuf.Bytes(%q)", c)
-}
-
-func (f Field) Message() (Message, bool) {
-   if v, ok := f.Value.(Prefix); ok {
-      return Message(v), true
-   }
-   return nil, false
 }
 
 type Fixed32 uint32
@@ -42,136 +54,6 @@ func (f Fixed64) Append(b []byte) []byte {
 
 func (f Fixed64) GoString() string {
    return fmt.Sprintf("protobuf.Fixed64(%v)", f)
-}
-
-type Message []Field
-
-func Consume(b []byte) (Message, error) {
-   if len(b) == 0 {
-      return nil, io.ErrUnexpectedEOF
-   }
-   var mes Message
-   for len(b) >= 1 {
-      num, typ, length := protowire.ConsumeTag(b)
-      err := protowire.ParseError(length)
-      if err != nil {
-         return nil, err
-      }
-      b = b[length:]
-      switch typ {
-      case protowire.BytesType:
-         val, length := protowire.ConsumeBytes(b)
-         err := protowire.ParseError(length)
-         if err != nil {
-            return nil, err
-         }
-         b = b[length:]
-         mes.Add_Bytes(num, val)
-         con, err := Consume(val)
-         if err == nil {
-            mes.add_message(num, con)
-         }
-      case protowire.Fixed32Type:
-         val, length := protowire.ConsumeFixed32(b)
-         err := protowire.ParseError(length)
-         if err != nil {
-            return nil, err
-         }
-         b = b[length:]
-         mes.add_fixed32(num, val)
-      case protowire.Fixed64Type:
-         val, length := protowire.ConsumeFixed64(b)
-         err := protowire.ParseError(length)
-         if err != nil {
-            return nil, err
-         }
-         b = b[length:]
-         mes.add_fixed64(num, val)
-      case protowire.VarintType:
-         val, length := protowire.ConsumeVarint(b)
-         err := protowire.ParseError(length)
-         if err != nil {
-            return nil, err
-         }
-         b = b[length:]
-         mes.Add_Varint(num, val)
-      default:
-         return nil, errors.New("cannot parse reserved wire type")
-      }
-   }
-   return mes, nil
-}
-
-func (m Message) Append(b []byte) []byte {
-   for _, f := range m {
-      b = f.Append(b)
-   }
-   return b
-}
-
-func (m Message) Bytes(n protowire.Number) ([]byte, bool) {
-   for _, f := range m {
-      if f.Number == n {
-         if v, ok := f.Value.(Bytes); ok {
-            return v, true
-         }
-      }
-   }
-   return nil, false
-}
-
-func (m Message) Fixed64(n protowire.Number) (uint64, bool) {
-   for _, f := range m {
-      if f.Number == n {
-         if v, ok := f.Value.(Fixed64); ok {
-            return uint64(v), true
-         }
-      }
-   }
-   return 0, false
-}
-
-func (m Message) GoString() string {
-   b := []byte("protobuf.Message{\n")
-   for _, f := range m {
-      b = fmt.Appendf(b, "%#v,\n", f)
-   }
-   b = append(b, '}')
-   return string(b)
-}
-
-func (m *Message) Message(n protowire.Number) bool {
-   for _, f := range *m {
-      if f.Number == n {
-         if v, ok := f.Message(); ok {
-            *m = v
-            return true
-         }
-      }
-   }
-   return false
-}
-
-func (m Message) String(n protowire.Number) (string, bool) {
-   for _, f := range m {
-      if f.Number == n {
-         if v, ok := f.Value.(Bytes); ok {
-            return string(v), true
-         }
-      }
-   }
-   return "", false
-}
-
-func (m Message) Varint(n protowire.Number) (uint64, bool) {
-   for _, f := range m {
-      if f.Number == n {
-         if v, ok := f.Value.(Varint); ok {
-            return uint64(v), true
-         }
-      }
-   }
-   return 0, false
 }
 
 type Prefix []Field
@@ -205,4 +87,22 @@ func (v Varint) Append(b []byte) []byte {
 
 func (v Varint) GoString() string {
    return fmt.Sprintf("protobuf.Varint(%v)", v)
+}
+
+type Message []Field
+
+func (m Message) Append(b []byte) []byte {
+   for _, f := range m {
+      b = f.Append(b)
+   }
+   return b
+}
+
+func (m Message) GoString() string {
+   b := []byte("protobuf.Message{\n")
+   for _, f := range m {
+      b = fmt.Appendf(b, "%#v,\n", f)
+   }
+   b = append(b, '}')
+   return string(b)
 }
