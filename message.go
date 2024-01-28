@@ -6,6 +6,14 @@ import (
    "io"
 )
 
+func (m *Message) Add_Varint(n protowire.Number, v uint64) {
+   *m = append(*m, Field{
+      Number: n,
+      Type: protowire.VarintType,
+      Value: Varint(v),
+   })
+}
+
 func (m Message) Varint(n protowire.Number) (uint64, bool) {
    for _, f := range m {
       if f.Number == n {
@@ -63,14 +71,6 @@ func (m *Message) Add_String(n protowire.Number, v string) {
       Number: n,
       Type: protowire.BytesType,
       Value: Bytes(v),
-   })
-}
-
-func (m *Message) Add_Varint(n protowire.Number, v uint64) {
-   *m = append(*m, Field{
-      Number: n,
-      Type: protowire.VarintType,
-      Value: Varint(v),
    })
 }
 
