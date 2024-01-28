@@ -90,6 +90,6 @@ func (m Message) Encode() []byte {
 }
 
 func (p Prefix) Append(b []byte) []byte {
-   value := Message(p).Encode()
-   return protowire.AppendBytes(b, value)
+   v := Message(p).Encode()
+   return protowire.AppendBytes(b, v)
 }
