@@ -15,63 +15,54 @@ func Test_Message(t *testing.T) {
       t.Fatal(err)
    }
    var ok bool
-   m.Get(1, func(m Message) bool {
-      m.Get(2, func(m Message) bool {
-         m.Get(4, func(m Message) bool {
-            ok = true
-            var v string
-            m.GetBytes(5, func(b Bytes) bool {
-               v = string(b)
-               return true
-            })
-            if v != "Pinterest" {
-               t.Fatal("title", v)
-            }
-            //if v, _ := m.String(6); v != "Pinterest" {
-            //   t.Fatal("creator", v)
-            //}
-            //{
-            //   m := m
-            //   m.Message(8)
-            //   if v, _ := m.String(2); v != "USD" {
-            //      t.Fatal("currencyCode", v)
-            //   }
-            //}
-            //m.Message(13)
-            //m.Message(1)
-            //if v, _ := m.Varint(3); v != 10448020 {
-            //   t.Fatal("versionCode", v)
-            //}
-            //if v, _ := m.String(4); v != "10.44.0" {
-            //   t.Fatal("versionString", v)
-            //}
-            //if v, _ := m.Varint(9); v != 29945887 {
-            //   t.Fatal("size", v)
-            //}
-            //if v, _ := m.String(16); v != "Dec 5, 2022" {
-            //   t.Fatal("date", v)
-            //}
-            //var v int
-            //for _, f := range m {
-            //   if f.Number == 17 {
-            //      if _, ok := f.Message(); ok {
-            //         v++
-            //      }
-            //   }
-            //}
-            //if v != 4 {
-            //   t.Fatal("file", v)
-            //}
-            //if v, _ := m.Varint(70); v != 818092752 {
-            //   t.Fatal("numDownloads", v)
-            //}
-            return true
-         })
-         return true
-      })
-      return true
-   })
-   if !ok {
-      t.Fatal(1, 2, 4)
+   if m, ok = m.Get(1); !ok {
+      t.Fatal(1)
    }
+   if m, ok = m.Get(2); !ok {
+      t.Fatal(2)
+   }
+   if m, ok = m.Get(4); !ok {
+      t.Fatal(4)
+   }
+   if v, _ := m.GetBytes(5); string(v) != "Pinterest" {
+      t.Fatal("title", v)
+   }
+   //if v, _ := m.String(6); v != "Pinterest" {
+   //   t.Fatal("creator", v)
+   //}
+   //{
+   //   m := m
+   //   m.Message(8)
+   //   if v, _ := m.String(2); v != "USD" {
+   //      t.Fatal("currencyCode", v)
+   //   }
+   //}
+   //m.Message(13)
+   //m.Message(1)
+   //if v, _ := m.Varint(3); v != 10448020 {
+   //   t.Fatal("versionCode", v)
+   //}
+   //if v, _ := m.String(4); v != "10.44.0" {
+   //   t.Fatal("versionString", v)
+   //}
+   //if v, _ := m.Varint(9); v != 29945887 {
+   //   t.Fatal("size", v)
+   //}
+   //if v, _ := m.String(16); v != "Dec 5, 2022" {
+   //   t.Fatal("date", v)
+   //}
+   //var v int
+   //for _, f := range m {
+   //   if f.Number == 17 {
+   //      if _, ok := f.Message(); ok {
+   //         v++
+   //      }
+   //   }
+   //}
+   //if v != 4 {
+   //   t.Fatal("file", v)
+   //}
+   //if v, _ := m.Varint(70); v != 818092752 {
+   //   t.Fatal("numDownloads", v)
+   //}
 }
