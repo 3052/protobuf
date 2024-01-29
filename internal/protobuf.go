@@ -2,24 +2,12 @@ package protobuf
 
 import "google.golang.org/protobuf/encoding/protowire"
 
-func add(m *Message, n Number, t Type, v Value) {
+func add(m *Message, n protowire.Number, t protowire.Type, v Value) {
    *m = append(*m, Field{
       Number: n,
       Type: t,
       Value: v,
    })
-}
-
-func get[T Value](m Message, n Number, f func(T) bool) {
-   for _, record := range m {
-      if record.Number == n {
-         if v, ok := record.Value.(T); ok {
-            if f(v) {
-               return
-            }
-         }
-      }
-   }
 }
 
 type Bytes []byte
@@ -29,8 +17,8 @@ func (c Bytes) Append(b []byte) []byte {
 }
 
 type Field struct {
-   Number Number
-   Type Type
+   Number protowire.Number
+   Type protowire.Type
    Value Value
 }
 
@@ -62,10 +50,6 @@ func (m Message) Encode() []byte {
    }
    return b
 }
-
-type Number = protowire.Number
-
-type Type = protowire.Type
 
 type Value interface {
    Append([]byte) []byte
