@@ -1,9 +1,17 @@
 package protobuf
 
-import (
-   "errors"
-   "google.golang.org/protobuf/encoding/protowire"
-)
+import "google.golang.org/protobuf/encoding/protowire"
+
+func get[T Value](m Message, n Number) (T, bool) {
+   for _, record := range m {
+      if record.Number == n {
+         if v, ok := record.Value.(T); ok {
+            return v, true
+         }
+      }
+   }
+   return *new(T), false
+}
 
 type Bytes []byte
 
@@ -33,61 +41,6 @@ type Message []Field
 
 func (m Message) Append(b []byte) []byte {
    return protowire.AppendBytes(b, m.Encode())
-}
-
-func (m *Message) Consume(data []byte) error {
-   if len(data) == 0 {
-      return errors.New("unexpected EOF")
-   }
-   for len(data) >= 1 {
-      num, typ, length := protowire.ConsumeTag(data)
-      err := protowire.ParseError(length)
-      if err != nil {
-         return err
-      }
-      data = data[length:]
-      switch typ {
-      case protowire.BytesType:
-         v, length := protowire.ConsumeBytes(data)
-         err := protowire.ParseError(length)
-         if err != nil {
-            return err
-         }
-         data = data[length:]
-         m.AddBytes(num, v)
-         var embed Message
-         if embed.Consume(v) == nil {
-            *m = append(*m, Field{num, -protowire.BytesType, embed})
-         }
-      case protowire.Fixed32Type:
-         v, length := protowire.ConsumeFixed32(data)
-         err := protowire.ParseError(length)
-         if err != nil {
-            return err
-         }
-         data = data[length:]
-         m.AddFixed32(num, Fixed32(v))
-      case protowire.Fixed64Type:
-         v, length := protowire.ConsumeFixed64(data)
-         err := protowire.ParseError(length)
-         if err != nil {
-            return err
-         }
-         data = data[length:]
-         m.AddFixed64(num, Fixed64(v))
-      case protowire.VarintType:
-         v, length := protowire.ConsumeVarint(data)
-         err := protowire.ParseError(length)
-         if err != nil {
-            return err
-         }
-         data = data[length:]
-         m.AddVarint(num, Varint(v))
-      default:
-         return errors.New("cannot parse reserved wire type")
-      }
-   }
-   return nil
 }
 
 func (m Message) Encode() []byte {
