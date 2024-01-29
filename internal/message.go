@@ -49,22 +49,24 @@ func (m Message) GetVarint(n Number) (Varint, bool) {
    return get[Varint](m, n)
 }
 
+func (m Message) Get(n Number) (Message, bool) {
+   return get[Message](m, n)
+}
+
 func (m *Message) AddFunc(n Number, f func(*Message)) {
    var v Message
    f(&v)
    *m = append(*m, Field{n, protowire.BytesType, v})
 }
 
-func (m Message) GetFunc(n Number, f func(Message)) {
+func (m Message) GetFunc(n Number, f func(Message) bool) {
    for _, record := range m {
       if record.Number == n {
          if v, ok := record.Value.(Message); ok {
-            f(v)
+            if f(v) {
+               return
+            }
          }
       }
    }
-}
-
-func (m Message) Get(n Number) (Message, bool) {
-   return get[Message](m, n)
 }
