@@ -1,13 +1,63 @@
 package protobuf
 
-import "google.golang.org/protobuf/encoding/protowire"
+import (
+   "errors"
+   "google.golang.org/protobuf/encoding/protowire"
+)
 
-func add(m *Message, n protowire.Number, t protowire.Type, v Value) {
-   *m = append(*m, Field{
-      Number: n,
-      Type: t,
-      Value: v,
-   })
+func (m *Message) Consume(data []byte) error {
+   if len(data) == 0 {
+      return errors.New("unexpected EOF")
+   }
+   for len(data) >= 1 {
+      num, typ, length := protowire.ConsumeTag(data)
+      err := protowire.ParseError(length)
+      if err != nil {
+         return err
+      }
+      data = data[length:]
+      switch typ {
+      case protowire.BytesType:
+         v, length := protowire.ConsumeBytes(data)
+         err := protowire.ParseError(length)
+         if err != nil {
+            return err
+         }
+         data = data[length:]
+         m.AddBytes(num, v)
+         var embed Message
+         if embed.Consume(v) == nil {
+            add(m, num, -protowire.BytesType, embed)
+         }
+      case protowire.Fixed32Type:
+         v, length := protowire.ConsumeFixed32(data)
+         err := protowire.ParseError(length)
+         if err != nil {
+            return err
+         }
+         data = data[length:]
+         m.AddFixed32(num, v)
+      case protowire.Fixed64Type:
+         v, length := protowire.ConsumeFixed64(data)
+         err := protowire.ParseError(length)
+         if err != nil {
+            return err
+         }
+         data = data[length:]
+         m.AddFixed64(num, v)
+      case protowire.VarintType:
+         v, length := protowire.ConsumeVarint(data)
+         err := protowire.ParseError(length)
+         if err != nil {
+            return err
+         }
+         data = data[length:]
+         m.AddVarint(num, v)
+      default:
+         return errors.New("cannot parse reserved wire type")
+      }
+   }
+   return nil
 }
 
 type Bytes []byte

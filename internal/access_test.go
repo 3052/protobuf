@@ -14,9 +14,11 @@ func Test_Message(t *testing.T) {
    if err := m.Consume(data); err != nil {
       t.Fatal(err)
    }
+   var ok bool
    m.Get(1, func(m Message) bool {
       m.Get(2, func(m Message) bool {
          m.Get(4, func(m Message) bool {
+            ok = true
             var v string
             m.GetBytes(5, func(b Bytes) bool {
                v = string(b)
@@ -69,4 +71,7 @@ func Test_Message(t *testing.T) {
       })
       return true
    })
+   if !ok {
+      t.Fatal(1, 2, 4)
+   }
 }
