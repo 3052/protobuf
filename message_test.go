@@ -44,8 +44,12 @@ func Test_Message(t *testing.T) {
       t.Fatal("date", v)
    }
    var v int
-   m.GetFunc(17, func(Message) bool {
-      v++
+   m.GetFunc(func(f Field) bool {
+      if f.Number == 17 {
+         if f.Type >= 0 {
+            v++
+         }
+      }
       return false
    })
    if v != 4 {

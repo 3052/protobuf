@@ -5,16 +5,9 @@ import (
    "google.golang.org/protobuf/encoding/protowire"
 )
 
-func get[T Value](m Message, n protowire.Number) (T, bool) {
-   for _, record := range m {
-      if record.Number == n {
-         if v, ok := record.Value.(T); ok {
-            return v, true
-         }
-      }
-   }
-   return *new(T), false
-}
+type Number = protowire.Number
+
+type Type = protowire.Type
 
 type Bytes []byte
 
@@ -27,8 +20,8 @@ func (b Bytes) GoString() string {
 }
 
 type Field struct {
-   Number protowire.Number
-   Type protowire.Type
+   Number Number
+   Type Type
    Value Value
 }
 
@@ -91,4 +84,42 @@ func (v Varint) Append(data []byte) []byte {
 
 func (v Varint) GoString() string {
    return fmt.Sprintf("protobuf.Varint(%v)", v)
+}
+
+func field_get[T Value](f Field) (T, bool) {
+   if v, ok := f.Value.(T); ok {
+      return v, true
+   }
+   return *new(T), false
+}
+
+func (f Field) GetVarint() (Varint, bool) {
+   return field_get[Varint](f)
+}
+
+func (f Field) GetFixed64() (Fixed64, bool) {
+   return field_get[Fixed64](f)
+}
+
+func (f Field) GetFixed32() (Fixed32, bool) {
+   return field_get[Fixed32](f)
+}
+
+func (f Field) GetBytes() (Bytes, bool) {
+   return field_get[Bytes](f)
+}
+
+func (f Field) Get() (Message, bool) {
+   return field_get[Message](f)
+}
+
+func get[T Value](m Message, n Number) (T, bool) {
+   for _, record := range m {
+      if record.Number == n {
+         if v, ok := record.Value.(T); ok {
+            return v, true
+         }
+      }
+   }
+   return *new(T), false
 }
