@@ -5,32 +5,6 @@ import (
    "google.golang.org/protobuf/encoding/protowire"
 )
 
-func (m *Message) Add(n protowire.Number, v Message) {
-   *m = append(*m, Field{n, protowire.BytesType, v})
-}
-
-func (m *Message) AddBytes(n protowire.Number, v Bytes) {
-   *m = append(*m, Field{n, protowire.BytesType, v})
-}
-
-func (m *Message) AddFixed32(n protowire.Number, v Fixed32) {
-   *m = append(*m, Field{n, protowire.Fixed32Type, v})
-}
-
-func (m *Message) AddFixed64(n protowire.Number, v Fixed64) {
-   *m = append(*m, Field{n, protowire.Fixed64Type, v})
-}
-
-func (m *Message) AddFunc(n protowire.Number, f func(*Message)) {
-   var v Message
-   f(&v)
-   *m = append(*m, Field{n, protowire.BytesType, v})
-}
-
-func (m *Message) AddVarint(n protowire.Number, v Varint) {
-   *m = append(*m, Field{n, protowire.VarintType, v})
-}
-
 func (m *Message) Consume(data []byte) error {
    if len(data) == 0 {
       return errors.New("unexpected EOF")
@@ -86,34 +60,59 @@ func (m *Message) Consume(data []byte) error {
    return nil
 }
 
-func (m Message) Get(n protowire.Number) (Message, bool) {
-   return get[Message](m, n)
-}
-
-func (m Message) GetBytes(n protowire.Number) (Bytes, bool) {
-   return get[Bytes](m, n)
-}
-
-func (m Message) GetFixed32(n protowire.Number) (Fixed32, bool) {
-   return get[Fixed32](m, n)
+func (m Message) GetVarint(n protowire.Number) (Varint, bool) {
+   return get[Varint](m, n)
 }
 
 func (m Message) GetFixed64(n protowire.Number) (Fixed64, bool) {
    return get[Fixed64](m, n)
 }
 
-func (m Message) GetFunc(n protowire.Number, f func(Message) bool) {
+func (m Message) GetFixed32(n protowire.Number) (Fixed32, bool) {
+   return get[Fixed32](m, n)
+}
+
+func (m Message) GetBytes(n protowire.Number) (Bytes, bool) {
+   return get[Bytes](m, n)
+}
+
+func (m Message) Get(n protowire.Number) (Message, bool) {
+   return get[Message](m, n)
+}
+
+func (m *Message) AddVarint(n protowire.Number, v Varint) {
+   *m = append(*m, Field{n, protowire.VarintType, v})
+}
+
+func (m *Message) AddFixed64(n protowire.Number, v Fixed64) {
+   *m = append(*m, Field{n, protowire.Fixed64Type, v})
+}
+
+func (m *Message) AddFixed32(n protowire.Number, v Fixed32) {
+   *m = append(*m, Field{n, protowire.Fixed32Type, v})
+}
+
+func (m *Message) AddBytes(n protowire.Number, v Bytes) {
+   *m = append(*m, Field{n, protowire.BytesType, v})
+}
+
+func (m *Message) Add(n protowire.Number, v Message) {
+   *m = append(*m, Field{n, protowire.BytesType, v})
+}
+
+func (m *Message) AddFunc(n protowire.Number, f func(*Message)) {
+   var v Message
+   f(&v)
+   *m = append(*m, Field{n, protowire.BytesType, v})
+}
+
+func (m Message) GetFunc(f func(Field) bool) (Message, bool) {
    for _, record := range m {
-      if record.Number == n {
-         if v, ok := record.Value.(Message); ok {
-            if f(v) {
-               return
-            }
+      if f(record) {
+         if v, ok := record.Get(); ok {
+            return v, true
          }
       }
    }
-}
-
-func (m Message) GetVarint(n protowire.Number) (Varint, bool) {
-   return get[Varint](m, n)
+   return nil, false
 }
