@@ -102,18 +102,17 @@ func (m Message) GetFixed64(n protowire.Number) (Fixed64, bool) {
    return get[Fixed64](m, n)
 }
 
-func (m Message) GetFunc(n protowire.Number, f func(Message) bool) {
+func (m Message) GetVarint(n protowire.Number) (Varint, bool) {
+   return get[Varint](m, n)
+}
+
+func (m Message) GetFunc(f func(Field) bool) (Message, bool) {
    for _, record := range m {
-      if record.Number == n {
+      if f(record) {
          if v, ok := record.Value.(Message); ok {
-            if f(v) {
-               return
-            }
+            return v, true
          }
       }
    }
-}
-
-func (m Message) GetVarint(n protowire.Number) (Varint, bool) {
-   return get[Varint](m, n)
+   return nil, false
 }

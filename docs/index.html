@@ -14,7 +14,7 @@
   <body>
     <nav>
         154.pages.dev/protobuf<span class="navbar-right">
-          v1.0.5 | <a href="">Root</a> | <a href="#pkg-index">Index</a></span>
+          v1.0.6 | <a href="">Root</a> | <a href="#pkg-index">Index</a></span>
       </nav>
     <main><h2 id="pkg-overview">package protobuf</h2>
 <pre class="chroma"><span class="kn">import</span> <span class="s">&#34;154.pages.dev/protobuf&#34;</span></pre>
@@ -60,7 +60,7 @@
           <li><a href="#Message.GetBytes">func (m Message) GetBytes(n protowire.Number) (Bytes, bool)</a></li>
           <li><a href="#Message.GetFixed32">func (m Message) GetFixed32(n protowire.Number) (Fixed32, bool)</a></li>
           <li><a href="#Message.GetFixed64">func (m Message) GetFixed64(n protowire.Number) (Fixed64, bool)</a></li>
-          <li><a href="#Message.GetFunc">func (m Message) GetFunc(n protowire.Number, f func(Message) bool)</a></li>
+          <li><a href="#Message.GetFunc">func (m Message) GetFunc(f func(Field) bool) (Message, bool)</a></li>
           <li><a href="#Message.GetVarint">func (m Message) GetVarint(n protowire.Number) (Varint, bool)</a></li>
           <li><a href="#Message.GoString">func (m Message) GoString() string</a></li>
           </ul>
@@ -129,7 +129,7 @@
   <h4 id="Message.GetFixed64">func (Message) GetFixed64</h4>
   <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">GetFixed64</span><span class="p">(</span><span class="nx">n</span> <a href="https://pkg.go.dev/google.golang.org/protobuf/encoding/protowire"><span class="nx">protowire</span></a><span class="p">.</span><a href="https://pkg.go.dev/google.golang.org/protobuf/encoding/protowire#Number"><span class="nx">Number</span></a><span class="p">)</span> <span class="p">(</span><a href="#Fixed64"><span class="nx">Fixed64</span></a><span class="p">,</span> <a href="https://pkg.go.dev/builtin#bool"><span class="kt">bool</span></a><span class="p">)</span></pre>
   <h4 id="Message.GetFunc">func (Message) GetFunc</h4>
-  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">GetFunc</span><span class="p">(</span><span class="nx">n</span> <a href="https://pkg.go.dev/google.golang.org/protobuf/encoding/protowire"><span class="nx">protowire</span></a><span class="p">.</span><a href="https://pkg.go.dev/google.golang.org/protobuf/encoding/protowire#Number"><span class="nx">Number</span></a><span class="p">,</span> <span class="nx">f</span> <span class="kd">func</span><span class="p">(</span><a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <a href="https://pkg.go.dev/builtin#bool"><span class="kt">bool</span></a><span class="p">)</span></pre>
+  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">GetFunc</span><span class="p">(</span><span class="nx">f</span> <span class="kd">func</span><span class="p">(</span><a href="#Field"><span class="nx">Field</span></a><span class="p">)</span> <a href="https://pkg.go.dev/builtin#bool"><span class="kt">bool</span></a><span class="p">)</span> <span class="p">(</span><a href="#Message"><span class="nx">Message</span></a><span class="p">,</span> <a href="https://pkg.go.dev/builtin#bool"><span class="kt">bool</span></a><span class="p">)</span></pre>
   <h4 id="Message.GetVarint">func (Message) GetVarint</h4>
   <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">GetVarint</span><span class="p">(</span><span class="nx">n</span> <a href="https://pkg.go.dev/google.golang.org/protobuf/encoding/protowire"><span class="nx">protowire</span></a><span class="p">.</span><a href="https://pkg.go.dev/google.golang.org/protobuf/encoding/protowire#Number"><span class="nx">Number</span></a><span class="p">)</span> <span class="p">(</span><a href="#Varint"><span class="nx">Varint</span></a><span class="p">,</span> <a href="https://pkg.go.dev/builtin#bool"><span class="kt">bool</span></a><span class="p">)</span></pre>
   <h4 id="Message.GoString">func (Message) GoString</h4>
