@@ -44,14 +44,11 @@ func Test_Message(t *testing.T) {
       t.Fatal("date", v)
    }
    var v int
-   m.GetFunc(func(f Field) bool {
-      if f.Number == 17 {
-         if f.Type >= 0 {
-            v++
-         }
+   for _, record := range m {
+      if _, ok := record.Get(17); ok {
+         v++
       }
-      return false
-   })
+   }
    if v != 4 {
       t.Fatal("file", v)
    }

@@ -5,6 +5,28 @@ import (
    "google.golang.org/protobuf/encoding/protowire"
 )
 
+func (m *Message) AddVarint(n Number, v Varint) {
+   *m = append(*m, Field{n, protowire.VarintType, v})
+}
+
+func (m *Message) AddFixed64(n Number, v Fixed64) {
+   *m = append(*m, Field{n, protowire.Fixed64Type, v})
+}
+
+func (m *Message) AddFixed32(n Number, v Fixed32) {
+   *m = append(*m, Field{n, protowire.Fixed32Type, v})
+}
+
+func (m *Message) Add(n Number, v Message) {
+   *m = append(*m, Field{n, protowire.BytesType, v})
+}
+
+func (m *Message) AddFunc(n Number, f func(*Message)) {
+   var v Message
+   f(&v)
+   *m = append(*m, Field{n, protowire.BytesType, v})
+}
+
 func (m *Message) Consume(data []byte) error {
    if len(data) == 0 {
       return errors.New("unexpected EOF")
@@ -60,39 +82,6 @@ func (m *Message) Consume(data []byte) error {
    return nil
 }
 
-func (m *Message) AddVarint(n Number, v Varint) {
-   *m = append(*m, Field{n, protowire.VarintType, v})
-}
-
-func (m *Message) AddFixed64(n Number, v Fixed64) {
-   *m = append(*m, Field{n, protowire.Fixed64Type, v})
-}
-
-func (m *Message) AddFixed32(n Number, v Fixed32) {
-   *m = append(*m, Field{n, protowire.Fixed32Type, v})
-}
-
-func (m *Message) Add(n Number, v Message) {
-   *m = append(*m, Field{n, protowire.BytesType, v})
-}
-
-func (m *Message) AddFunc(n Number, f func(*Message)) {
-   var v Message
-   f(&v)
-   *m = append(*m, Field{n, protowire.BytesType, v})
-}
-
-func (m Message) GetFunc(f func(Field) bool) (Message, bool) {
-   for _, record := range m {
-      if f(record) {
-         if v, ok := record.Get(); ok {
-            return v, true
-         }
-      }
-   }
-   return nil, false
-}
-
 func (m Message) GetString(n Number) (string, bool) {
    for _, record := range m {
       if v, ok := record.GetString(n); ok {
@@ -132,6 +121,15 @@ func (m Message) GetFixed32(n Number) (uint32, bool) {
 func (m Message) Get(n Number) (Message, bool) {
    for _, record := range m {
       if v, ok := record.Get(n); ok {
+         return v, true
+      }
+   }
+   return nil, false
+}
+
+func (m Message) GetBytes(n Number) ([]byte, bool) {
+   for _, record := range m {
+      if v, ok := record.GetBytes(n); ok {
          return v, true
       }
    }
