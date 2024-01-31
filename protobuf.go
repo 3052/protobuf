@@ -5,10 +5,6 @@ import (
    "google.golang.org/protobuf/encoding/protowire"
 )
 
-type Number = protowire.Number
-
-type Type = protowire.Type
-
 type Bytes []byte
 
 func (b Bytes) Append(data []byte) []byte {
@@ -18,6 +14,10 @@ func (b Bytes) Append(data []byte) []byte {
 func (b Bytes) GoString() string {
    return fmt.Sprintf("protobuf.Bytes(%q)", b)
 }
+
+type Number = protowire.Number
+
+type Type = protowire.Type
 
 type Field struct {
    Number Number
