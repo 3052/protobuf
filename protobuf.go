@@ -5,16 +5,6 @@ import (
    "google.golang.org/protobuf/encoding/protowire"
 )
 
-type Bytes []byte
-
-func (b Bytes) Append(data []byte) []byte {
-   return protowire.AppendBytes(data, b)
-}
-
-func (b Bytes) GoString() string {
-   return fmt.Sprintf("protobuf.Bytes(%q)", b)
-}
-
 type Number = protowire.Number
 
 type Type = protowire.Type
@@ -34,8 +24,6 @@ func (f Fixed32) Append(data []byte) []byte {
 func (f Fixed32) GoString() string {
    return fmt.Sprintf("protobuf.Fixed32(%v)", f)
 }
-
-type Fixed64 uint64
 
 func (f Fixed64) Append(data []byte) []byte {
    return protowire.AppendFixed64(data, uint64(f))
@@ -76,8 +64,6 @@ type Value interface {
    fmt.GoStringer
 }
 
-type Varint uint64
-
 func (v Varint) Append(data []byte) []byte {
    return protowire.AppendVarint(data, uint64(v))
 }
@@ -86,40 +72,59 @@ func (v Varint) GoString() string {
    return fmt.Sprintf("protobuf.Varint(%v)", v)
 }
 
-func field_get[T Value](f Field) (T, bool) {
-   if v, ok := f.Value.(T); ok {
+type Bytes []byte
+
+func (b Bytes) Append(data []byte) []byte {
+   return protowire.AppendBytes(data, b)
+}
+
+func (b Bytes) GoString() string {
+   return fmt.Sprintf("protobuf.Bytes(%q)", b)
+}
+
+func (m *Message) AddBytes(n Number, v Bytes) {
+   *m = append(*m, Field{n, protowire.BytesType, v})
+}
+
+func (m Message) GetBytes(n Number) (Bytes, bool) {
+   return get[Bytes](m, n)
+}
+
+type Varint uint64
+
+func (f Field) GetVarint() (uint64, bool) {
+   if v, ok := f.Value.(Varint); ok {
+      return uint64(v), true
+   }
+   return 0, false
+}
+
+type Fixed64 uint64
+
+func (f Field) GetFixed64() (uint64, bool) {
+   if v, ok := f.Value.(Fixed64); ok {
+      return uint64(v), true
+   }
+   return 0, false
+}
+
+func (f Field) GetFixed32() (uint32, bool) {
+   if v, ok := f.Value.(Fixed32); ok {
+      return uint32(v), true
+   }
+   return 0, false
+}
+
+func (f Field) GetBytes() ([]byte, bool) {
+   if v, ok := f.Value.(Bytes); ok {
       return v, true
    }
-   return *new(T), false
-}
-
-func (f Field) GetVarint() (Varint, bool) {
-   return field_get[Varint](f)
-}
-
-func (f Field) GetFixed64() (Fixed64, bool) {
-   return field_get[Fixed64](f)
-}
-
-func (f Field) GetFixed32() (Fixed32, bool) {
-   return field_get[Fixed32](f)
-}
-
-func (f Field) GetBytes() (Bytes, bool) {
-   return field_get[Bytes](f)
+   return nil, false
 }
 
 func (f Field) Get() (Message, bool) {
-   return field_get[Message](f)
-}
-
-func get[T Value](m Message, n Number) (T, bool) {
-   for _, record := range m {
-      if record.Number == n {
-         if v, ok := record.Value.(T); ok {
-            return v, true
-         }
-      }
+   if v, ok := f.Value.(Message); ok {
+      return v, true
    }
-   return *new(T), false
+   return nil, false
 }
