@@ -5,6 +5,44 @@ import (
    "google.golang.org/protobuf/encoding/protowire"
 )
 
+func (f Field) GetBytes(n Number) (Bytes, bool) {
+   return field_get[Bytes](f, n)
+}
+
+func (f Field) GetFixed32(n Number) (Fixed32, bool) {
+   return field_get[Fixed32](f, n)
+}
+
+func (f Field) GetFixed64(n Number) (Fixed64, bool) {
+   return field_get[Fixed64](f, n)
+}
+
+func (f Field) Get(n Number) (Message, bool) {
+   return field_get[Message](f, n)
+}
+
+func (f Field) GetVarint(n Number) (Varint, bool) {
+   return field_get[Varint](f, n)
+}
+
+func field_get[T Value](f Field, n Number) (T, bool) {
+   if f.Number == n {
+      if v, ok := f.Value.(T); ok {
+         return v, true
+      }
+   }
+   return *new(T), false
+}
+
+func get[T Value](m Message, n Number) (T, bool) {
+   for _, record := range m {
+      if v, ok := field_get[T](record, n); ok {
+         return v, true
+      }
+   }
+   return *new(T), false
+}
+
 type Bytes []byte
 
 func (b Bytes) Append(data []byte) []byte {
@@ -15,64 +53,10 @@ func (b Bytes) GoString() string {
    return fmt.Sprintf("protobuf.Bytes(%q)", b)
 }
 
-func (f Field) GetString(n Number) (string, bool) {
-   if f.Number == n {
-      if v, ok := f.Value.(String); ok {
-         return string(v), true
-      }
-   }
-   return "", false
-}
-
 type Field struct {
    Number Number
    Type Type
    Value Value
-}
-
-func (f Field) GetVarint(n Number) (uint64, bool) {
-   if f.Number == n {
-      if v, ok := f.Value.(Varint); ok {
-         return uint64(v), true
-      }
-   }
-   return 0, false
-}
-
-func (f Field) GetFixed64(n Number) (uint64, bool) {
-   if f.Number == n {
-      if v, ok := f.Value.(Fixed64); ok {
-         return uint64(v), true
-      }
-   }
-   return 0, false
-}
-
-func (f Field) GetFixed32(n Number) (uint32, bool) {
-   if f.Number == n {
-      if v, ok := f.Value.(Fixed32); ok {
-         return uint32(v), true
-      }
-   }
-   return 0, false
-}
-
-func (f Field) GetBytes(n Number) ([]byte, bool) {
-   if f.Number == n {
-      if v, ok := f.Value.(Bytes); ok {
-         return v, true
-      }
-   }
-   return nil, false
-}
-
-func (f Field) Get(n Number) (Message, bool) {
-   if f.Number == n {
-      if v, ok := f.Value.(Message); ok {
-         return v, true
-      }
-   }
-   return nil, false
 }
 
 type Fixed32 uint32
@@ -95,10 +79,6 @@ func (f Fixed64) GoString() string {
    return fmt.Sprintf("protobuf.Fixed64(%v)", f)
 }
 
-func (m *Message) AddString(n Number, v String) {
-   *m = append(*m, Field{n, protowire.BytesType, v})
-}
-
 type Message []Field
 
 func (m Message) Append(data []byte) []byte {
@@ -116,10 +96,6 @@ func (m Message) Encode() []byte {
    return b
 }
 
-func (m *Message) AddBytes(n Number, v Bytes) {
-   *m = append(*m, Field{n, protowire.BytesType, v})
-}
-
 func (m Message) GoString() string {
    b := []byte("protobuf.Message{\n")
    for _, record := range m {
@@ -130,16 +106,6 @@ func (m Message) GoString() string {
 }
 
 type Number = protowire.Number
-
-type String string
-
-func (s String) Append(data []byte) []byte {
-   return protowire.AppendString(data, string(s))
-}
-
-func (s String) GoString() string {
-   return fmt.Sprintf("protobuf.String(%q)", s)
-}
 
 type Type = protowire.Type
 
