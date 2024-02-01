@@ -45,12 +45,6 @@ I am leaning toward adding nothing. does Go use the `(nil,` syntax anywhere?
 yes:
 
 ~~~go
-logLine := fmt.Appendf(nil, "%s %x %x\n", label, clientRandom, secret)
-~~~
-
-https://github.com/golang/go/blob/go1.21.6/src/crypto/tls/common.go
-
-~~~go
 return strconv.AppendQuote(nil, l.String()), nil
 ~~~
 
@@ -61,6 +55,12 @@ return fmt.Appendf(nil, "%s %x", a.username, d.Sum(s)), nil
 ~~~
 
 https://github.com/golang/go/blob/go1.21.6/src/net/smtp/auth.go
+
+~~~go
+logLine := fmt.Appendf(nil, "%s %x %x\n", label, clientRandom, secret)
+~~~
+
+https://github.com/golang/go/blob/go1.21.6/src/crypto/tls/common.go
 
 from the Get side, we have these options:
 
@@ -93,4 +93,13 @@ if we add `String` type AND `string` conversion, we can do this:
 
 ~~~go
 return m.GetString(1)
+~~~
+
+benchmark:
+
+~~~
+Benchmark_FormatInt-12          27236576   43.19 ns/op   24 B/op   1 allocs/op
+Benchmark_AppendInt-12          24428376   48.93 ns/op   24 B/op   1 allocs/op
+Benchmark_Sprint-12             15338167   79.61 ns/op   24 B/op   1 allocs/op
+Benchmark_Append-12             12673293   92.96 ns/op   24 B/op   1 allocs/op
 ~~~

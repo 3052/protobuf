@@ -14,7 +14,7 @@
   <body>
     <nav>
         154.pages.dev/protobuf<span class="navbar-right">
-          v1.0.8 | <a href="">Root</a> | <a href="#pkg-index">Index</a></span>
+          v1.0.9 | <a href="">Root</a> | <a href="#pkg-index">Index</a></span>
       </nav>
     <main><h2 id="pkg-overview">package protobuf</h2>
 <pre class="chroma"><span class="kn">import</span> <span class="s">&#34;154.pages.dev/protobuf&#34;</span></pre>
@@ -29,13 +29,6 @@
       </li>
   <li>
       <a href="#Field">type Field</a>
-      <ul>
-          <li><a href="#Field.Get">func (f Field) Get() (Message, bool)</a></li>
-          <li><a href="#Field.GetBytes">func (f Field) GetBytes() (Bytes, bool)</a></li>
-          <li><a href="#Field.GetFixed32">func (f Field) GetFixed32() (Fixed32, bool)</a></li>
-          <li><a href="#Field.GetFixed64">func (f Field) GetFixed64() (Fixed64, bool)</a></li>
-          <li><a href="#Field.GetVarint">func (f Field) GetVarint() (Varint, bool)</a></li>
-          </ul>
       </li>
   <li>
       <a href="#Fixed32">type Fixed32</a>
@@ -67,7 +60,7 @@
           <li><a href="#Message.GetBytes">func (m Message) GetBytes(n Number) (Bytes, bool)</a></li>
           <li><a href="#Message.GetFixed32">func (m Message) GetFixed32(n Number) (Fixed32, bool)</a></li>
           <li><a href="#Message.GetFixed64">func (m Message) GetFixed64(n Number) (Fixed64, bool)</a></li>
-          <li><a href="#Message.GetFunc">func (m Message) GetFunc(f func(Field) bool) (Message, bool)</a></li>
+          <li><a href="#Message.GetFunc">func (m Message) GetFunc(f func(Number, Message) bool)</a></li>
           <li><a href="#Message.GetVarint">func (m Message) GetVarint(n Number) (Varint, bool)</a></li>
           <li><a href="#Message.GoString">func (m Message) GoString() string</a></li>
           </ul>
@@ -101,17 +94,7 @@
 	<span id="Field.Type"><span class="nx">Type</span></span>   <a href="#Type"><span class="nx">Type</span></a>
 	<span id="Field.Value"><span class="nx">Value</span></span>  <a href="#Value"><span class="nx">Value</span></a>
 <span class="p">}</span></pre>
-    <h4 id="Field.Get">func (Field) Get</h4>
-  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">f</span> <a href="#Field"><span class="nx">Field</span></a><span class="p">)</span> <span class="nf">Get</span><span class="p">()</span> <span class="p">(</span><a href="#Message"><span class="nx">Message</span></a><span class="p">,</span> <a href="https://pkg.go.dev/builtin#bool"><span class="kt">bool</span></a><span class="p">)</span></pre>
-  <h4 id="Field.GetBytes">func (Field) GetBytes</h4>
-  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">f</span> <a href="#Field"><span class="nx">Field</span></a><span class="p">)</span> <span class="nf">GetBytes</span><span class="p">()</span> <span class="p">(</span><a href="#Bytes"><span class="nx">Bytes</span></a><span class="p">,</span> <a href="https://pkg.go.dev/builtin#bool"><span class="kt">bool</span></a><span class="p">)</span></pre>
-  <h4 id="Field.GetFixed32">func (Field) GetFixed32</h4>
-  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">f</span> <a href="#Field"><span class="nx">Field</span></a><span class="p">)</span> <span class="nf">GetFixed32</span><span class="p">()</span> <span class="p">(</span><a href="#Fixed32"><span class="nx">Fixed32</span></a><span class="p">,</span> <a href="https://pkg.go.dev/builtin#bool"><span class="kt">bool</span></a><span class="p">)</span></pre>
-  <h4 id="Field.GetFixed64">func (Field) GetFixed64</h4>
-  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">f</span> <a href="#Field"><span class="nx">Field</span></a><span class="p">)</span> <span class="nf">GetFixed64</span><span class="p">()</span> <span class="p">(</span><a href="#Fixed64"><span class="nx">Fixed64</span></a><span class="p">,</span> <a href="https://pkg.go.dev/builtin#bool"><span class="kt">bool</span></a><span class="p">)</span></pre>
-  <h4 id="Field.GetVarint">func (Field) GetVarint</h4>
-  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">f</span> <a href="#Field"><span class="nx">Field</span></a><span class="p">)</span> <span class="nf">GetVarint</span><span class="p">()</span> <span class="p">(</span><a href="#Varint"><span class="nx">Varint</span></a><span class="p">,</span> <a href="https://pkg.go.dev/builtin#bool"><span class="kt">bool</span></a><span class="p">)</span></pre>
-  <h3 id="Fixed32">type Fixed32</h3>
+    <h3 id="Fixed32">type Fixed32</h3>
     <pre class="chroma"><span class="kd">type</span> <span class="nx">Fixed32</span> <a href="https://pkg.go.dev/builtin#uint32"><span class="kt">uint32</span></a></pre>
     <h4 id="Fixed32.Append">func (Fixed32) Append</h4>
   <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">f</span> <a href="#Fixed32"><span class="nx">Fixed32</span></a><span class="p">)</span> <span class="nf">Append</span><span class="p">(</span><span class="nx">data</span> <span class="p">[]</span><a href="https://pkg.go.dev/builtin#byte"><span class="kt">byte</span></a><span class="p">)</span> <span class="p">[]</span><a href="https://pkg.go.dev/builtin#byte"><span class="kt">byte</span></a></pre>
@@ -152,8 +135,9 @@
   <h4 id="Message.GetFixed64">func (Message) GetFixed64</h4>
   <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">GetFixed64</span><span class="p">(</span><span class="nx">n</span> <a href="#Number"><span class="nx">Number</span></a><span class="p">)</span> <span class="p">(</span><a href="#Fixed64"><span class="nx">Fixed64</span></a><span class="p">,</span> <a href="https://pkg.go.dev/builtin#bool"><span class="kt">bool</span></a><span class="p">)</span></pre>
   <h4 id="Message.GetFunc">func (Message) GetFunc</h4>
-  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">GetFunc</span><span class="p">(</span><span class="nx">f</span> <span class="kd">func</span><span class="p">(</span><a href="#Field"><span class="nx">Field</span></a><span class="p">)</span> <a href="https://pkg.go.dev/builtin#bool"><span class="kt">bool</span></a><span class="p">)</span> <span class="p">(</span><a href="#Message"><span class="nx">Message</span></a><span class="p">,</span> <a href="https://pkg.go.dev/builtin#bool"><span class="kt">bool</span></a><span class="p">)</span></pre>
-  <h4 id="Message.GetVarint">func (Message) GetVarint</h4>
+  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">GetFunc</span><span class="p">(</span><span class="nx">f</span> <span class="kd">func</span><span class="p">(</span><a href="#Number"><span class="nx">Number</span></a><span class="p">,</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <a href="https://pkg.go.dev/builtin#bool"><span class="kt">bool</span></a><span class="p">)</span></pre>
+  <p>google.golang.org/protobuf/reflect/protoreflect#Message.Range
+<h4 id="Message.GetVarint">func (Message) GetVarint</h4>
   <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">GetVarint</span><span class="p">(</span><span class="nx">n</span> <a href="#Number"><span class="nx">Number</span></a><span class="p">)</span> <span class="p">(</span><a href="#Varint"><span class="nx">Varint</span></a><span class="p">,</span> <a href="https://pkg.go.dev/builtin#bool"><span class="kt">bool</span></a><span class="p">)</span></pre>
   <h4 id="Message.GoString">func (Message) GoString</h4>
   <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">GoString</span><span class="p">()</span> <a href="https://pkg.go.dev/builtin#string"><span class="kt">string</span></a></pre>

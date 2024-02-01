@@ -5,6 +5,10 @@ import (
    "google.golang.org/protobuf/encoding/protowire"
 )
 
+func (m *Message) AddBytes(n Number, v Bytes) {
+   *m = append(*m, Field{n, protowire.BytesType, v})
+}
+
 func (m *Message) AddVarint(n Number, v Varint) {
    *m = append(*m, Field{n, protowire.VarintType, v})
 }
@@ -82,56 +86,33 @@ func (m *Message) Consume(data []byte) error {
    return nil
 }
 
-func (m Message) GetString(n Number) (string, bool) {
+// google.golang.org/protobuf/reflect/protoreflect#Message.Range
+func (m Message) GetFunc(f func(Number, Message) bool) {
    for _, record := range m {
-      if v, ok := record.GetString(n); ok {
-         return v, true
+      if v, ok := record.Value.(Message); ok {
+         if !f(record.Number, v) {
+            return
+         }
       }
    }
-   return "", false
 }
 
-func (m Message) GetVarint(n Number) (uint64, bool) {
-   for _, record := range m {
-      if v, ok := record.GetVarint(n); ok {
-         return v, true
-      }
-   }
-   return 0, false
+func (m Message) GetFixed64(n Number) (Fixed64, bool) {
+   return get[Fixed64](m, n)
 }
 
-func (m Message) GetFixed64(n Number) (uint64, bool) {
-   for _, record := range m {
-      if v, ok := record.GetFixed64(n); ok {
-         return v, true
-      }
-   }
-   return 0, false
+func (m Message) GetVarint(n Number) (Varint, bool) {
+   return get[Varint](m, n)
 }
 
-func (m Message) GetFixed32(n Number) (uint32, bool) {
-   for _, record := range m {
-      if v, ok := record.GetFixed32(n); ok {
-         return v, true
-      }
-   }
-   return 0, false
+func (m Message) GetFixed32(n Number) (Fixed32, bool) {
+   return get[Fixed32](m, n)
+}
+
+func (m Message) GetBytes(n Number) (Bytes, bool) {
+   return get[Bytes](m, n)
 }
 
 func (m Message) Get(n Number) (Message, bool) {
-   for _, record := range m {
-      if v, ok := record.Get(n); ok {
-         return v, true
-      }
-   }
-   return nil, false
-}
-
-func (m Message) GetBytes(n Number) ([]byte, bool) {
-   for _, record := range m {
-      if v, ok := record.GetBytes(n); ok {
-         return v, true
-      }
-   }
-   return nil, false
+   return get[Message](m, n)
 }

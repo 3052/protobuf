@@ -44,11 +44,12 @@ func Test_Message(t *testing.T) {
       t.Fatal("date", v)
    }
    var v int
-   for _, record := range m {
-      if _, ok := record.Get(17); ok {
+   m.GetFunc(func(n Number, _ Message) bool {
+      if n == 17 {
          v++
       }
-   }
+      return true
+   })
    if v != 4 {
       t.Fatal("file", v)
    }
