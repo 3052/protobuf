@@ -5,6 +5,20 @@ import (
    "google.golang.org/protobuf/encoding/protowire"
 )
 
+func (b Bytes) String() string {
+   return fmt.Sprintf("%q", []byte(b))
+}
+
+func (b Bytes) GoString() string {
+   return fmt.Sprintf("protobuf.Bytes(%q)", b)
+}
+
+func (b Bytes) Append(data []byte) []byte {
+   return protowire.AppendBytes(data, b)
+}
+
+type Bytes []byte
+
 func (f Field) GetBytes(n Number) (Bytes, bool) {
    return field_get[Bytes](f, n)
 }
@@ -41,16 +55,6 @@ func get[T Value](m Message, n Number) (T, bool) {
       }
    }
    return *new(T), false
-}
-
-type Bytes []byte
-
-func (b Bytes) Append(data []byte) []byte {
-   return protowire.AppendBytes(data, b)
-}
-
-func (b Bytes) GoString() string {
-   return fmt.Sprintf("protobuf.Bytes(%q)", b)
 }
 
 type Field struct {

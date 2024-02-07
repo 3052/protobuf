@@ -4,9 +4,13 @@ import (
    "bytes"
    "fmt"
    "google.golang.org/protobuf/testing/protopack"
-   "os"
    "testing"
 )
+
+func Test_Print(t *testing.T) {
+   b := Bytes("hello world")
+   fmt.Println(b)
+}
 
 var (
    exts = []string{"one", "two"}
@@ -96,16 +100,4 @@ func Test_Proto(t *testing.T) {
    if !bytes.Equal(a, b) {
       t.Fatal(a, "\n", b)
    }
-}
-
-func Test_Print(t *testing.T) {
-   data, err := os.ReadFile("com.pinterest.txt")
-   if err != nil {
-      t.Fatal(err)
-   }
-   var response_wrapper Message
-   if err := response_wrapper.Consume(data); err != nil {
-      t.Fatal(err)
-   }
-   fmt.Printf("%#v\n", response_wrapper)
 }
