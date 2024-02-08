@@ -9,7 +9,8 @@ import (
 
 func Test_Print(t *testing.T) {
    b := Bytes("hello world")
-   fmt.Println(b)
+   fmt.Println(b.String())
+   fmt.Println(b.GoString())
 }
 
 var (

@@ -10,7 +10,7 @@ func (b Bytes) String() string {
 }
 
 func (b Bytes) GoString() string {
-   return fmt.Sprintf("protobuf.Bytes(%q)", b)
+   return fmt.Sprintf("protobuf.Bytes(%q)", []byte(b))
 }
 
 func (b Bytes) Append(data []byte) []byte {
