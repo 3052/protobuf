@@ -94,12 +94,3 @@ if we add `String` type AND `string` conversion, we can do this:
 ~~~go
 return m.GetString(1)
 ~~~
-
-benchmark:
-
-~~~
-Benchmark_FormatInt-12          27236576   43.19 ns/op   24 B/op   1 allocs/op
-Benchmark_AppendInt-12          24428376   48.93 ns/op   24 B/op   1 allocs/op
-Benchmark_Sprint-12             15338167   79.61 ns/op   24 B/op   1 allocs/op
-Benchmark_Append-12             12673293   92.96 ns/op   24 B/op   1 allocs/op
-~~~
