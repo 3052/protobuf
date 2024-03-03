@@ -7,9 +7,8 @@ import (
    "testing"
 )
 
-func Test_Print(t *testing.T) {
+func TestPrint(t *testing.T) {
    b := Bytes("hello world")
-   fmt.Println(b.String())
    fmt.Println(b.GoString())
 }
 
@@ -65,13 +64,13 @@ func message_old() []byte {
 
 func message_new() []byte {
    var m Message
-   m.AddFunc(4, func(m *Message) {
-      m.AddFunc(1, func(m *Message) {
+   m.Add(4, func(m *Message) {
+      m.Add(1, func(m *Message) {
          m.AddVarint(10, 30)
       })
    })
    m.AddVarint(14, 3)
-   m.AddFunc(18, func(m *Message) {
+   m.Add(18, func(m *Message) {
       m.AddVarint(1, 3)
       m.AddVarint(2, 2)
       m.AddVarint(3, 2)
@@ -88,7 +87,7 @@ func message_new() []byte {
          m.AddBytes(15, []byte(ext))
       }
       for _, feat := range feats {
-         m.AddFunc(26, func(m *Message) {
+         m.Add(26, func(m *Message) {
             m.AddBytes(1, []byte(feat))
          })
       }
@@ -96,7 +95,7 @@ func message_new() []byte {
    return m.Encode()
 }
 
-func Test_Proto(t *testing.T) {
+func TestProto(t *testing.T) {
    a, b := message_old(), message_new()
    if !bytes.Equal(a, b) {
       t.Fatal(a, "\n", b)
