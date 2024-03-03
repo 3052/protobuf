@@ -5,10 +5,6 @@ import (
    "google.golang.org/protobuf/encoding/protowire"
 )
 
-func (b Bytes) String() string {
-   return fmt.Sprintf("%q", []byte(b))
-}
-
 func (b Bytes) GoString() string {
    return fmt.Sprintf("protobuf.Bytes(%q)", []byte(b))
 }
