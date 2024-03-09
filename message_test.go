@@ -1,33 +1,9 @@
 package protobuf
 
 import (
-   "fmt"
    "os"
    "testing"
 )
-
-func TestCurse(t *testing.T) {
-   b := Message{
-      Field{Number: 3, Type: 2, Value: Message{
-         Field{Number: 1, Type: 2, Value: Message{
-            Field{Number: 1, Type: 2, Value: Message{
-               Field{Number: 1, Type: 2, Value: Bytes("\xeb\xec")},
-            }},
-         }},
-      }},
-      Field{Number: 5, Type: 2, Value: Bytes("\x03\x00")},
-   }.Encode()
-   var m Message
-   m.Consume(b)
-   login_context, _ := m.GetBytes(5)
-   m, _ = m.Get(3)
-   m, _ = m.Get(1)
-   m, _ = m.Get(1)
-   prefix, _ := m.GetBytes(1)
-   fmt.Printf("%q\n", login_context)
-   _ = append(prefix, 1, 2, 3, 4, 5, 6)
-   fmt.Printf("%q\n", login_context)
-}
 
 func TestMessage(t *testing.T) {
    data, err := os.ReadFile("com.pinterest.txt")
@@ -68,8 +44,8 @@ func TestMessage(t *testing.T) {
       t.Fatal("date", v)
    }
    var v int
-   for _, record := range m {
-      if _, ok := record.Get(17); ok {
+   for _, f := range m {
+      if _, ok := f.Get(17); ok {
          v++
       }
    }
