@@ -2,15 +2,9 @@ package protobuf
 
 import (
    "bytes"
-   "fmt"
    "google.golang.org/protobuf/testing/protopack"
    "testing"
 )
-
-func TestPrint(t *testing.T) {
-   b := Bytes("hello world")
-   fmt.Println(b.GoString())
-}
 
 var (
    exts = []string{"one", "two"}
