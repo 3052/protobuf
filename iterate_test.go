@@ -14,47 +14,43 @@ func TestMessage(t *testing.T) {
    if err := m.Consume(data); err != nil {
       t.Fatal(err)
    }
-   m, _ = m.Get(1)
-   m, _ = m.Get(2)
-   m, _ = m.Get(4)
-   if v, _ := m.GetBytes(5); string(v) != "Pinterest" {
+   m = <-m.Get(1)
+   m = <-m.Get(2)
+   m = <-m.Get(4)
+   if v := <-m.GetBytes(5); string(v) != "Pinterest" {
       t.Fatal("title", v)
    }
-   if v, _ := m.GetBytes(6); string(v) != "Pinterest" {
+   if v := <-m.GetBytes(6); string(v) != "Pinterest" {
       t.Fatal("creator", v)
    }
    {
-      m, _ := m.Get(8)
-      if v, _ := m.GetBytes(2); string(v) != "USD" {
+      m := <-m.Get(8)
+      if v := <-m.GetBytes(2); string(v) != "USD" {
          t.Fatal("currencyCode", v)
       }
    }
-   m, _ = m.Get(13)
-   m, _ = m.Get(1)
-   if v, _ := m.GetVarint(3); v != 10448020 {
+   m = <-m.Get(13)
+   m = <-m.Get(1)
+   if v := <-m.GetVarint(3); v != 10448020 {
       t.Fatal("versionCode", v)
    }
-   if v, _ := m.GetBytes(4); string(v) != "10.44.0" {
+   if v := <-m.GetBytes(4); string(v) != "10.44.0" {
       t.Fatal("versionString", v)
    }
-   if v, _ := m.GetVarint(9); v != 29945887 {
+   if v := <-m.GetVarint(9); v != 29945887 {
       t.Fatal("size", v)
    }
-   if v, _ := m.GetBytes(16); string(v) != "Dec 5, 2022" {
+   if v := <-m.GetBytes(16); string(v) != "Dec 5, 2022" {
       t.Fatal("date", v)
    }
    var v int
-   file := m.Iterate(17)
-   for {
-      if _, ok := file(); !ok {
-         break
-      }
+   for range m.Get(17) {
       v++
    }
    if v != 4 {
       t.Fatal("file", v)
    }
-   if v, _ := m.GetVarint(70); v != 818092752 {
+   if v := <-m.GetVarint(70); v != 818092752 {
       t.Fatal("numDownloads", v)
    }
 }

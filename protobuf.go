@@ -7,6 +7,44 @@ import (
    "slices"
 )
 
+type Bytes []byte
+
+func (b Bytes) Append(data []byte) []byte {
+   return protowire.AppendBytes(data, b)
+}
+
+func (b Bytes) GoString() string {
+   return fmt.Sprintf("protobuf.Bytes(%q)", []byte(b))
+}
+
+type Field struct {
+   Number Number
+   Type Type
+   Value Value
+}
+
+type Fixed32 uint32
+
+func (f Fixed32) Append(data []byte) []byte {
+   return protowire.AppendFixed32(data, uint32(f))
+}
+
+func (f Fixed32) GoString() string {
+   return fmt.Sprintf("protobuf.Fixed32(%v)", f)
+}
+
+type Fixed64 uint64
+
+func (f Fixed64) Append(data []byte) []byte {
+   return protowire.AppendFixed64(data, uint64(f))
+}
+
+func (f Fixed64) GoString() string {
+   return fmt.Sprintf("protobuf.Fixed64(%v)", f)
+}
+
+type Message []Field
+
 func (m *Message) Add(n Number, f func(*Message)) {
    var v Message
    f(&v)
@@ -27,6 +65,10 @@ func (m *Message) AddFixed64(n Number, v Fixed64) {
 
 func (m *Message) AddVarint(n Number, v Varint) {
    *m = append(*m, Field{n, protowire.VarintType, v})
+}
+
+func (m Message) Append(data []byte) []byte {
+   return protowire.AppendBytes(data, m.Encode())
 }
 
 func (m *Message) Consume(data []byte) error {
@@ -83,68 +125,6 @@ func (m *Message) Consume(data []byte) error {
       }
    }
    return nil
-}
-
-func (m Message) Get(n Number) (Message, bool) {
-   return get[Message](m, n)
-}
-
-func (m Message) GetBytes(n Number) (Bytes, bool) {
-   return get[Bytes](m, n)
-}
-
-func (m Message) GetFixed32(n Number) (Fixed32, bool) {
-   return get[Fixed32](m, n)
-}
-
-func (m Message) GetFixed64(n Number) (Fixed64, bool) {
-   return get[Fixed64](m, n)
-}
-
-func (m Message) GetVarint(n Number) (Varint, bool) {
-   return get[Varint](m, n)
-}
-
-type Bytes []byte
-
-func (b Bytes) Append(data []byte) []byte {
-   return protowire.AppendBytes(data, b)
-}
-
-func (b Bytes) GoString() string {
-   return fmt.Sprintf("protobuf.Bytes(%q)", []byte(b))
-}
-
-type Field struct {
-   Number Number
-   Type Type
-   Value Value
-}
-
-type Fixed32 uint32
-
-func (f Fixed32) Append(data []byte) []byte {
-   return protowire.AppendFixed32(data, uint32(f))
-}
-
-func (f Fixed32) GoString() string {
-   return fmt.Sprintf("protobuf.Fixed32(%v)", f)
-}
-
-type Fixed64 uint64
-
-func (f Fixed64) Append(data []byte) []byte {
-   return protowire.AppendFixed64(data, uint64(f))
-}
-
-func (f Fixed64) GoString() string {
-   return fmt.Sprintf("protobuf.Fixed64(%v)", f)
-}
-
-type Message []Field
-
-func (m Message) Append(data []byte) []byte {
-   return protowire.AppendBytes(data, m.Encode())
 }
 
 func (m Message) Encode() []byte {

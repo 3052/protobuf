@@ -1,39 +1,36 @@
 package protobuf
 
-func (m Message) Iterate(n Number) func() (Message, bool) {
-   return iterate[Message](m, n)
-}
-
-func (m Message) IterateBytes(n Number) func() (Bytes, bool) {
-   return iterate[Bytes](m, n)
-}
-
-func (m Message) IterateFixed32(n Number) func() (Fixed32, bool) {
-   return iterate[Fixed32](m, n)
-}
-
-func (m Message) IterateFixed64(n Number) func() (Fixed64, bool) {
-   return iterate[Fixed64](m, n)
-}
-
-func (m Message) IterateVarint(n Number) func() (Varint, bool) {
-   return iterate[Varint](m, n)
-}
-
-func iterate[T Value](m Message, n Number) func() (T, bool) {
-   return func() (T, bool) {
-      for i, field := range m {
+func channel[T Value](m Message, n Number) chan T {
+   c := make(chan T)
+   go func() {
+      for _, field := range m {
          if field.Number == n {
             if v, ok := field.Value.(T); ok {
-               m = m[i+1:]
-               return v, true
+               c <- v
             }
          }
       }
-      return *new(T), false
-   }
+      close(c)
+   }()
+   return c
 }
 
-func get[T Value](m Message, n Number) (T, bool) {
-   return iterate[T](m, n)()
+func (m Message) Get(n Number) chan Message {
+   return channel[Message](m, n)
+}
+
+func (m Message) GetBytes(n Number) chan Bytes {
+   return channel[Bytes](m, n)
+}
+
+func (m Message) GetFixed32(n Number) chan Fixed32 {
+   return channel[Fixed32](m, n)
+}
+
+func (m Message) GetFixed64(n Number) chan Fixed64 {
+   return channel[Fixed64](m, n)
+}
+
+func (m Message) GetVarint(n Number) chan Varint {
+   return channel[Varint](m, n)
 }
