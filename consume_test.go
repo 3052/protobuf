@@ -5,7 +5,7 @@ import (
    "testing"
 )
 
-func TestMessage(t *testing.T) {
+func TestConsume(t *testing.T) {
    data, err := os.ReadFile("com.pinterest.txt")
    if err != nil {
       t.Fatal(err)

@@ -14,7 +14,7 @@
   <body>
     <nav>
         154.pages.dev/protobuf<span class="navbar-right">
-          v1.1.9 | <a href="">Root</a> | <a href="#pkg-index">Index</a></span>
+          v1.2.0 | <a href="">Root</a> | <a href="#pkg-index">Index</a></span>
       </nav>
     <main><h2 id="pkg-overview">package protobuf</h2>
 <pre class="chroma"><span class="kn">import</span> <span class="s">&#34;154.pages.dev/protobuf&#34;</span></pre>
@@ -67,9 +67,6 @@
       <a href="#Number">type Number</a>
       </li>
   <li>
-      <a href="#Type">type Type</a>
-      </li>
-  <li>
       <a href="#Value">type Value</a>
       </li>
   <li>
@@ -89,7 +86,7 @@
   <h3 id="Field">type Field</h3>
     <pre class="chroma"><span class="kd">type</span> <span class="nx">Field</span> <span class="kd">struct</span> <span class="p">{</span>
 	<span id="Field.Number"><span class="nx">Number</span></span> <a href="#Number"><span class="nx">Number</span></a>
-	<span id="Field.Type"><span class="nx">Type</span></span>   <a href="#Type"><span class="nx">Type</span></a>
+	<span id="Field.Type"><span class="nx">Type</span></span>   <a href="https://pkg.go.dev/google.golang.org/protobuf/encoding/protowire"><span class="nx">protowire</span></a><span class="p">.</span><a href="https://pkg.go.dev/google.golang.org/protobuf/encoding/protowire#Type"><span class="nx">Type</span></a>
 	<span id="Field.Value"><span class="nx">Value</span></span>  <a href="#Value"><span class="nx">Value</span></a>
 <span class="p">}</span></pre>
     <h3 id="Fixed32">type Fixed32</h3>
@@ -136,8 +133,6 @@
   <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">GoString</span><span class="p">()</span> <a href="https://pkg.go.dev/builtin#string"><span class="kt">string</span></a></pre>
   <h3 id="Number">type Number</h3>
     <pre class="chroma"><span class="kd">type</span> <span class="nx">Number</span> <span class="p">=</span> <a href="https://pkg.go.dev/google.golang.org/protobuf/encoding/protowire"><span class="nx">protowire</span></a><span class="p">.</span><a href="https://pkg.go.dev/google.golang.org/protobuf/encoding/protowire#Number"><span class="nx">Number</span></a></pre>
-    <h3 id="Type">type Type</h3>
-    <pre class="chroma"><span class="kd">type</span> <span class="nx">Type</span> <span class="p">=</span> <a href="https://pkg.go.dev/google.golang.org/protobuf/encoding/protowire"><span class="nx">protowire</span></a><span class="p">.</span><a href="https://pkg.go.dev/google.golang.org/protobuf/encoding/protowire#Type"><span class="nx">Type</span></a></pre>
     <h3 id="Value">type Value</h3>
     <pre class="chroma"><span class="kd">type</span> <span class="nx">Value</span> <span class="kd">interface</span> <span class="p">{</span>
 	<span id="Value.Append"><span class="nf">Append</span></span><span class="p">([]</span><a href="https://pkg.go.dev/builtin#byte"><span class="kt">byte</span></a><span class="p">)</span> <span class="p">[]</span><a href="https://pkg.go.dev/builtin#byte"><span class="kt">byte</span></a>
