@@ -50,6 +50,28 @@ func (f Fixed64) GoString() string {
    return fmt.Sprintf("protobuf.Fixed64(%v)", f)
 }
 
+func (m *Message) Add(n Number, f func(*Message)) {
+   var v Message
+   f(&v)
+   *m = append(*m, Field{n, protowire.BytesType, v})
+}
+
+func (m *Message) AddBytes(n Number, v Bytes) {
+   *m = append(*m, Field{n, protowire.BytesType, v})
+}
+
+func (m *Message) AddFixed32(n Number, v Fixed32) {
+   *m = append(*m, Field{n, protowire.Fixed32Type, v})
+}
+
+func (m *Message) AddFixed64(n Number, v Fixed64) {
+   *m = append(*m, Field{n, protowire.Fixed64Type, v})
+}
+
+func (m *Message) AddVarint(n Number, v Varint) {
+   *m = append(*m, Field{n, protowire.VarintType, v})
+}
+
 func (m Message) Append(data []byte) []byte {
    return protowire.AppendBytes(data, m.Encode())
 }
@@ -102,26 +124,4 @@ func (v Varint) Append(data []byte) []byte {
 
 func (v Varint) GoString() string {
    return fmt.Sprintf("protobuf.Varint(%v)", v)
-}
-
-func (m *Message) Add(n Number, f func(*Message)) {
-   var v Message
-   f(&v)
-   *m = append(*m, Field{n, protowire.BytesType, v})
-}
-
-func (m *Message) AddBytes(n Number, v Bytes) {
-   *m = append(*m, Field{n, protowire.BytesType, v})
-}
-
-func (m *Message) AddFixed32(n Number, v Fixed32) {
-   *m = append(*m, Field{n, protowire.Fixed32Type, v})
-}
-
-func (m *Message) AddFixed64(n Number, v Fixed64) {
-   *m = append(*m, Field{n, protowire.Fixed64Type, v})
-}
-
-func (m *Message) AddVarint(n Number, v Varint) {
-   *m = append(*m, Field{n, protowire.VarintType, v})
 }
