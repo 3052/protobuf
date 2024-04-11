@@ -6,7 +6,7 @@ import (
 )
 
 func TestConsume(t *testing.T) {
-   data, err := os.ReadFile("com.pinterest.txt")
+   data, err := os.ReadFile("com.pinterest.bin")
    if err != nil {
       t.Fatal(err)
    }
