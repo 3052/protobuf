@@ -1,9 +1,22 @@
 package protobuf
 
 import (
+   "fmt"
    "os"
    "testing"
 )
+
+func TestPrint(t *testing.T) {
+   data, err := os.ReadFile("com.pinterest.bin")
+   if err != nil {
+      t.Fatal(err)
+   }
+   var m Message
+   if err := m.Consume(data); err != nil {
+      t.Fatal(err)
+   }
+   fmt.Printf("%#v\n", m)
+}
 
 func TestConsume(t *testing.T) {
    data, err := os.ReadFile("com.pinterest.bin")
