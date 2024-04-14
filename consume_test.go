@@ -12,7 +12,8 @@ func TestPrint(t *testing.T) {
       t.Fatal(err)
    }
    var m Message
-   if err := m.Consume(data); err != nil {
+   err = m.Consume(data)
+   if err != nil {
       t.Fatal(err)
    }
    fmt.Printf("%#v\n", m)
@@ -24,7 +25,8 @@ func TestConsume(t *testing.T) {
       t.Fatal(err)
    }
    var m Message
-   if err := m.Consume(data); err != nil {
+   err = m.Consume(data)
+   if err != nil {
       t.Fatal(err)
    }
    m = <-m.Get(1)
