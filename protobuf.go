@@ -5,21 +5,6 @@ import (
    "google.golang.org/protobuf/encoding/protowire"
 )
 
-func channel[T Value](m Message, n Number) chan T {
-   c := make(chan T)
-   go func() {
-      for _, record := range m {
-         if record.Number == n {
-            if v, ok := record.Value.(T); ok {
-               c <- v
-            }
-         }
-      }
-      close(c)
-   }()
-   return c
-}
-
 func (b Bytes) Append(data []byte) []byte {
    return protowire.AppendBytes(data, b)
 }
@@ -48,12 +33,6 @@ func (f Fixed64) Append(data []byte) []byte {
 
 func (f Fixed64) GoString() string {
    return fmt.Sprintf("protobuf.Fixed64(%v)", f)
-}
-
-func (m *Message) Add(n Number, f func(*Message)) {
-   var v Message
-   f(&v)
-   *m = append(*m, Field{n, protowire.BytesType, v})
 }
 
 func (m *Message) AddBytes(n Number, v Bytes) {
@@ -87,24 +66,10 @@ func (m Message) Encode() []byte {
    return b
 }
 
-func (m Message) Get(n Number) chan Message {
-   return channel[Message](m, n)
-}
-
-func (m Message) GetBytes(n Number) chan Bytes {
-   return channel[Bytes](m, n)
-}
-
-func (m Message) GetFixed32(n Number) chan Fixed32 {
-   return channel[Fixed32](m, n)
-}
-
-func (m Message) GetFixed64(n Number) chan Fixed64 {
-   return channel[Fixed64](m, n)
-}
-
-func (m Message) GetVarint(n Number) chan Varint {
-   return channel[Varint](m, n)
+func (m *Message) Add(n Number, f func(*Message)) {
+   var v Message
+   f(&v)
+   *m = append(*m, Field{n, protowire.BytesType, v})
 }
 
 func (m Message) GoString() string {
@@ -124,4 +89,38 @@ func (v Varint) Append(data []byte) []byte {
 
 func (v Varint) GoString() string {
    return fmt.Sprintf("protobuf.Varint(%v)", v)
+}
+
+func pull[V Value](m Message, n Number) func() (V, bool) {
+   return func() (V, bool) {
+      for index, element := range m {
+         if element.Number == n {
+            if element, ok := element.Value.(V); ok {
+               m = m[index+1:]
+               return element, true
+            }
+         }
+      }
+      return *new(V), false
+   }
+}
+
+func (m Message) Get(n Number) func() (Message, bool) {
+   return pull[Message](m, n)
+}
+
+func (m Message) GetVarint(n Number) func() (Varint, bool) {
+   return pull[Varint](m, n)
+}
+
+func (m Message) GetBytes(n Number) func() (Bytes, bool) {
+   return pull[Bytes](m, n)
+}
+
+func (m Message) GetFixed32(n Number) func() (Fixed32, bool) {
+   return pull[Fixed32](m, n)
+}
+
+func (m Message) GetFixed64(n Number) func() (Fixed64, bool) {
+   return pull[Fixed64](m, n)
 }

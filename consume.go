@@ -15,6 +15,13 @@ type Fixed64 uint64
 
 type Message []Field
 
+type Value interface {
+   Append([]byte) []byte
+   fmt.GoStringer
+}
+
+type Varint uint64
+
 func (m *Message) Consume(data []byte) error {
    if len(data) == 0 {
       return errors.New("unexpected EOF")
@@ -71,10 +78,3 @@ func (m *Message) Consume(data []byte) error {
    }
    return nil
 }
-
-type Value interface {
-   Append([]byte) []byte
-   fmt.GoStringer
-}
-
-type Varint uint64
