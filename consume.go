@@ -19,7 +19,7 @@ func (m *Message) Consume(data []byte) error {
    if len(data) == 0 {
       return errors.New("unexpected EOF")
    }
-   *m = nil
+   *m = nil // same as json.Unmarshal
    for len(data) >= 1 {
       num, typ, length := protowire.ConsumeTag(data)
       err := protowire.ParseError(length)
