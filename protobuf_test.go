@@ -12,6 +12,46 @@ var (
    libs = []string{"one", "two"}
 )
 
+func TestProto(t *testing.T) {
+   a, b := message_old(), message_new()
+   if !bytes.Equal(a, b) {
+      t.Fatal(a, "\n", b)
+   }
+}
+
+func message_new() []byte {
+   var m Message
+   m.Add(4, func(m *Message) {
+      m.Add(1, func(m *Message) {
+         m.AddVarint(10, 30)
+      })
+   })
+   m.AddVarint(14, 3)
+   m.Add(18, func(m *Message) {
+      m.AddVarint(1, 3)
+      m.AddVarint(2, 2)
+      m.AddVarint(3, 2)
+      m.AddVarint(4, 2)
+      m.AddVarint(5, 1)
+      m.AddVarint(6, 1)
+      m.AddVarint(7, 420)
+      m.AddVarint(8, 0x30001)
+      for _, lib := range libs {
+         m.AddBytes(9, []byte(lib))
+      }
+      m.AddBytes(11, []byte("hello"))
+      for _, ext := range exts {
+         m.AddBytes(15, []byte(ext))
+      }
+      for _, feat := range feats {
+         m.Add(26, func(m *Message) {
+            m.AddBytes(1, []byte(feat))
+         })
+      }
+   })
+   return m.Encode()
+}
+
 func message_old() []byte {
    return protopack.Message{
       protopack.Tag{4, protopack.BytesType}, protopack.LengthPrefix{
@@ -54,44 +94,4 @@ func message_old() []byte {
          return m
       }()),
    }.Marshal()
-}
-
-func message_new() []byte {
-   var m Message
-   m.Add(4, func(m *Message) {
-      m.Add(1, func(m *Message) {
-         m.AddVarint(10, 30)
-      })
-   })
-   m.AddVarint(14, 3)
-   m.Add(18, func(m *Message) {
-      m.AddVarint(1, 3)
-      m.AddVarint(2, 2)
-      m.AddVarint(3, 2)
-      m.AddVarint(4, 2)
-      m.AddVarint(5, 1)
-      m.AddVarint(6, 1)
-      m.AddVarint(7, 420)
-      m.AddVarint(8, 0x30001)
-      for _, lib := range libs {
-         m.AddBytes(9, []byte(lib))
-      }
-      m.AddBytes(11, []byte("hello"))
-      for _, ext := range exts {
-         m.AddBytes(15, []byte(ext))
-      }
-      for _, feat := range feats {
-         m.Add(26, func(m *Message) {
-            m.AddBytes(1, []byte(feat))
-         })
-      }
-   })
-   return m.Encode()
-}
-
-func TestProto(t *testing.T) {
-   a, b := message_old(), message_new()
-   if !bytes.Equal(a, b) {
-      t.Fatal(a, "\n", b)
-   }
 }
