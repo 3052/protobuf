@@ -24,10 +24,6 @@ func (b Bytes) Append(data []byte) []byte {
    return protowire.AppendBytes(data, b)
 }
 
-func (b Bytes) GoString() string {
-   return fmt.Sprintf("protobuf.Bytes(%q)", []byte(b))
-}
-
 type Field struct {
    Number Number
    Type protowire.Type
@@ -38,16 +34,8 @@ func (f Fixed32) Append(data []byte) []byte {
    return protowire.AppendFixed32(data, uint32(f))
 }
 
-func (f Fixed32) GoString() string {
-   return fmt.Sprintf("protobuf.Fixed32(%v)", f)
-}
-
 func (f Fixed64) Append(data []byte) []byte {
    return protowire.AppendFixed64(data, uint64(f))
-}
-
-func (f Fixed64) GoString() string {
-   return fmt.Sprintf("protobuf.Fixed64(%v)", f)
 }
 
 func (m *Message) Add(n Number, f func(*Message)) {
@@ -76,17 +64,6 @@ func (m Message) Append(data []byte) []byte {
    return protowire.AppendBytes(data, m.Encode())
 }
 
-func (m Message) Encode() []byte {
-   var b []byte
-   for _, record := range m {
-      if record.Type >= 0 {
-         b = protowire.AppendTag(b, record.Number, record.Type)
-         b = record.Value.Append(b)
-      }
-   }
-   return b
-}
-
 func (m Message) Get(n Number) chan Message {
    return channel[Message](m, n)
 }
@@ -107,6 +84,39 @@ func (m Message) GetVarint(n Number) chan Varint {
    return channel[Varint](m, n)
 }
 
+type Number = protowire.Number
+
+func (v Varint) Append(data []byte) []byte {
+   return protowire.AppendVarint(data, uint64(v))
+}
+
+func (m Message) Encode() []byte {
+   var b []byte
+   for _, record := range m {
+      if record.Type >= 0 {
+         b = protowire.AppendTag(b, record.Number, record.Type)
+         b = record.Value.Append(b)
+      }
+   }
+   return b
+}
+
+func (v Varint) GoString() string {
+   return fmt.Sprintf("protobuf.Varint(%v)", v)
+}
+
+func (b Bytes) GoString() string {
+   return fmt.Sprintf("protobuf.Bytes(%q)", []byte(b))
+}
+
+func (f Fixed32) GoString() string {
+   return fmt.Sprintf("protobuf.Fixed32(%v)", f)
+}
+
+func (f Fixed64) GoString() string {
+   return fmt.Sprintf("protobuf.Fixed64(%v)", f)
+}
+
 func (m Message) GoString() string {
    b := []byte("protobuf.Message{\n")
    for _, record := range m {
@@ -114,14 +124,4 @@ func (m Message) GoString() string {
    }
    b = append(b, '}')
    return string(b)
-}
-
-type Number = protowire.Number
-
-func (v Varint) Append(data []byte) []byte {
-   return protowire.AppendVarint(data, uint64(v))
-}
-
-func (v Varint) GoString() string {
-   return fmt.Sprintf("protobuf.Varint(%v)", v)
 }

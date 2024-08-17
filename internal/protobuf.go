@@ -4,26 +4,61 @@ import (
    "errors"
    "google.golang.org/protobuf/encoding/protowire"
    "slices"
+   "strconv"
 )
+
+func (v Varint) GoString() string {
+   return fmt.Sprintf("protobuf.Varint(%v)", v)
+}
+
+func (m Message) GoString() string {
+   data := []byte("protobuf.Message{\n")
+   for key, values := range m {
+      data = strconv.AppendInt(data, int64(key), 10)
+      data = append(data, ":{\n"...)
+      for _, v := range values {
+         data = append(data, v.GoString()...)
+         data = append(data, ",\n"...)
+      }
+      data = append(data, "},\n"...)
+   }
+   data = append(data, '}')
+   return string(data)
+}
+
+type Value interface {
+   Append([]byte) []byte
+   GoString() string
+   Type() protowire.Type
+}
 
 // godocs.io/net/url#Values.Encode
 func (m Message) Encode() []byte {
-   var b []byte
-   for key, values := range m {
-      for _, field_value := range values {
-         b = protowire.AppendTag(b, key, field_value.Type())
-         b = field_value.Append(b)
+   var keys []protowire.Number
+   for key := range m {
+      keys = append(keys, key)
+   }
+   slices.Sort(keys)
+   var data []byte
+   for _, key := range keys {
+      if key.IsValid() {
+         for _, v := range m[key] {
+            data = protowire.AppendTag(data, key, v.Type())
+            data = v.Append(data)
+         }
       }
    }
-   return b
+   return data
 }
+
+type Message map[protowire.Number][]Value
 
 // godocs.io/net/url#Values.Get
 func get[T Value](m Message, key protowire.Number) chan T {
    channel := make(chan T)
    go func() {
-      for _, field_value := range m[key] {
-         if v, ok := field_value.(T); ok {
+      for _, v := range m[key] {
+         if v, ok := v.(T); ok {
             channel <- v
          }
       }
@@ -65,8 +100,6 @@ func (v Fixed64) Append(b []byte) []byte {
    return protowire.AppendFixed64(b, uint64(v))
 }
 
-type Message map[protowire.Number][]Value
-
 func (Message) Type() protowire.Type {
    return protowire.BytesType
 }
@@ -101,11 +134,6 @@ func (m Message) Get(key protowire.Number) chan Message {
    return get[Message](m, key)
 }
 
-type Value interface {
-   Append([]byte) []byte
-   Type() protowire.Type
-}
-
 func (Varint) Type() protowire.Type {
    return protowire.VarintType
 }
@@ -116,8 +144,6 @@ func (v Varint) Append(b []byte) []byte {
 }
 
 type Varint uint64
-
-///
 
 // godocs.io/net/url#Values.Add
 func (m Message) AddFixed64(key protowire.Number, v Fixed64) {
@@ -135,11 +161,6 @@ func (m Message) AddBytes(key protowire.Number, v Bytes) {
 }
 
 // godocs.io/net/url#Values.Add
-func (m Message) Add(key protowire.Number, v Message) {
-   m[key] = append(m[key], v)
-}
-
-// godocs.io/net/url#Values.Add
 func (m Message) AddFunc(key protowire.Number, f func(Message)) {
    v := Message{}
    f(v)
@@ -148,6 +169,11 @@ func (m Message) AddFunc(key protowire.Number, f func(Message)) {
 
 // godocs.io/net/url#Values.Add
 func (m Message) AddVarint(key protowire.Number, v Varint) {
+   m[key] = append(m[key], v)
+}
+
+// godocs.io/net/url#Values.Add
+func (m Message) Add(key protowire.Number, v Message) {
    m[key] = append(m[key], v)
 }
 
@@ -171,7 +197,7 @@ func Parse(data []byte) (Message, error) {
          if err != nil {
             return nil, err
          }
-         m[key] = append(m[key], Varint(v))
+         m.AddVarint(key, Varint(v))
          data = data[length:]
       case protowire.Fixed64Type:
          v, length := protowire.ConsumeFixed64(data)
@@ -179,7 +205,7 @@ func Parse(data []byte) (Message, error) {
          if err != nil {
             return nil, err
          }
-         m[key] = append(m[key], Fixed64(v))
+         m.AddFixed64(key, Fixed64(v))
          data = data[length:]
       case protowire.Fixed32Type:
          v, length := protowire.ConsumeFixed32(data)
@@ -187,7 +213,7 @@ func Parse(data []byte) (Message, error) {
          if err != nil {
             return nil, err
          }
-         m[key] = append(m[key], Fixed32(v))
+         m.AddFixed32(key, Fixed32(v))
          data = data[length:]
       case protowire.BytesType:
          v, length := protowire.ConsumeBytes(data)
@@ -196,9 +222,9 @@ func Parse(data []byte) (Message, error) {
             return nil, err
          }
          v = slices.Clip(v)
-         m[key] = append(m[key], Bytes(v))
+         m.AddBytes(key, v)
          if v, err := Parse(v); err == nil {
-            m[key] = append(m[key], v)
+            m.Add(-key, v)
          }
          data = data[length:]
       default:
