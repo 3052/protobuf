@@ -10,32 +10,22 @@ import (
 func make_pluto() (protobuf.Message, error) {
    data, err := os.ReadFile("pluto.txt")
    if err != nil {
-      b.Fatal(err)
+      return nil, err
    }
    _, data, _ = bytes.Cut(data, []byte("\r\n\r\n"))
    var message protobuf.Message
    err = message.Consume(data)
    if err != nil {
-      b.Fatal(err)
+      return nil, err
    }
-   message = <-message.Get(2)
-   for range b.N {
-      message.Get(3)
-   }
+   return <-message.Get(2), nil
 }
 
 func BenchmarkPlutoFunc(b *testing.B) {
-   data, err := os.ReadFile("pluto.txt")
+   message, err := make_pluto()
    if err != nil {
       b.Fatal(err)
    }
-   _, data, _ = bytes.Cut(data, []byte("\r\n\r\n"))
-   var message protobuf.Message
-   err = message.Consume(data)
-   if err != nil {
-      b.Fatal(err)
-   }
-   message = <-message.Get(2)
    for range b.N {
       message.Get(3)
    }
