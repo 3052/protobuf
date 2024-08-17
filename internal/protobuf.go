@@ -6,116 +6,12 @@ import (
    "slices"
 )
 
-func get[T FieldValue](m Message, key protowire.Number) chan T {
-   c := make(chan T)
-   go func() {
-      for _, value := range m[key] {
-         if v, ok := value.(T); ok {
-            c <- v
-         }
-      }
-      close(c)
-   }()
-   return c
-}
-
-func (Bytes) Type() protowire.Type {
-   return protowire.BytesType
-}
-
-func (b Bytes) Append(data []byte) []byte {
-   return protowire.AppendBytes(data, b)
-}
-
-type Bytes []byte
-
-type FieldValue interface {
-   Append([]byte) []byte
-   Type() protowire.Type
-}
-
-func (Fixed32) Type() protowire.Type {
-   return protowire.Fixed32Type
-}
-
-func (f Fixed32) Append(data []byte) []byte {
-   return protowire.AppendFixed32(data, uint32(f))
-}
-
-type Fixed32 uint32
-
-type Fixed64 uint64
-
-func (Fixed64) Type() protowire.Type {
-   return protowire.Fixed64Type
-}
-
-func (f Fixed64) Append(data []byte) []byte {
-   return protowire.AppendFixed64(data, uint64(f))
-}
-
-type Message map[protowire.Number][]FieldValue
-
-func (Message) Type() protowire.Type {
-   return protowire.BytesType
-}
-
-func (m Message) Append(data []byte) []byte {
-   return protowire.AppendBytes(data, m.Encode())
-}
-
-func (m Message) GetVarint(key protowire.Number) chan Varint {
-   return get[Varint](m, key)
-}
-
-func (m Message) GetFixed64(key protowire.Number) chan Fixed64 {
-   return get[Fixed64](m, key)
-}
-
-func (m Message) GetFixed32(key protowire.Number) chan Fixed32 {
-   return get[Fixed32](m, key)
-}
-
-func (m Message) GetBytes(key protowire.Number) chan Bytes {
-   return get[Bytes](m, key)
-}
-
-func (m Message) Get(key protowire.Number) chan Message {
-   return get[Message](m, key)
-}
-
-func (m Message) AddVarint(key protowire.Number, v Varint) {
-   m[key] = append(m[key], v)
-}
-
-func (m Message) AddFixed64(key protowire.Number, v Fixed64) {
-   m[key] = append(m[key], v)
-}
-
-func (m Message) AddFixed32(key protowire.Number, v Fixed32) {
-   m[key] = append(m[key], v)
-}
-
-func (m Message) AddBytes(key protowire.Number, v Bytes) {
-   m[key] = append(m[key], v)
-}
-
-func (m Message) Add(key protowire.Number, v Message) {
-   m[key] = append(m[key], v)
-}
-
-func (m Message) AddFunc(key protowire.Number, f func(Message)) {
-   value := Message{}
-   f(value)
-   m[key] = append(m[key], value)
-}
-
 func (m Message) Consume(data []byte) error {
    if len(data) == 0 {
       return errors.New("unexpected EOF")
    }
    for len(data) >= 1 {
-      number, wire_type, length := protowire.ConsumeTag(data)
+      key, wire_type, length := protowire.ConsumeTag(data)
       err := protowire.ParseError(length)
       if err != nil {
          return err
@@ -123,40 +19,40 @@ func (m Message) Consume(data []byte) error {
       data = data[length:]
       switch wire_type {
       case protowire.VarintType:
-         value, length := protowire.ConsumeVarint(data)
+         v, length := protowire.ConsumeVarint(data)
          err := protowire.ParseError(length)
          if err != nil {
             return err
          }
-         m[number] = append(m[number], Varint(value))
+         m[key] = append(m[key], Varint(v))
          data = data[length:]
       case protowire.Fixed64Type:
-         value, length := protowire.ConsumeFixed64(data)
+         v, length := protowire.ConsumeFixed64(data)
          err := protowire.ParseError(length)
          if err != nil {
             return err
          }
-         m[number] = append(m[number], Fixed64(value))
+         m[key] = append(m[key], Fixed64(v))
          data = data[length:]
       case protowire.Fixed32Type:
-         value, length := protowire.ConsumeFixed32(data)
+         v, length := protowire.ConsumeFixed32(data)
          err := protowire.ParseError(length)
          if err != nil {
             return err
          }
-         m[number] = append(m[number], Fixed32(value))
+         m[key] = append(m[key], Fixed32(v))
          data = data[length:]
       case protowire.BytesType:
-         value, length := protowire.ConsumeBytes(data)
+         v, length := protowire.ConsumeBytes(data)
          err := protowire.ParseError(length)
          if err != nil {
             return err
          }
-         value = slices.Clip(value)
-         m[number] = append(m[number], Bytes(value))
+         v = slices.Clip(v)
+         m[key] = append(m[key], Bytes(v))
          embed := Message{}
-         if embed.Consume(value) == nil {
-            m[number] = append(m[number], embed)
+         if embed.Consume(v) == nil {
+            m[key] = append(m[key], embed)
          }
          data = data[length:]
       default:
@@ -166,23 +62,145 @@ func (m Message) Consume(data []byte) error {
    return nil
 }
 
+// godocs.io/net/url#Values.Get
+func get[T Value](m Message, key protowire.Number) chan T {
+   channel := make(chan T)
+   go func() {
+      for _, field_value := range m[key] {
+         if v, ok := field_value.(T); ok {
+            channel <- v
+         }
+      }
+      close(channel)
+   }()
+   return channel
+}
+
+// google.golang.org/protobuf/encoding/protowire#AppendBytes
+func (v Bytes) Append(b []byte) []byte {
+   return protowire.AppendBytes(b, v)
+}
+
+type Bytes []byte
+
+func (Bytes) Type() protowire.Type {
+   return protowire.BytesType
+}
+
+type Fixed32 uint32
+
+// google.golang.org/protobuf/encoding/protowire#AppendFixed32
+func (v Fixed32) Append(b []byte) []byte {
+   return protowire.AppendFixed32(b, uint32(v))
+}
+
+func (Fixed32) Type() protowire.Type {
+   return protowire.Fixed32Type
+}
+
+func (Fixed64) Type() protowire.Type {
+   return protowire.Fixed64Type
+}
+
+type Fixed64 uint64
+
+// google.golang.org/protobuf/encoding/protowire#AppendFixed64
+func (v Fixed64) Append(b []byte) []byte {
+   return protowire.AppendFixed64(b, uint64(v))
+}
+
+// godocs.io/net/url#Values.Add
+func (m Message) AddFixed64(key protowire.Number, v Fixed64) {
+   m[key] = append(m[key], v)
+}
+
+// godocs.io/net/url#Values.Add
+func (m Message) AddFixed32(key protowire.Number, v Fixed32) {
+   m[key] = append(m[key], v)
+}
+
+// godocs.io/net/url#Values.Add
+func (m Message) AddBytes(key protowire.Number, v Bytes) {
+   m[key] = append(m[key], v)
+}
+
+// godocs.io/net/url#Values.Add
+func (m Message) Add(key protowire.Number, v Message) {
+   m[key] = append(m[key], v)
+}
+
+// godocs.io/net/url#Values.Add
+func (m Message) AddFunc(key protowire.Number, f func(Message)) {
+   v := Message{}
+   f(v)
+   m[key] = append(m[key], v)
+}
+
+// godocs.io/net/url#Values.Add
+func (m Message) AddVarint(key protowire.Number, v Varint) {
+   m[key] = append(m[key], v)
+}
+
+type Message map[protowire.Number][]Value
+
+func (Message) Type() protowire.Type {
+   return protowire.BytesType
+}
+
+// godocs.io/net/url#Values.Encode
 func (m Message) Encode() []byte {
    var b []byte
    for key, values := range m {
-      for _, value := range values {
-         b = protowire.AppendTag(b, key, value.Type())
-         b = value.Append(b)
+      for _, field_value := range values {
+         b = protowire.AppendTag(b, key, field_value.Type())
+         b = field_value.Append(b)
       }
    }
    return b
 }
 
-type Varint uint64
+// google.golang.org/protobuf/encoding/protowire#AppendBytes
+func (v Message) Append(b []byte) []byte {
+   return protowire.AppendBytes(b, v.Encode())
+}
+
+// godocs.io/net/url#Values.Get
+func (m Message) GetVarint(key protowire.Number) chan Varint {
+   return get[Varint](m, key)
+}
+
+// godocs.io/net/url#Values.Get
+func (m Message) GetFixed64(key protowire.Number) chan Fixed64 {
+   return get[Fixed64](m, key)
+}
+
+// godocs.io/net/url#Values.Get
+func (m Message) GetFixed32(key protowire.Number) chan Fixed32 {
+   return get[Fixed32](m, key)
+}
+
+// godocs.io/net/url#Values.Get
+func (m Message) GetBytes(key protowire.Number) chan Bytes {
+   return get[Bytes](m, key)
+}
+
+// godocs.io/net/url#Values.Get
+func (m Message) Get(key protowire.Number) chan Message {
+   return get[Message](m, key)
+}
+
+type Value interface {
+   Append([]byte) []byte
+   Type() protowire.Type
+}
 
 func (Varint) Type() protowire.Type {
    return protowire.VarintType
 }
 
-func (v Varint) Append(data []byte) []byte {
-   return protowire.AppendVarint(data, uint64(v))
+// google.golang.org/protobuf/encoding/protowire#AppendVarint
+func (v Varint) Append(b []byte) []byte {
+   return protowire.AppendVarint(b, uint64(v))
 }
+
+type Varint uint64
