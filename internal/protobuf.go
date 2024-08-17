@@ -6,60 +6,16 @@ import (
    "slices"
 )
 
-func (m Message) Consume(data []byte) error {
-   if len(data) == 0 {
-      return errors.New("unexpected EOF")
-   }
-   for len(data) >= 1 {
-      key, wire_type, length := protowire.ConsumeTag(data)
-      err := protowire.ParseError(length)
-      if err != nil {
-         return err
-      }
-      data = data[length:]
-      switch wire_type {
-      case protowire.VarintType:
-         v, length := protowire.ConsumeVarint(data)
-         err := protowire.ParseError(length)
-         if err != nil {
-            return err
-         }
-         m[key] = append(m[key], Varint(v))
-         data = data[length:]
-      case protowire.Fixed64Type:
-         v, length := protowire.ConsumeFixed64(data)
-         err := protowire.ParseError(length)
-         if err != nil {
-            return err
-         }
-         m[key] = append(m[key], Fixed64(v))
-         data = data[length:]
-      case protowire.Fixed32Type:
-         v, length := protowire.ConsumeFixed32(data)
-         err := protowire.ParseError(length)
-         if err != nil {
-            return err
-         }
-         m[key] = append(m[key], Fixed32(v))
-         data = data[length:]
-      case protowire.BytesType:
-         v, length := protowire.ConsumeBytes(data)
-         err := protowire.ParseError(length)
-         if err != nil {
-            return err
-         }
-         v = slices.Clip(v)
-         m[key] = append(m[key], Bytes(v))
-         embed := Message{}
-         if embed.Consume(v) == nil {
-            m[key] = append(m[key], embed)
-         }
-         data = data[length:]
-      default:
-         return errors.New("cannot parse reserved wire type")
+// godocs.io/net/url#Values.Encode
+func (m Message) Encode() []byte {
+   var b []byte
+   for key, values := range m {
+      for _, field_value := range values {
+         b = protowire.AppendTag(b, key, field_value.Type())
+         b = field_value.Append(b)
       }
    }
-   return nil
+   return b
 }
 
 // godocs.io/net/url#Values.Get
@@ -109,54 +65,10 @@ func (v Fixed64) Append(b []byte) []byte {
    return protowire.AppendFixed64(b, uint64(v))
 }
 
-// godocs.io/net/url#Values.Add
-func (m Message) AddFixed64(key protowire.Number, v Fixed64) {
-   m[key] = append(m[key], v)
-}
-
-// godocs.io/net/url#Values.Add
-func (m Message) AddFixed32(key protowire.Number, v Fixed32) {
-   m[key] = append(m[key], v)
-}
-
-// godocs.io/net/url#Values.Add
-func (m Message) AddBytes(key protowire.Number, v Bytes) {
-   m[key] = append(m[key], v)
-}
-
-// godocs.io/net/url#Values.Add
-func (m Message) Add(key protowire.Number, v Message) {
-   m[key] = append(m[key], v)
-}
-
-// godocs.io/net/url#Values.Add
-func (m Message) AddFunc(key protowire.Number, f func(Message)) {
-   v := Message{}
-   f(v)
-   m[key] = append(m[key], v)
-}
-
-// godocs.io/net/url#Values.Add
-func (m Message) AddVarint(key protowire.Number, v Varint) {
-   m[key] = append(m[key], v)
-}
-
 type Message map[protowire.Number][]Value
 
 func (Message) Type() protowire.Type {
    return protowire.BytesType
-}
-
-// godocs.io/net/url#Values.Encode
-func (m Message) Encode() []byte {
-   var b []byte
-   for key, values := range m {
-      for _, field_value := range values {
-         b = protowire.AppendTag(b, key, field_value.Type())
-         b = field_value.Append(b)
-      }
-   }
-   return b
 }
 
 // google.golang.org/protobuf/encoding/protowire#AppendBytes
@@ -204,3 +116,94 @@ func (v Varint) Append(b []byte) []byte {
 }
 
 type Varint uint64
+
+///
+
+// godocs.io/net/url#Values.Add
+func (m Message) AddFixed64(key protowire.Number, v Fixed64) {
+   m[key] = append(m[key], v)
+}
+
+// godocs.io/net/url#Values.Add
+func (m Message) AddFixed32(key protowire.Number, v Fixed32) {
+   m[key] = append(m[key], v)
+}
+
+// godocs.io/net/url#Values.Add
+func (m Message) AddBytes(key protowire.Number, v Bytes) {
+   m[key] = append(m[key], v)
+}
+
+// godocs.io/net/url#Values.Add
+func (m Message) Add(key protowire.Number, v Message) {
+   m[key] = append(m[key], v)
+}
+
+// godocs.io/net/url#Values.Add
+func (m Message) AddFunc(key protowire.Number, f func(Message)) {
+   v := Message{}
+   f(v)
+   m[key] = append(m[key], v)
+}
+
+// godocs.io/net/url#Values.Add
+func (m Message) AddVarint(key protowire.Number, v Varint) {
+   m[key] = append(m[key], v)
+}
+
+// godocs.io/net/url#ParseQuery
+func Parse(data []byte) (Message, error) {
+   if len(data) == 0 {
+      return nil, errors.New("unexpected EOF")
+   }
+   m := Message{}
+   for len(data) >= 1 {
+      key, wire_type, length := protowire.ConsumeTag(data)
+      err := protowire.ParseError(length)
+      if err != nil {
+         return nil, err
+      }
+      data = data[length:]
+      switch wire_type {
+      case protowire.VarintType:
+         v, length := protowire.ConsumeVarint(data)
+         err := protowire.ParseError(length)
+         if err != nil {
+            return nil, err
+         }
+         m[key] = append(m[key], Varint(v))
+         data = data[length:]
+      case protowire.Fixed64Type:
+         v, length := protowire.ConsumeFixed64(data)
+         err := protowire.ParseError(length)
+         if err != nil {
+            return nil, err
+         }
+         m[key] = append(m[key], Fixed64(v))
+         data = data[length:]
+      case protowire.Fixed32Type:
+         v, length := protowire.ConsumeFixed32(data)
+         err := protowire.ParseError(length)
+         if err != nil {
+            return nil, err
+         }
+         m[key] = append(m[key], Fixed32(v))
+         data = data[length:]
+      case protowire.BytesType:
+         v, length := protowire.ConsumeBytes(data)
+         err := protowire.ParseError(length)
+         if err != nil {
+            return nil, err
+         }
+         v = slices.Clip(v)
+         m[key] = append(m[key], Bytes(v))
+         if v, err := Parse(v); err == nil {
+            m[key] = append(m[key], v)
+         }
+         data = data[length:]
+      default:
+         return nil, errors.New("cannot parse reserved wire type")
+      }
+   }
+   return m, nil
+}
