@@ -5,16 +5,13 @@ https://go.dev/wiki/RangefuncExperiment
 ## details
 
 ~~~
-google\play\details.go
-88:      for v := range v.Get(17) {
+play -i com.google.android.youtube
 ~~~
 
 ## delivery
 
 ~~~
-google\play\delivery.go
-99:      for v := range d.Message.Get(15) {
-110:      for v := range d.Message.Get(4) {
+play -i com.google.android.youtube -c 1547822528
 ~~~
 
 ## widevine
@@ -22,4 +19,10 @@ google\play\delivery.go
 ~~~
 widevine\cdm.go
 53:   for container := range license.Get(3) { // KeyContainer key
+~~~
+
+then:
+
+~~~
+pluto -a pluto.tv/us/on-demand/movies/6002532ace98800013ebd5fe -i 7
 ~~~
