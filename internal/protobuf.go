@@ -7,19 +7,6 @@ import (
    "slices"
 )
 
-func get[T Value](m Message, key Number) chan T {
-   channel := make(chan T)
-   go func() {
-      for _, v := range m[key] {
-         if v, ok := v.(T); ok {
-            channel <- v
-         }
-      }
-      close(channel)
-   }()
-   return channel
-}
-
 func sort_keys[T Message | UnknownMessage](m T) []Number {
    var keys []Number
    for key := range m {
@@ -27,6 +14,20 @@ func sort_keys[T Message | UnknownMessage](m T) []Number {
    }
    slices.Sort(keys)
    return keys
+}
+
+func get[T Value](m Message, key Number) chan T {
+   channel := make(chan T)
+   go func() {
+      for _, v := range m[key] {
+         v, ok := v.(T)
+         if ok {
+            channel <- v
+         }
+      }
+      close(channel)
+   }()
+   return channel
 }
 
 func message_string[T Message | UnknownMessage](m T) string {
@@ -49,11 +50,11 @@ func message_string[T Message | UnknownMessage](m T) string {
    return string(b)
 }
 
+type Bytes []byte
+
 func (b Bytes) GoString() string {
    return fmt.Sprintf("%T(%q)", b, []byte(b))
 }
-
-type Bytes []byte
 
 func (v Bytes) Append(b []byte, num Number) []byte {
    b = protowire.AppendTag(b, num, protowire.BytesType)
@@ -82,51 +83,14 @@ func (v Fixed64) Append(b []byte, num Number) []byte {
    return protowire.AppendFixed64(b, uint64(v))
 }
 
-func (v Message) Append(b []byte, num Number) []byte {
-   b = protowire.AppendTag(b, num, protowire.BytesType)
-   return protowire.AppendBytes(b, v.Encode())
-}
-
-func (m Message) AddFixed64(key Number, v Fixed64) {
-   m[key] = append(m[key], v)
-}
-
-func (m Message) AddFixed32(key Number, v Fixed32) {
-   m[key] = append(m[key], v)
-}
-
-func (m Message) AddBytes(key Number, v Bytes) {
-   m[key] = append(m[key], v)
-}
-
-func (m Message) AddFunc(key Number, f func(Message)) {
-   v := Message{}
-   f(v)
-   m[key] = append(m[key], v)
-}
-
 type Message map[Number][]Value
-
-func (m Message) Encode() []byte {
-   var data []byte
-   for key, values := range m {
-      for _, v := range values {
-         data = v.Append(data, key)
-      }
-   }
-   return data
-}
 
 func (m Message) GoString() string {
    return message_string(m)
 }
 
-func (m Message) AddVarint(key Number, v Varint) {
-   m[key] = append(m[key], v)
-}
-
-func (m Message) Add(key Number, v Message) {
-   m[key] = append(m[key], v)
+func (m Message) GetVarint(key Number) chan Varint {
+   return get[Varint](m, key)
 }
 
 func (m Message) GetFixed64(key Number) chan Fixed64 {
@@ -145,64 +109,97 @@ func (m Message) Get(key Number) chan Message {
    return get[Message](m, key)
 }
 
-func (m Message) GetVarint(key Number) chan Varint {
-   return get[Varint](m, key)
+func (m Message) AddVarint(key Number, v Varint) {
+   m[key] = append(m[key], v)
 }
 
-func (m Message) Parse(data []byte) error {
-   return UnknownMessage(m).parse(data)
+func (m Message) AddFixed64(key Number, v Fixed64) {
+   m[key] = append(m[key], v)
+}
+
+func (m Message) AddFixed32(key Number, v Fixed32) {
+   m[key] = append(m[key], v)
+}
+
+func (m Message) AddBytes(key Number, v Bytes) {
+   m[key] = append(m[key], v)
+}
+
+func (m Message) Add(key Number, f func(Message)) {
+   v := Message{}
+   f(v)
+   m[key] = append(m[key], v)
+}
+
+func (v Message) Append(b []byte, num Number) []byte {
+   b = protowire.AppendTag(b, num, protowire.BytesType)
+   return protowire.AppendBytes(b, v.Marshal())
+}
+
+func (m Message) Marshal() []byte {
+   var data []byte
+   for key, values := range m {
+      for _, v := range values {
+         data = v.Append(data, key)
+      }
+   }
+   return data
+}
+
+func (m Message) Unmarshal(in []byte) error {
+   return UnknownMessage(m).unmarshal(in)
 }
 
 type Number = protowire.Number
+
+type UnknownMessage map[Number][]Value
 
 func (UnknownMessage) Append(b []byte, _ Number) []byte {
    return b
 }
 
-type UnknownMessage map[Number][]Value
-
 func (u UnknownMessage) GoString() string {
    return message_string(u)
 }
 
-func (u UnknownMessage) parse(data []byte) error {
-   if len(data) == 0 {
+func (u UnknownMessage) unmarshal(in []byte) error {
+   if len(in) == 0 {
       return errors.New("unexpected EOF")
    }
-   for len(data) >= 1 {
-      key, wire_type, length := protowire.ConsumeTag(data)
+   for len(in) >= 1 {
+      key, wire_type, length := protowire.ConsumeTag(in)
       err := protowire.ParseError(length)
       if err != nil {
          return err
       }
-      data = data[length:]
+      in = in[length:]
       switch wire_type {
       case protowire.VarintType:
-         v, length := protowire.ConsumeVarint(data)
+         v, length := protowire.ConsumeVarint(in)
          err := protowire.ParseError(length)
          if err != nil {
             return err
          }
          u[key] = append(u[key], Varint(v))
-         data = data[length:]
+         in = in[length:]
       case protowire.Fixed64Type:
-         v, length := protowire.ConsumeFixed64(data)
+         v, length := protowire.ConsumeFixed64(in)
          err := protowire.ParseError(length)
          if err != nil {
             return err
          }
          u[key] = append(u[key], Fixed64(v))
-         data = data[length:]
+         in = in[length:]
       case protowire.Fixed32Type:
-         v, length := protowire.ConsumeFixed32(data)
+         v, length := protowire.ConsumeFixed32(in)
          err := protowire.ParseError(length)
          if err != nil {
             return err
          }
          u[key] = append(u[key], Fixed32(v))
-         data = data[length:]
+         in = in[length:]
       case protowire.BytesType:
-         v, length := protowire.ConsumeBytes(data)
+         v, length := protowire.ConsumeBytes(in)
          err := protowire.ParseError(length)
          if err != nil {
             return err
@@ -210,12 +207,12 @@ func (u UnknownMessage) parse(data []byte) error {
          v = slices.Clip(v)
          u[key] = append(u[key], Bytes(v))
          unknown := UnknownMessage{}
-         if unknown.parse(v) == nil {
+         if unknown.unmarshal(v) == nil {
             u[key] = append(u[key], unknown)
          }
-         data = data[length:]
+         in = in[length:]
       default:
-         return errors.New("cannot parse reserved wire type")
+         return errors.New("reserved wire type")
       }
    }
    return nil
@@ -226,12 +223,12 @@ type Value interface {
    fmt.GoStringer
 }
 
+type Varint uint64
+
 func (v Varint) Append(b []byte, num Number) []byte {
    b = protowire.AppendTag(b, num, protowire.VarintType)
    return protowire.AppendVarint(b, uint64(v))
 }
-
-type Varint uint64
 
 func (v Varint) GoString() string {
    return fmt.Sprintf("%T(%v)", v, v)
