@@ -7,12 +7,85 @@ import (
    "slices"
 )
 
-// godocs.io/net/url#ParseQuery
+type Varint uint64
+
+type Bytes []byte
+
+type Fixed32 uint32
+
+type Fixed64 uint64
+
+type Number = protowire.Number
+
+type Message map[Number][]Value
+
+type UnknownMessage map[Number][]Value
+
+type Value interface {
+   Append([]byte, Number) []byte
+   fmt.GoStringer
+}
+
+func (m Message) Encode() []byte {
+   var data []byte
+   for key, values := range m {
+      for _, v := range values {
+         data = v.Append(data, key)
+      }
+   }
+   return data
+}
+
+func message_string[T Message | UnknownMessage](m T) string {
+   b := fmt.Appendf(nil, "%T{\n", m)
+   for _, key := range sort_keys(m) {
+      values := m[key]
+      b = fmt.Appendf(b, "%v: {", key)
+      if len(values) >= 2 {
+         b = append(b, '\n')
+      }
+      for _, v := range values {
+         b = fmt.Appendf(b, "%#v", v)
+         if len(values) >= 2 {
+            b = append(b, ",\n"...)
+         }
+      }
+      b = append(b, "},\n"...)
+   }
+   b = append(b, '}')
+   return string(b)
+}
+
+func (m Message) GoString() string {
+   return message_string(m)
+}
+
+func (u UnknownMessage) GoString() string {
+   return message_string(u)
+}
+
+func (v Varint) GoString() string {
+   return fmt.Sprintf("%T(%v)", v, v)
+}
+
+func (f Fixed64) GoString() string {
+   return fmt.Sprintf("%T(%v)", f, f)
+}
+
+func (f Fixed32) GoString() string {
+   return fmt.Sprintf("%T(%v)", f, f)
+}
+
+func (b Bytes) GoString() string {
+   return fmt.Sprintf("%T(%q)", b, []byte(b))
+}
+
+///
+
 func (m Message) Parse(data []byte) error {
    return UnknownMessage(m).Parse(data)
 }
 
-// godocs.io/net/url#ParseQuery
 func (u UnknownMessage) Parse(data []byte) error {
    if len(data) == 0 {
       return errors.New("unexpected EOF")
@@ -69,67 +142,44 @@ func (u UnknownMessage) Parse(data []byte) error {
    return nil
 }
 
-// godocs.io/net/url#Values.Add
-func (m Message) AddVarint(key protowire.Number, v Varint) {
+func sort_keys[T Message | UnknownMessage](m T) []Number {
+   var keys []Number
+   for key := range m {
+      keys = append(keys, key)
+   }
+   slices.Sort(keys)
+   return keys
+}
+
+func (m Message) AddVarint(key Number, v Varint) {
    m[key] = append(m[key], v)
 }
 
-// godocs.io/net/url#Values.Add
-func (m Message) Add(key protowire.Number, v Message) {
+func (m Message) Add(key Number, v Message) {
    m[key] = append(m[key], v)
 }
 
-func (b Bytes) GoString() string {
-   return fmt.Sprintf("protobuf.Bytes(%q)", []byte(b))
-}
-
-func (f Fixed32) GoString() string {
-   return fmt.Sprintf("protobuf.Fixed32(%v)", f)
-}
-
-func (f Fixed64) GoString() string {
-   return fmt.Sprintf("protobuf.Fixed64(%v)", f)
-}
-
-func (v Varint) GoString() string {
-   return fmt.Sprintf("protobuf.Varint(%v)", v)
-}
-
-type Varint uint64
-
-type Bytes []byte
-
-type Fixed32 uint32
-
-type Fixed64 uint64
-
-// godocs.io/net/url#Values.Get
-func (m Message) GetFixed64(key protowire.Number) chan Fixed64 {
+func (m Message) GetFixed64(key Number) chan Fixed64 {
    return get[Fixed64](m, key)
 }
 
-// godocs.io/net/url#Values.Get
-func (m Message) GetFixed32(key protowire.Number) chan Fixed32 {
+func (m Message) GetFixed32(key Number) chan Fixed32 {
    return get[Fixed32](m, key)
 }
 
-// godocs.io/net/url#Values.Get
-func (m Message) GetBytes(key protowire.Number) chan Bytes {
+func (m Message) GetBytes(key Number) chan Bytes {
    return get[Bytes](m, key)
 }
 
-// godocs.io/net/url#Values.Get
-func (m Message) Get(key protowire.Number) chan Message {
+func (m Message) Get(key Number) chan Message {
    return get[Message](m, key)
 }
 
-// godocs.io/net/url#Values.Get
-func (m Message) GetVarint(key protowire.Number) chan Varint {
+func (m Message) GetVarint(key Number) chan Varint {
    return get[Varint](m, key)
 }
 
-// godocs.io/net/url#Values.Get
-func get[T Value](m Message, key protowire.Number) chan T {
+func get[T Value](m Message, key Number) chan T {
    channel := make(chan T)
    go func() {
       for _, v := range m[key] {
@@ -142,112 +192,48 @@ func get[T Value](m Message, key protowire.Number) chan T {
    return channel
 }
 
-type Message map[protowire.Number][]Value
-
-type UnknownMessage map[protowire.Number][]Value
-
-// google.golang.org/protobuf/encoding/protowire#AppendBytes
-// google.golang.org/protobuf/encoding/protowire#AppendTag
-func (v Bytes) Append(b []byte, num protowire.Number) []byte {
+func (v Bytes) Append(b []byte, num Number) []byte {
    b = protowire.AppendTag(b, num, protowire.BytesType)
    return protowire.AppendBytes(b, v)
 }
 
-// google.golang.org/protobuf/encoding/protowire#AppendFixed32
-// google.golang.org/protobuf/encoding/protowire#AppendTag
-func (v Fixed32) Append(b []byte, num protowire.Number) []byte {
+func (v Fixed32) Append(b []byte, num Number) []byte {
    b = protowire.AppendTag(b, num, protowire.Fixed32Type)
    return protowire.AppendFixed32(b, uint32(v))
 }
 
-// google.golang.org/protobuf/encoding/protowire#AppendFixed64
-// google.golang.org/protobuf/encoding/protowire#AppendTag
-func (v Fixed64) Append(b []byte, num protowire.Number) []byte {
+func (v Fixed64) Append(b []byte, num Number) []byte {
    b = protowire.AppendTag(b, num, protowire.Fixed64Type)
    return protowire.AppendFixed64(b, uint64(v))
 }
 
-// google.golang.org/protobuf/encoding/protowire#AppendTag
-// google.golang.org/protobuf/encoding/protowire#AppendVarint
-func (v Varint) Append(b []byte, num protowire.Number) []byte {
+func (v Varint) Append(b []byte, num Number) []byte {
    b = protowire.AppendTag(b, num, protowire.VarintType)
    return protowire.AppendVarint(b, uint64(v))
 }
 
-// google.golang.org/protobuf/encoding/protowire#AppendBytes
-// google.golang.org/protobuf/encoding/protowire#AppendTag
-func (v Message) Append(b []byte, num protowire.Number) []byte {
+func (v Message) Append(b []byte, num Number) []byte {
    b = protowire.AppendTag(b, num, protowire.BytesType)
    return protowire.AppendBytes(b, v.Encode())
 }
 
-type Value interface {
-   Append([]byte, protowire.Number) []byte
-   fmt.GoStringer
-}
-
-func message_string[T Message | UnknownMessage](m T, s string) string {
-   b := []byte(s)
-   b = append(b, "{\n"...)
-   for key, values := range m {
-      b = fmt.Appendf(b, "%v: {", key)
-      if len(values) >= 2 {
-         b = append(b, '\n')
-      }
-      for _, v := range values {
-         b = fmt.Appendf(b, "%#v", v)
-         if len(values) >= 2 {
-            b = append(b, ",\n"...)
-         }
-      }
-      b = append(b, "},\n"...)
-   }
-   b = append(b, '}')
-   return string(b)
-}
-
-// google.golang.org/protobuf/encoding/protowire#AppendBytes
-func (UnknownMessage) Append(b []byte, _ protowire.Number) []byte {
+func (UnknownMessage) Append(b []byte, _ Number) []byte {
    return b
 }
 
-func (m Message) GoString() string {
-   return message_string(m, "protobuf.Message")
-}
-
-func (u UnknownMessage) GoString() string {
-   return message_string(u, "protobuf.UnknownMessage")
-}
-
-// godocs.io/net/url#Values.Encode
-// protobuf.dev/programming-guides/encoding#order
-func (m Message) Encode() []byte {
-   var b []byte
-   for key, values := range m {
-      for _, v := range values {
-         b = v.Append(b, key)
-      }
-   }
-   return b
-}
-
-// godocs.io/net/url#Values.Add
-func (m Message) AddFixed64(key protowire.Number, v Fixed64) {
+func (m Message) AddFixed64(key Number, v Fixed64) {
    m[key] = append(m[key], v)
 }
 
-// godocs.io/net/url#Values.Add
-func (m Message) AddFixed32(key protowire.Number, v Fixed32) {
+func (m Message) AddFixed32(key Number, v Fixed32) {
    m[key] = append(m[key], v)
 }
 
-// godocs.io/net/url#Values.Add
-func (m Message) AddBytes(key protowire.Number, v Bytes) {
+func (m Message) AddBytes(key Number, v Bytes) {
    m[key] = append(m[key], v)
 }
 
-// godocs.io/net/url#Values.Add
-func (m Message) AddFunc(key protowire.Number, f func(Message)) {
+func (m Message) AddFunc(key Number, f func(Message)) {
    v := Message{}
    f(v)
    m[key] = append(m[key], v)

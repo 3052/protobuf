@@ -7,7 +7,7 @@ import (
 )
 
 func TestPrint(t *testing.T) {
-   data, err := os.ReadFile("../com.pinterest.bin")
+   data, err := os.ReadFile("../../com.pinterest.bin")
    if err != nil {
       t.Fatal(err)
    }
@@ -16,5 +16,12 @@ func TestPrint(t *testing.T) {
    if err != nil {
       t.Fatal(err)
    }
-   fmt.Printf("%#v\n", m)
+   file, err := os.Create("../internal.go")
+   if err != nil {
+      t.Fatal(err)
+   }
+   defer file.Close()
+   fmt.Fprintln(file, "package internal")
+   fmt.Fprintln(file, `import "154.pages.dev/protobuf/internal/protobuf"`)
+   fmt.Fprintf(file, "var _ = %#v\n", m)
 }
