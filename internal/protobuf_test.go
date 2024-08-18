@@ -2,15 +2,18 @@ package protobuf
 
 import (
    "fmt"
+   "os"
    "testing"
 )
 
-func TestMessage(t *testing.T) {
-   m := Message{
-      1: {
-         Fixed64(1),
-         Varint(1),
-      },
+func TestPrint(t *testing.T) {
+   data, err := os.ReadFile("../com.pinterest.bin")
+   if err != nil {
+      t.Fatal(err)
+   }
+   m, err := Parse(data)
+   if err != nil {
+      t.Fatal(err)
    }
    fmt.Printf("%#v\n", m)
 }
