@@ -1,9 +1,5 @@
 package protobuf
 
-func add[T Value, U Values](m U, key Number, v T) {
-   m[key] = append(m[key], v)
-}
-
 func get[T Value, U Values](m U, key Number) chan T {
    channel := make(chan T)
    go func() {
@@ -16,28 +12,6 @@ func get[T Value, U Values](m U, key Number) chan T {
       close(channel)
    }()
    return channel
-}
-
-func (m Message) AddVarint(key Number, v Varint) {
-   add(m, key, v)
-}
-
-func (m Message) AddFixed64(key Number, v Fixed64) {
-   add(m, key, v)
-}
-
-func (m Message) AddFixed32(key Number, v Fixed32) {
-   add(m, key, v)
-}
-
-func (m Message) AddBytes(key Number, v Bytes) {
-   add(m, key, v)
-}
-
-func (m Message) Add(key Number, f func(Message)) {
-   v := Message{}
-   f(v)
-   add(m, key, v)
 }
 
 func (m Message) GetVarint(key Number) chan Varint {
@@ -82,4 +56,26 @@ func (u UnknownMessage) GetBytes(key Number) chan Bytes {
 
 func (u UnknownMessage) Get(key Number) chan UnknownMessage {
    return get[UnknownMessage](u, key)
+}
+
+func (m Message) AddVarint(key Number, v Varint) {
+   m[key] = append(m[key], v)
+}
+
+func (m Message) AddFixed64(key Number, v Fixed64) {
+   m[key] = append(m[key], v)
+}
+
+func (m Message) AddFixed32(key Number, v Fixed32) {
+   m[key] = append(m[key], v)
+}
+
+func (m Message) AddBytes(key Number, v Bytes) {
+   m[key] = append(m[key], v)
+}
+
+func (m Message) Add(key Number, f func(Message)) {
+   v := Message{}
+   f(v)
+   m[key] = append(m[key], v)
 }

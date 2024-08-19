@@ -106,62 +106,6 @@ func (u UnknownMessage) GoString() string {
    return message_string(u)
 }
 
-func (u UnknownMessage) unmarshal(data []byte) error {
-   if len(data) == 0 {
-      return errors.New("unexpected EOF")
-   }
-   for len(data) >= 1 {
-      key, wire_type, length := protowire.ConsumeTag(data)
-      err := protowire.ParseError(length)
-      if err != nil {
-         return err
-      }
-      data = data[length:]
-      switch wire_type {
-      case protowire.VarintType:
-         v, length := protowire.ConsumeVarint(data)
-         err := protowire.ParseError(length)
-         if err != nil {
-            return err
-         }
-         add(u, key, Varint(v))
-         data = data[length:]
-      case protowire.Fixed64Type:
-         v, length := protowire.ConsumeFixed64(data)
-         err := protowire.ParseError(length)
-         if err != nil {
-            return err
-         }
-         add(u, key, Fixed64(v))
-         data = data[length:]
-      case protowire.Fixed32Type:
-         v, length := protowire.ConsumeFixed32(data)
-         err := protowire.ParseError(length)
-         if err != nil {
-            return err
-         }
-         add(u, key, Fixed32(v))
-         data = data[length:]
-      case protowire.BytesType:
-         v, length := protowire.ConsumeBytes(data)
-         err := protowire.ParseError(length)
-         if err != nil {
-            return err
-         }
-         v = slices.Clip(v)
-         add(u, key, Bytes(v))
-         unknown := UnknownMessage{}
-         if unknown.unmarshal(v) == nil {
-            add(u, key, unknown)
-         }
-         data = data[length:]
-      default:
-         return errors.New("reserved wire type")
-      }
-   }
-   return nil
-}
-
 type Value interface {
    Append([]byte, Number) []byte
    fmt.GoStringer
@@ -180,4 +124,60 @@ func (v Varint) Append(b []byte, num Number) []byte {
 
 func (v Varint) GoString() string {
    return fmt.Sprintf("%T(%v)", v, v)
+}
+
+func (u UnknownMessage) unmarshal(data []byte) error {
+   if len(data) == 0 {
+      return errors.New("unexpected EOF")
+   }
+   for len(data) >= 1 {
+      key, wire_type, length := protowire.ConsumeTag(data)
+      err := protowire.ParseError(length)
+      if err != nil {
+         return err
+      }
+      data = data[length:]
+      switch wire_type {
+      case protowire.VarintType:
+         v, length := protowire.ConsumeVarint(data)
+         err := protowire.ParseError(length)
+         if err != nil {
+            return err
+         }
+         u[key] = append(u[key], Varint(v))
+         data = data[length:]
+      case protowire.Fixed64Type:
+         v, length := protowire.ConsumeFixed64(data)
+         err := protowire.ParseError(length)
+         if err != nil {
+            return err
+         }
+         u[key] = append(u[key], Fixed64(v))
+         data = data[length:]
+      case protowire.Fixed32Type:
+         v, length := protowire.ConsumeFixed32(data)
+         err := protowire.ParseError(length)
+         if err != nil {
+            return err
+         }
+         u[key] = append(u[key], Fixed32(v))
+         data = data[length:]
+      case protowire.BytesType:
+         v, length := protowire.ConsumeBytes(data)
+         err := protowire.ParseError(length)
+         if err != nil {
+            return err
+         }
+         v = slices.Clip(v)
+         u[key] = append(u[key], Bytes(v))
+         unknown := UnknownMessage{}
+         if unknown.unmarshal(v) == nil {
+            u[key] = append(u[key], unknown)
+         }
+         data = data[length:]
+      default:
+         return errors.New("reserved wire type")
+      }
+   }
+   return nil
 }
