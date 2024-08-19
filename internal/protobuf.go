@@ -7,6 +7,49 @@ import (
    "slices"
 )
 
+func message_string[T Values](m T) string {
+   b := fmt.Appendf(nil, "%T{\n", m)
+   for _, key := range sort_keys(m) {
+      vs := m[key]
+      b = fmt.Appendf(b, "%v: {", key)
+      if len(vs) >= 2 {
+         b = append(b, '\n')
+      }
+      for _, v := range vs {
+         b = fmt.Appendf(b, "%#v", v)
+         if len(vs) >= 2 {
+            b = append(b, ",\n"...)
+         }
+      }
+      b = append(b, "},\n"...)
+   }
+   b = append(b, '}')
+   return string(b)
+}
+
+func get[T Value, U Values](m U, key Number) chan T {
+   channel := make(chan T)
+   go func() {
+      for _, v := range m[key] {
+         v, ok := v.(T)
+         if ok {
+            channel <- v
+         }
+      }
+      close(channel)
+   }()
+   return channel
+}
+
+func sort_keys[T Values](m T) []Number {
+   var keys []Number
+   for key := range m {
+      keys = append(keys, key)
+   }
+   slices.Sort(keys)
+   return keys
+}
+
 type Bytes []byte
 
 func (b Bytes) GoString() string {
@@ -42,6 +85,40 @@ func (v Fixed64) Append(b []byte, num Number) []byte {
 
 func (m Message) Unmarshal(data []byte) error {
    return UnknownMessage(m).unmarshal(data)
+}
+
+func (m Message) Marshal() []byte {
+   var data []byte
+   for key, vs := range m {
+      for _, v := range vs {
+         data = v.Append(data, key)
+      }
+   }
+   return data
+}
+
+func (m Message) GetVarint(key Number) chan Varint {
+   return get[Varint](m, key)
+}
+
+func (m Message) GetFixed64(key Number) chan Fixed64 {
+   return get[Fixed64](m, key)
+}
+
+func (m Message) GetFixed32(key Number) chan Fixed32 {
+   return get[Fixed32](m, key)
+}
+
+func (m Message) GetBytes(key Number) chan Bytes {
+   return get[Bytes](m, key)
+}
+
+func (m Message) Get(key Number) chan Message {
+   return get[Message](m, key)
+}
+
+func (m Message) GetUnknown(key Number) chan UnknownMessage {
+   return get[UnknownMessage](m, key)
 }
 
 type Message map[Number][]Value
@@ -85,6 +162,28 @@ func (UnknownMessage) Append(b []byte, _ Number) []byte {
 
 func (u UnknownMessage) GoString() string {
    return message_string(u)
+}
+
+type UnknownMessage map[Number][]Value
+
+func (u UnknownMessage) GetVarint(key Number) chan Varint {
+   return get[Varint](u, key)
+}
+
+func (u UnknownMessage) GetFixed64(key Number) chan Fixed64 {
+   return get[Fixed64](u, key)
+}
+
+func (u UnknownMessage) GetFixed32(key Number) chan Fixed32 {
+   return get[Fixed32](u, key)
+}
+
+func (u UnknownMessage) GetBytes(key Number) chan Bytes {
+   return get[Bytes](u, key)
+}
+
+func (u UnknownMessage) Get(key Number) chan UnknownMessage {
+   return get[UnknownMessage](u, key)
 }
 
 func (u UnknownMessage) unmarshal(data []byte) error {
@@ -148,6 +247,10 @@ type Value interface {
    fmt.GoStringer
 }
 
+type Values interface {
+   Message | UnknownMessage
+}
+
 type Varint uint64
 
 func (v Varint) Append(b []byte, num Number) []byte {
@@ -157,107 +260,4 @@ func (v Varint) Append(b []byte, num Number) []byte {
 
 func (v Varint) GoString() string {
    return fmt.Sprintf("%T(%v)", v, v)
-}
-
-type UnknownMessage map[Number][]Value
-
-type Values interface {
-   Message | UnknownMessage
-}
-
-func sort_keys[T Values](m T) []Number {
-   var keys []Number
-   for key := range m {
-      keys = append(keys, key)
-   }
-   slices.Sort(keys)
-   return keys
-}
-
-func (m Message) Marshal() []byte {
-   var data []byte
-   for key, vs := range m {
-      for _, v := range vs {
-         data = v.Append(data, key)
-      }
-   }
-   return data
-}
-
-func message_string[T Values](m T) string {
-   b := fmt.Appendf(nil, "%T{\n", m)
-   for _, key := range sort_keys(m) {
-      vs := m[key]
-      b = fmt.Appendf(b, "%v: {", key)
-      if len(vs) >= 2 {
-         b = append(b, '\n')
-      }
-      for _, v := range vs {
-         b = fmt.Appendf(b, "%#v", v)
-         if len(vs) >= 2 {
-            b = append(b, ",\n"...)
-         }
-      }
-      b = append(b, "},\n"...)
-   }
-   b = append(b, '}')
-   return string(b)
-}
-
-func get[T Value, U Values](m U, key Number) chan T {
-   channel := make(chan T)
-   go func() {
-      for _, v := range m[key] {
-         v, ok := v.(T)
-         if ok {
-            channel <- v
-         }
-      }
-      close(channel)
-   }()
-   return channel
-}
-
-func (m Message) GetVarint(key Number) chan Varint {
-   return get[Varint](m, key)
-}
-
-func (m Message) GetFixed64(key Number) chan Fixed64 {
-   return get[Fixed64](m, key)
-}
-
-func (m Message) GetFixed32(key Number) chan Fixed32 {
-   return get[Fixed32](m, key)
-}
-
-func (m Message) GetBytes(key Number) chan Bytes {
-   return get[Bytes](m, key)
-}
-
-func (m Message) Get(key Number) chan Message {
-   return get[Message](m, key)
-}
-
-func (m Message) GetUnknown(key Number) chan UnknownMessage {
-   return get[UnknownMessage](m, key)
-}
-
-func (u UnknownMessage) GetVarint(key Number) chan Varint {
-   return get[Varint](u, key)
-}
-
-func (u UnknownMessage) GetFixed64(key Number) chan Fixed64 {
-   return get[Fixed64](u, key)
-}
-
-func (u UnknownMessage) GetFixed32(key Number) chan Fixed32 {
-   return get[Fixed32](u, key)
-}
-
-func (u UnknownMessage) GetBytes(key Number) chan Bytes {
-   return get[Bytes](u, key)
-}
-
-func (u UnknownMessage) Get(key Number) chan UnknownMessage {
-   return get[UnknownMessage](u, key)
 }
