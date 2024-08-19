@@ -241,3 +241,23 @@ func (m Message) Get(key Number) chan Message {
 func (m Message) GetUnknown(key Number) chan UnknownMessage {
    return get[UnknownMessage](m, key)
 }
+
+func (u UnknownMessage) GetVarint(key Number) chan Varint {
+   return get[Varint](u, key)
+}
+
+func (u UnknownMessage) GetFixed64(key Number) chan Fixed64 {
+   return get[Fixed64](u, key)
+}
+
+func (u UnknownMessage) GetFixed32(key Number) chan Fixed32 {
+   return get[Fixed32](u, key)
+}
+
+func (u UnknownMessage) GetBytes(key Number) chan Bytes {
+   return get[Bytes](u, key)
+}
+
+func (u UnknownMessage) Get(key Number) chan UnknownMessage {
+   return get[UnknownMessage](u, key)
+}
