@@ -7,10 +7,68 @@ import (
    "testing"
 )
 
+func TestUnmarshal(t *testing.T) {
+   data, err := os.ReadFile("com.pinterest.bin")
+   if err != nil {
+      t.Fatal(err)
+   }
+   m := Message{}
+   err = m.Unmarshal(data)
+   if err != nil {
+      t.Fatal(err)
+   }
+   u := <-m.GetUnknown(1)
+   u = <-u.Message.GetUnknown(2)
+   u = <-u.Message.GetUnknown(4)
+   if v := <-u.Message.GetUnknown(5); string(v.Bytes) != "Pinterest" {
+      t.Fatal(5, v)
+   }
+   if v := <-u.Message.GetUnknown(6); string(v.Bytes) != "Pinterest" {
+      t.Fatal(6, v)
+   }
+   {
+      u := <-u.Message.GetUnknown(8)
+      if v := <-u.Message.GetUnknown(2); string(v.Bytes) != "USD" {
+         t.Fatal(8, 2, v)
+      }
+   }
+   u = <-u.Message.GetUnknown(13)
+   u = <-u.Message.GetUnknown(1)
+   if v := <-u.Message.GetVarint(3); v != 10448020 {
+      t.Fatal(13, 1, 3, v)
+   }
+   if v := <-u.Message.GetUnknown(4); string(v.Bytes) != "10.44.0" {
+      t.Fatal(13, 1, 4, v)
+   }
+   if v := <-u.Message.GetVarint(9); v != 29945887 {
+      t.Fatal(13, 1, 9, v)
+   }
+   if v := <-u.Message.GetUnknown(16); string(v.Bytes) != "Dec 5, 2022" {
+      t.Fatal(13, 1, 16, v)
+   }
+   var v int
+   for range u.Message.GetUnknown(17) {
+      v++
+   }
+   if v != 4 {
+      t.Fatal(13, 1, 17, v)
+   }
+   if v := <-u.Message.GetVarint(70); v != 818092752 {
+      t.Fatal(13, 1, 70, v)
+   }
+}
+
+func TestMarshal(t *testing.T) {
+   a, b := message_old(), message_new()
+   if !bytes.Equal(a, b) {
+      t.Fatalf("\n% x\n% x", a, b)
+   }
+}
+
 var (
-   exts = []string{"one", "two"}
+   exts  = []string{"one", "two"}
    feats = []string{"one", "two"}
-   libs = []string{"one", "two"}
+   libs  = []string{"one", "two"}
 )
 
 func message_old() []byte {
@@ -102,62 +160,4 @@ func message_new() []byte {
       }
    }
    return data
-}
-
-func TestUnmarshal(t *testing.T) {
-   data, err := os.ReadFile("com.pinterest.bin")
-   if err != nil {
-      t.Fatal(err)
-   }
-   m := Message{}
-   err = m.Unmarshal(data)
-   if err != nil {
-      t.Fatal(err)
-   }
-   u := <-m.GetUnknown(1)
-   u = <-u.Message.GetUnknown(2)
-   u = <-u.Message.GetUnknown(4)
-   if v := <-u.Message.GetUnknown(5); string(v.Bytes) != "Pinterest" {
-      t.Fatal(5, v)
-   }
-   if v := <-u.Message.GetUnknown(6); string(v.Bytes) != "Pinterest" {
-      t.Fatal(6, v)
-   }
-   {
-      u := <-u.Message.GetUnknown(8)
-      if v := <-u.Message.GetUnknown(2); string(v.Bytes) != "USD" {
-         t.Fatal(8, 2, v)
-      }
-   }
-   u = <-u.Message.GetUnknown(13)
-   u = <-u.Message.GetUnknown(1)
-   if v := <-u.Message.GetVarint(3); v != 10448020 {
-      t.Fatal(13, 1, 3, v)
-   }
-   if v := <-u.Message.GetUnknown(4); string(v.Bytes) != "10.44.0" {
-      t.Fatal(13, 1, 4, v)
-   }
-   if v := <-u.Message.GetVarint(9); v != 29945887 {
-      t.Fatal(13, 1, 9, v)
-   }
-   if v := <-u.Message.GetUnknown(16); string(v.Bytes) != "Dec 5, 2022" {
-      t.Fatal(13, 1, 16, v)
-   }
-   var v int
-   for range u.Message.GetUnknown(17) {
-      v++
-   }
-   if v != 4 {
-      t.Fatal(13, 1, 17, v)
-   }
-   if v := <-u.Message.GetVarint(70); v != 818092752 {
-      t.Fatal(13, 1, 70, v)
-   }
-}
-
-func TestMarshal(t *testing.T) {
-   a, b := message_old(), message_new()
-   if !bytes.Equal(a, b) {
-      t.Fatalf("\n% x\n% x", a, b)
-   }
 }
