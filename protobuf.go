@@ -7,6 +7,10 @@ import (
    "slices"
 )
 
+func (m Message) GoString() string {
+   return message_string(m)
+}
+
 func message_string[T Values](m T) string {
    b := fmt.Appendf(nil, "%T{\n", m)
    for _, key := range sort_keys(m) {
@@ -84,10 +88,6 @@ func (m Message) Marshal() []byte {
 }
 
 type Message map[Number][]Value
-
-func (m Message) GoString() string {
-   return message_string(m)
-}
 
 func (v Message) Append(b []byte, num Number) []byte {
    b = protowire.AppendTag(b, num, protowire.BytesType)

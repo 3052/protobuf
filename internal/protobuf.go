@@ -2,6 +2,7 @@ package protobuf
 
 import (
    "errors"
+   "fmt"
    "google.golang.org/protobuf/encoding/protowire"
    "slices"
 )
@@ -27,6 +28,14 @@ func (v Bytes) Append(b []byte, num Number) []byte {
    return protowire.AppendBytes(b, v)
 }
 
+func (b Bytes) GoString() string {
+   return fmt.Sprintf("%T(%q)", b, []byte(b))
+}
+
+func (f Fixed32) GoString() string {
+   return fmt.Sprintf("%T(%v)", f, f)
+}
+
 type Fixed32 uint32
 
 func (v Fixed32) Append(b []byte, num Number) []byte {
@@ -34,11 +43,44 @@ func (v Fixed32) Append(b []byte, num Number) []byte {
    return protowire.AppendFixed32(b, uint32(v))
 }
 
+func (f Fixed64) GoString() string {
+   return fmt.Sprintf("%T(%v)", f, f)
+}
+
 type Fixed64 uint64
 
 func (v Fixed64) Append(b []byte, num Number) []byte {
    b = protowire.AppendTag(b, num, protowire.Fixed64Type)
    return protowire.AppendFixed64(b, uint64(v))
+}
+
+func (m Message) GoString() string {
+   b := fmt.Appendf(nil, "%T{\n", m)
+   for _, key := range m.keys() {
+      vs := m[key]
+      b = fmt.Appendf(b, "%v: {", key)
+      if len(vs) >= 2 {
+         b = append(b, '\n')
+      }
+      for _, v := range vs {
+         b = fmt.Appendf(b, "%#v", v)
+         if len(vs) >= 2 {
+            b = append(b, ",\n"...)
+         }
+      }
+      b = append(b, "},\n"...)
+   }
+   b = append(b, '}')
+   return string(b)
+}
+
+func (m Message) keys() []Number {
+   var keys []Number
+   for key := range m {
+      keys = append(keys, key)
+   }
+   slices.Sort(keys)
+   return keys
 }
 
 type Message map[Number][]Value
@@ -147,15 +189,19 @@ func (m Message) GetFixed32(key Number) chan Fixed32 {
    return get[Fixed32](m, key)
 }
 
-func (m Message) GetBytes(key Number) chan Bytes {
-   return get[Bytes](m, key)
-}
-
 func (m Message) GetUnknown(key Number) chan Unknown {
    return get[Unknown](m, key)
 }
 
 type Number = protowire.Number
+
+func (u Unknown) GoString() string {
+   b := fmt.Appendf(nil, "%T{\n", u)
+   b = fmt.Appendf(b, "%#v,\n", u.Bytes)
+   b = fmt.Appendf(b, "%#v,\n", u.Message)
+   b = append(b, '}')
+   return string(b)
+}
 
 type Unknown struct {
    Bytes Bytes
@@ -168,6 +214,11 @@ func (u Unknown) Append(b []byte, num Number) []byte {
 
 type Value interface {
    Append([]byte, Number) []byte
+   fmt.GoStringer
+}
+
+func (v Varint) GoString() string {
+   return fmt.Sprintf("%T(%v)", v, v)
 }
 
 type Varint uint64
