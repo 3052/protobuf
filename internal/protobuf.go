@@ -7,6 +7,63 @@ import (
    "slices"
 )
 
+func get[T Value](m Message, key Number) chan T {
+   channel := make(chan T)
+   go func() {
+      for _, v := range m[key] {
+         if v, ok := v.(T); ok {
+            channel <- v
+         }
+      }
+      close(channel)
+   }()
+   return channel
+}
+
+func (m Message) GetVarint(key Number) chan Varint {
+   return get[Varint](m, key)
+}
+
+func (m Message) GetFixed64(key Number) chan Fixed64 {
+   return get[Fixed64](m, key)
+}
+
+func (m Message) GetFixed32(key Number) chan Fixed32 {
+   return get[Fixed32](m, key)
+}
+
+func (m Message) Get(key Number) chan Message {
+   channel := make(chan Message)
+   go func() {
+      for _, v := range m[key] {
+         switch v := v.(type) {
+         case Message:
+            channel <- v
+         case Unknown:
+            channel <- v.Message
+         }
+      }
+      close(channel)
+   }()
+   return channel
+}
+
+func (m Message) GetBytes(key Number) chan Bytes {
+   channel := make(chan Bytes)
+   go func() {
+      for _, v := range m[key] {
+         switch v := v.(type) {
+         case Bytes:
+            channel <- v
+         case Unknown:
+            channel <- v.Bytes
+         }
+      }
+      close(channel)
+   }()
+   return channel
+}
+
 type Bytes []byte
 
 func (v Bytes) Append(b []byte, num Number) []byte {
