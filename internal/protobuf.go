@@ -213,9 +213,10 @@ func (m Message) Get(key Number) func() (Message, bool) {
    vs := m[key]
    return func() (Message, bool) {
       for len(vs) >= 1 {
-         v := vs[0]
-         vs = vs[1:]
-         switch v := v.(type) {
+         defer func() {
+            vs = vs[1:]
+         }()
+         switch v := vs[0].(type) {
          case Message:
             return v, true
          case Unknown:
@@ -230,9 +231,10 @@ func (m Message) GetBytes(key Number) func() (Bytes, bool) {
    vs := m[key]
    return func() (Bytes, bool) {
       for len(vs) >= 1 {
-         v := vs[0]
-         vs = vs[1:]
-         switch v := v.(type) {
+         defer func() {
+            vs = vs[1:]
+         }()
+         switch v := vs[0].(type) {
          case Bytes:
             return v, true
          case Unknown:
@@ -247,9 +249,10 @@ func get[T Value](m Message, key Number) func() (T, bool) {
    vs := m[key]
    return func() (T, bool) {
       for len(vs) >= 1 {
-         v := vs[0]
-         vs = vs[1:]
-         if v, ok := v.(T); ok {
+         defer func() {
+            vs = vs[1:]
+         }()
+         if v, ok := vs[0].(T); ok {
             return v, true
          }
       }
