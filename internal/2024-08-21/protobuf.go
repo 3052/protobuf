@@ -2,51 +2,6 @@ package protobuf
 
 import "google.golang.org/protobuf/encoding/protowire"
 
-func (m Message) GetBytes(key Number) chan Bytes {
-   channel := make(chan Bytes)
-   go func() {
-      for _, v := range m[key] {
-         switch v := v.(type) {
-         case Bytes:
-            channel <- v
-         case Unknown:
-            channel <- v.Bytes
-         }
-      }
-      close(channel)
-   }()
-   return channel
-}
-
-func (m Message) Get(key Number) chan Message {
-   channel := make(chan Message)
-   go func() {
-      for _, v := range m[key] {
-         switch v := v.(type) {
-         case Message:
-            channel <- v
-         case Unknown:
-            channel <- v.Message
-         }
-      }
-      close(channel)
-   }()
-   return channel
-}
-
-func get[T Value](m Message, key Number) chan T {
-   channel := make(chan T)
-   go func() {
-      for _, v := range m[key] {
-         if v, ok := v.(T); ok {
-            channel <- v
-         }
-      }
-      close(channel)
-   }()
-   return channel
-}
-
 type Bytes []byte
 
 func (v Bytes) Append(b []byte, num Number) []byte {
@@ -68,48 +23,19 @@ func (v Fixed64) Append(b []byte, num Number) []byte {
    return protowire.AppendFixed64(b, uint64(v))
 }
 
-type Message map[Number][]Value
-
-func (v Message) Append(b []byte, num Number) []byte {
-   b = protowire.AppendTag(b, num, protowire.BytesType)
-   return protowire.AppendBytes(b, v.Marshal())
-}
-
-func (m Message) Marshal() []byte {
-   var data []byte
-   for key, values := range m {
-      for _, v := range values {
-         data = v.Append(data, key)
-      }
-   }
-   return data
-}
-
-func (m Message) GetVarint(key Number) chan Varint {
-   return get[Varint](m, key)
-}
-
-func (m Message) GetFixed64(key Number) chan Fixed64 {
-   return get[Fixed64](m, key)
-}
-
-func (m Message) GetFixed32(key Number) chan Fixed32 {
-   return get[Fixed32](m, key)
-}
-
 type Number = protowire.Number
 
-func (u Unknown) Append(b []byte, num Number) []byte {
-   return u.Bytes.Append(b, num)
+type Value interface {
+   Append([]byte, Number) []byte
 }
+
+type Values []Value
+
+type Message map[Number]Values
 
 type Unknown struct {
    Bytes   Bytes
    Message Message
-}
-
-type Value interface {
-   Append([]byte, Number) []byte
 }
 
 type Varint uint64
@@ -117,4 +43,77 @@ type Varint uint64
 func (v Varint) Append(b []byte, num Number) []byte {
    b = protowire.AppendTag(b, num, protowire.VarintType)
    return protowire.AppendVarint(b, uint64(v))
+}
+
+func (u Unknown) Append(b []byte, num Number) []byte {
+   return u.Bytes.Append(b, num)
+}
+
+func (m Message) Marshal() []byte {
+   var data []byte
+   for key, for_values := range m {
+      for _, for_value := range for_values {
+         data = for_value.Append(data, key)
+      }
+   }
+   return data
+}
+
+func (v Message) Append(b []byte, num Number) []byte {
+   b = protowire.AppendTag(b, num, protowire.BytesType)
+   return protowire.AppendBytes(b, v.Marshal())
+}
+
+func get[T Value](vs Values) func() (T, bool) {
+   return func() (T, bool) {
+      for len(vs) >= 1 {
+         if v, ok := vs[0].(T); ok {
+            return v, true
+         }
+         vs = vs[1:]
+      }
+      return *new(T), false
+   }
+}
+
+func (vs Values) GetVarint() func() (Varint, bool) {
+   return get[Varint](vs)
+}
+
+func (vs Values) GetFixed64() func() (Fixed64, bool) {
+   return get[Fixed64](vs)
+}
+
+func (vs Values) GetFixed32() func() (Fixed32, bool) {
+   return get[Fixed32](vs)
+}
+
+func (vs Values) GetBytes() func() (Bytes, bool) {
+   return func() (Bytes, bool) {
+      for len(vs) >= 1 {
+         switch v := vs[0].(type) {
+         case Bytes:
+            return v, true
+         case Unknown:
+            return v.Bytes, true
+         }
+         vs = vs[1:]
+      }
+      return nil, false
+   }
+}
+
+func (vs Values) Get() func() (Message, bool) {
+   return func() (Message, bool) {
+      for len(vs) >= 1 {
+         switch v := vs[0].(type) {
+         case Message:
+            return v, true
+         case Unknown:
+            return v.Message, true
+         }
+         vs = vs[1:]
+      }
+      return nil, false
+   }
 }
