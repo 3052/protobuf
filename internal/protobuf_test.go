@@ -151,15 +151,21 @@ func TestUnmarshal(t *testing.T) {
       t.Fatal(13, 1, 16, v)
    }
    var v int
-   vs := m.Get(17)
+   m17 := m.Get(17)
    for {
-      if _, ok := vs(); !ok {
+      if _, ok := m17(); !ok {
          break
       }
       v++
    }
    if v != 4 {
       t.Fatal(13, 1, 17, v)
+   }
+   v17 := m.GetVarint(17)
+   for {
+      if _, ok := v17(); !ok {
+         break
+      }
    }
    if v, _ := m.GetVarint(70)(); v != 818092752 {
       t.Fatal(13, 1, 70, v)
