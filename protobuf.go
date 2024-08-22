@@ -7,6 +7,38 @@ import (
    "slices"
 )
 
+func (m Message) GetBytes(key Number) chan Bytes {
+   channel := make(chan Bytes)
+   go func() {
+      for _, v := range m[key] {
+         switch v := v.(type) {
+         case Bytes:
+            channel <- v
+         case Unknown:
+            channel <- v.Bytes
+         }
+      }
+      close(channel)
+   }()
+   return channel
+}
+
+func (m Message) Get(key Number) chan Message {
+   channel := make(chan Message)
+   go func() {
+      for _, v := range m[key] {
+         switch v := v.(type) {
+         case Message:
+            channel <- v
+         case Unknown:
+            channel <- v.Message
+         }
+      }
+      close(channel)
+   }()
+   return channel
+}
+
 func unmarshal(v []byte) Value {
    if len(v) >= 1 {
       m := Message{}
@@ -141,38 +173,6 @@ func (m Message) GetFixed64(key Number) chan Fixed64 {
 
 func (m Message) GetFixed32(key Number) chan Fixed32 {
    return get[Fixed32](m, key)
-}
-
-func (m Message) Get(key Number) chan Message {
-   channel := make(chan Message)
-   go func() {
-      for _, v := range m[key] {
-         switch v := v.(type) {
-         case Message:
-            channel <- v
-         case Unknown:
-            channel <- v.Message
-         }
-      }
-      close(channel)
-   }()
-   return channel
-}
-
-func (m Message) GetBytes(key Number) chan Bytes {
-   channel := make(chan Bytes)
-   go func() {
-      for _, v := range m[key] {
-         switch v := v.(type) {
-         case Bytes:
-            channel <- v
-         case Unknown:
-            channel <- v.Bytes
-         }
-      }
-      close(channel)
-   }()
-   return channel
 }
 
 func (m Message) Unmarshal(data []byte) error {

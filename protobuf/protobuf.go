@@ -29,38 +29,6 @@ func (v Varint) Append(b []byte, num Number) []byte {
    return protowire.AppendVarint(b, uint64(v))
 }
 
-func (v Value) Varint() (Varint, bool) {
-   return get[Varint](v)
-}
-
-func (v Value) Fixed64() (Fixed64, bool) {
-   return get[Fixed64](v)
-}
-
-func (v Value) Fixed32() (Fixed32, bool) {
-   return get[Fixed32](v)
-}
-
-func (v Value) Bytes() (Bytes, bool) {
-   switch v := v.a.(type) {
-   case Bytes:
-      return v, true
-   case Unknown:
-      return v.Bytes, true
-   }
-   return nil, false
-}
-
-func (v Value) Message() (Message, bool) {
-   switch v := v.a.(type) {
-   case Message:
-      return v, true
-   case Unknown:
-      return v.Message, true
-   }
-   return nil, false
-}
-
 type Bytes []byte
 
 func (v Bytes) Append(b []byte, num Number) []byte {
@@ -109,13 +77,6 @@ func (v Message) Append(b []byte, num Number) []byte {
    return protowire.AppendBytes(b, v.Marshal())
 }
 
-func get[T appender](v Value) (T, bool) {
-   if v, ok := v.a.(T); ok {
-      return v, true
-   }
-   return *new(T), false
-}
-
 func (m Message) keys() []Number {
    var keys []Number
    for key := range m {
@@ -156,19 +117,6 @@ func (m Message) GoString() string {
 type appender interface {
    Append([]byte, Number) []byte
    fmt.GoStringer
-}
-
-type Value struct {
-   a appender
-}
-
-type Message map[Number][]Value
-
-func (m Message) Get(key Number) Value {
-   if vs := m[key]; len(vs) >= 1 {
-      return vs[0]
-   }
-   return Value{}
 }
 
 func (m Message) AddVarint(key Number, v uint64) {
@@ -249,4 +197,52 @@ func unmarshal(data []byte) appender {
       }
    }
    return Bytes(data)
+}
+
+type Value struct {
+   a appender
+}
+
+type Message map[Number][]Value
+
+func (m Message) Get(key Number) Value {
+   if vs := m[key]; len(vs) >= 1 {
+      return vs[0]
+   }
+   return Value{}
+}
+
+func (v Value) Varint() (Varint, bool) {
+   a, ok := v.a.(Varint)
+   return a, ok
+}
+
+func (v Value) Fixed64() (Fixed64, bool) {
+   a, ok := v.a.(Fixed64)
+   return a, ok
+}
+
+func (v Value) Fixed32() (Fixed32, bool) {
+   a, ok := v.a.(Fixed32)
+   return a, ok
+}
+
+func (v Value) Bytes() (Bytes, bool) {
+   switch v := v.a.(type) {
+   case Bytes:
+      return v, true
+   case Unknown:
+      return v.Bytes, true
+   }
+   return nil, false
+}
+
+func (v Value) Message() (Message, bool) {
+   switch v := v.a.(type) {
+   case Message:
+      return v, true
+   case Unknown:
+      return v.Message, true
+   }
+   return nil, false
 }
