@@ -209,16 +209,20 @@ func (m Message) GetFixed32(key Number) func() (Fixed32, bool) {
    return get[Fixed32](m, key)
 }
 
-func get[T Value](m Message, key Number) func() (T, bool) {
+func (m Message) Get(key Number) func() (Message, bool) {
    vs := m[key]
-   return func() (T, bool) {
+   return func() (Message, bool) {
       for len(vs) >= 1 {
-         if v, ok := vs[0].(T); ok {
-            return v, true
-         }
+         v := vs[0]
          vs = vs[1:]
+         switch v := v.(type) {
+         case Message:
+            return v, true
+         case Unknown:
+            return v.Message, true
+         }
       }
-      return *new(T), false
+      return nil, false
    }
 }
 
@@ -226,30 +230,29 @@ func (m Message) GetBytes(key Number) func() (Bytes, bool) {
    vs := m[key]
    return func() (Bytes, bool) {
       for len(vs) >= 1 {
-         switch v := vs[0].(type) {
+         v := vs[0]
+         vs = vs[1:]
+         switch v := v.(type) {
          case Bytes:
             return v, true
          case Unknown:
             return v.Bytes, true
          }
-         vs = vs[1:]
       }
       return nil, false
    }
 }
 
-func (m Message) Get(key Number) func() (Message, bool) {
+func get[T Value](m Message, key Number) func() (T, bool) {
    vs := m[key]
-   return func() (Message, bool) {
+   return func() (T, bool) {
       for len(vs) >= 1 {
-         switch v := vs[0].(type) {
-         case Message:
-            return v, true
-         case Unknown:
-            return v.Message, true
-         }
+         v := vs[0]
          vs = vs[1:]
+         if v, ok := v.(T); ok {
+            return v, true
+         }
       }
-      return nil, false
+      return *new(T), false
    }
 }
