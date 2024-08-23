@@ -7,59 +7,59 @@ import (
    "slices"
 )
 
-func (m Message) GetBytes(key Number) chan Bytes {
-   channel := make(chan Bytes)
-   go func() {
-      for _, v := range m[key] {
-         switch v := v.(type) {
-         case Bytes:
-            channel <- v
-         case Unknown:
-            channel <- v.Bytes
-         }
-      }
-      close(channel)
-   }()
-   return channel
-}
-
-func (m Message) Get(key Number) chan Message {
-   channel := make(chan Message)
-   go func() {
-      for _, v := range m[key] {
-         switch v := v.(type) {
+func (m Message) Get(key Number) func() (Message, bool) {
+   var i int
+   return func() (Message, bool) {
+      defer func() { i++ }()
+      for vs := m[key]; i < len(vs); i++ {
+         switch v := vs[i].(type) {
          case Message:
-            channel <- v
+            return v, true
          case Unknown:
-            channel <- v.Message
+            return v.Message, true
          }
       }
-      close(channel)
-   }()
-   return channel
+      return nil, false
+   }
 }
 
-func unmarshal(v []byte) Value {
-   if len(v) >= 1 {
+func (m Message) GetBytes(key Number) func() (Bytes, bool) {
+   var i int
+   return func() (Bytes, bool) {
+      defer func() { i++ }()
+      for vs := m[key]; i < len(vs); i++ {
+         switch v := vs[i].(type) {
+         case Bytes:
+            return v, true
+         case Unknown:
+            return v.Bytes, true
+         }
+      }
+      return nil, false
+   }
+}
+
+func get[T Value](m Message, key Number) func() (T, bool) {
+   var i int
+   return func() (T, bool) {
+      defer func() { i++ }()
+      for vs := m[key]; i < len(vs); i++ {
+         if v, ok := vs[i].(T); ok {
+            return v, true
+         }
+      }
+      return *new(T), false
+   }
+}
+
+func unmarshal(data []byte) Value {
+   if len(data) >= 1 {
       m := Message{}
-      if m.Unmarshal(v) == nil {
-         return Unknown{v, m}
+      if m.Unmarshal(data) == nil {
+         return Unknown{data, m}
       }
    }
-   return Bytes(v)
-}
-
-func get[T Value](m Message, key Number) chan T {
-   channel := make(chan T)
-   go func() {
-      for _, v := range m[key] {
-         if v, ok := v.(T); ok {
-            channel <- v
-         }
-      }
-      close(channel)
-   }()
-   return channel
+   return Bytes(data)
 }
 
 type Bytes []byte
@@ -84,10 +84,6 @@ func (v Fixed32) Append(b []byte, num Number) []byte {
    return protowire.AppendFixed32(b, uint32(v))
 }
 
-func (f Fixed64) GoString() string {
-   return fmt.Sprintf("%T(%v)", f, f)
-}
-
 type Fixed64 uint64
 
 func (v Fixed64) Append(b []byte, num Number) []byte {
@@ -95,52 +91,8 @@ func (v Fixed64) Append(b []byte, num Number) []byte {
    return protowire.AppendFixed64(b, uint64(v))
 }
 
-func (m Message) keys() []Number {
-   var keys []Number
-   for key := range m {
-      keys = append(keys, key)
-   }
-   slices.Sort(keys)
-   return keys
-}
-
-type Message map[Number][]Value
-
-func (v Message) Append(b []byte, num Number) []byte {
-   b = protowire.AppendTag(b, num, protowire.BytesType)
-   return protowire.AppendBytes(b, v.Marshal())
-}
-
-func (m Message) Marshal() []byte {
-   var data []byte
-   for key, values := range m {
-      for _, v := range values {
-         data = v.Append(data, key)
-      }
-   }
-   return data
-}
-
-func (m Message) AddVarint(key Number, v Varint) {
-   m[key] = append(m[key], v)
-}
-
-func (m Message) AddFixed64(key Number, v Fixed64) {
-   m[key] = append(m[key], v)
-}
-
-func (m Message) AddFixed32(key Number, v Fixed32) {
-   m[key] = append(m[key], v)
-}
-
-func (m Message) AddBytes(key Number, v Bytes) {
-   m[key] = append(m[key], v)
-}
-
-func (m Message) Add(key Number, f func(Message)) {
-   v := Message{}
-   f(v)
-   m[key] = append(m[key], v)
+func (f Fixed64) GoString() string {
+   return fmt.Sprintf("%T(%v)", f, f)
 }
 
 func (m Message) GoString() string {
@@ -163,16 +115,64 @@ func (m Message) GoString() string {
    return string(b)
 }
 
-func (m Message) GetVarint(key Number) chan Varint {
+func (m Message) GetVarint(key Number) func() (Varint, bool) {
    return get[Varint](m, key)
 }
 
-func (m Message) GetFixed64(key Number) chan Fixed64 {
+func (m Message) GetFixed64(key Number) func() (Fixed64, bool) {
    return get[Fixed64](m, key)
 }
 
-func (m Message) GetFixed32(key Number) chan Fixed32 {
+func (m Message) GetFixed32(key Number) func() (Fixed32, bool) {
    return get[Fixed32](m, key)
+}
+
+type Message map[Number][]Value
+
+func (m Message) keys() []Number {
+   var keys []Number
+   for key := range m {
+      keys = append(keys, key)
+   }
+   slices.Sort(keys)
+   return keys
+}
+
+func (m Message) Marshal() []byte {
+   var data []byte
+   for key, values := range m {
+      for _, v := range values {
+         data = v.Append(data, key)
+      }
+   }
+   return data
+}
+
+func (v Message) Append(b []byte, num Number) []byte {
+   b = protowire.AppendTag(b, num, protowire.BytesType)
+   return protowire.AppendBytes(b, v.Marshal())
+}
+
+func (m Message) AddVarint(key Number, v Varint) {
+   m[key] = append(m[key], v)
+}
+
+func (m Message) AddFixed64(key Number, v Fixed64) {
+   m[key] = append(m[key], v)
+}
+
+func (m Message) AddFixed32(key Number, v Fixed32) {
+   m[key] = append(m[key], v)
+}
+
+func (m Message) AddBytes(key Number, v Bytes) {
+   m[key] = append(m[key], v)
+}
+
+func (m Message) Add(key Number, f func(Message)) {
+   v := Message{}
+   f(v)
+   m[key] = append(m[key], v)
 }
 
 func (m Message) Unmarshal(data []byte) error {
