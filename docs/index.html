@@ -14,7 +14,7 @@
   <body>
     <nav>
         154.pages.dev/protobuf<span class="navbar-right">
-          v1.2.6 | <a href="">Root</a> | <a href="#pkg-index">Index</a></span>
+          v1.2.7 | <a href="">Root</a> | <a href="#pkg-index">Index</a></span>
       </nav>
     <main><h2 id="pkg-overview">package protobuf</h2>
 <pre class="chroma"><span class="kn">import</span> <span class="s">&#34;154.pages.dev/protobuf&#34;</span></pre>
@@ -50,11 +50,11 @@
           <li><a href="#Message.AddFixed64">func (m Message) AddFixed64(key Number, v Fixed64)</a></li>
           <li><a href="#Message.AddVarint">func (m Message) AddVarint(key Number, v Varint)</a></li>
           <li><a href="#Message.Append">func (v Message) Append(b []byte, num Number) []byte</a></li>
-          <li><a href="#Message.Get">func (m Message) Get(key Number) chan Message</a></li>
-          <li><a href="#Message.GetBytes">func (m Message) GetBytes(key Number) chan Bytes</a></li>
-          <li><a href="#Message.GetFixed32">func (m Message) GetFixed32(key Number) chan Fixed32</a></li>
-          <li><a href="#Message.GetFixed64">func (m Message) GetFixed64(key Number) chan Fixed64</a></li>
-          <li><a href="#Message.GetVarint">func (m Message) GetVarint(key Number) chan Varint</a></li>
+          <li><a href="#Message.Get">func (m Message) Get(key Number) func() (Message, bool)</a></li>
+          <li><a href="#Message.GetBytes">func (m Message) GetBytes(key Number) func() (Bytes, bool)</a></li>
+          <li><a href="#Message.GetFixed32">func (m Message) GetFixed32(key Number) func() (Fixed32, bool)</a></li>
+          <li><a href="#Message.GetFixed64">func (m Message) GetFixed64(key Number) func() (Fixed64, bool)</a></li>
+          <li><a href="#Message.GetVarint">func (m Message) GetVarint(key Number) func() (Varint, bool)</a></li>
           <li><a href="#Message.GoString">func (m Message) GoString() string</a></li>
           <li><a href="#Message.Marshal">func (m Message) Marshal() []byte</a></li>
           <li><a href="#Message.Unmarshal">func (m Message) Unmarshal(data []byte) error</a></li>
@@ -114,15 +114,15 @@
   <h4 id="Message.Append">func (Message) Append</h4>
   <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">v</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">Append</span><span class="p">(</span><span class="nx">b</span> <span class="p">[]</span><a href="https://pkg.go.dev/builtin#byte"><span class="kt">byte</span></a><span class="p">,</span> <span class="nx">num</span> <a href="#Number"><span class="nx">Number</span></a><span class="p">)</span> <span class="p">[]</span><a href="https://pkg.go.dev/builtin#byte"><span class="kt">byte</span></a></pre>
   <h4 id="Message.Get">func (Message) Get</h4>
-  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">Get</span><span class="p">(</span><span class="nx">key</span> <a href="#Number"><span class="nx">Number</span></a><span class="p">)</span> <span class="kd">chan</span> <a href="#Message"><span class="nx">Message</span></a></pre>
+  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">Get</span><span class="p">(</span><span class="nx">key</span> <a href="#Number"><span class="nx">Number</span></a><span class="p">)</span> <span class="kd">func</span><span class="p">()</span> <span class="p">(</span><a href="#Message"><span class="nx">Message</span></a><span class="p">,</span> <a href="https://pkg.go.dev/builtin#bool"><span class="kt">bool</span></a><span class="p">)</span></pre>
   <h4 id="Message.GetBytes">func (Message) GetBytes</h4>
-  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">GetBytes</span><span class="p">(</span><span class="nx">key</span> <a href="#Number"><span class="nx">Number</span></a><span class="p">)</span> <span class="kd">chan</span> <a href="#Bytes"><span class="nx">Bytes</span></a></pre>
+  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">GetBytes</span><span class="p">(</span><span class="nx">key</span> <a href="#Number"><span class="nx">Number</span></a><span class="p">)</span> <span class="kd">func</span><span class="p">()</span> <span class="p">(</span><a href="#Bytes"><span class="nx">Bytes</span></a><span class="p">,</span> <a href="https://pkg.go.dev/builtin#bool"><span class="kt">bool</span></a><span class="p">)</span></pre>
   <h4 id="Message.GetFixed32">func (Message) GetFixed32</h4>
-  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">GetFixed32</span><span class="p">(</span><span class="nx">key</span> <a href="#Number"><span class="nx">Number</span></a><span class="p">)</span> <span class="kd">chan</span> <a href="#Fixed32"><span class="nx">Fixed32</span></a></pre>
+  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">GetFixed32</span><span class="p">(</span><span class="nx">key</span> <a href="#Number"><span class="nx">Number</span></a><span class="p">)</span> <span class="kd">func</span><span class="p">()</span> <span class="p">(</span><a href="#Fixed32"><span class="nx">Fixed32</span></a><span class="p">,</span> <a href="https://pkg.go.dev/builtin#bool"><span class="kt">bool</span></a><span class="p">)</span></pre>
   <h4 id="Message.GetFixed64">func (Message) GetFixed64</h4>
-  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">GetFixed64</span><span class="p">(</span><span class="nx">key</span> <a href="#Number"><span class="nx">Number</span></a><span class="p">)</span> <span class="kd">chan</span> <a href="#Fixed64"><span class="nx">Fixed64</span></a></pre>
+  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">GetFixed64</span><span class="p">(</span><span class="nx">key</span> <a href="#Number"><span class="nx">Number</span></a><span class="p">)</span> <span class="kd">func</span><span class="p">()</span> <span class="p">(</span><a href="#Fixed64"><span class="nx">Fixed64</span></a><span class="p">,</span> <a href="https://pkg.go.dev/builtin#bool"><span class="kt">bool</span></a><span class="p">)</span></pre>
   <h4 id="Message.GetVarint">func (Message) GetVarint</h4>
-  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">GetVarint</span><span class="p">(</span><span class="nx">key</span> <a href="#Number"><span class="nx">Number</span></a><span class="p">)</span> <span class="kd">chan</span> <a href="#Varint"><span class="nx">Varint</span></a></pre>
+  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">GetVarint</span><span class="p">(</span><span class="nx">key</span> <a href="#Number"><span class="nx">Number</span></a><span class="p">)</span> <span class="kd">func</span><span class="p">()</span> <span class="p">(</span><a href="#Varint"><span class="nx">Varint</span></a><span class="p">,</span> <a href="https://pkg.go.dev/builtin#bool"><span class="kt">bool</span></a><span class="p">)</span></pre>
   <h4 id="Message.GoString">func (Message) GoString</h4>
   <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">GoString</span><span class="p">()</span> <a href="https://pkg.go.dev/builtin#string"><span class="kt">string</span></a></pre>
   <h4 id="Message.Marshal">func (Message) Marshal</h4>
@@ -151,17 +151,7 @@
   <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">v</span> <a href="#Varint"><span class="nx">Varint</span></a><span class="p">)</span> <span class="nf">Append</span><span class="p">(</span><span class="nx">b</span> <span class="p">[]</span><a href="https://pkg.go.dev/builtin#byte"><span class="kt">byte</span></a><span class="p">,</span> <span class="nx">num</span> <a href="#Number"><span class="nx">Number</span></a><span class="p">)</span> <span class="p">[]</span><a href="https://pkg.go.dev/builtin#byte"><span class="kt">byte</span></a></pre>
   <h4 id="Varint.GoString">func (Varint) GoString</h4>
   <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">v</span> <a href="#Varint"><span class="nx">Varint</span></a><span class="p">)</span> <span class="nf">GoString</span><span class="p">()</span> <a href="https://pkg.go.dev/builtin#string"><span class="kt">string</span></a></pre>
-  <h3 id="pkg-directories">Directories</h3>
-
-<table>
-  <tbody>
-    <tr>
-        <td><a href="protobuf">protobuf</a></td>
-        <td></td>
-      </tr>
-    </tbody>
-</table>
-</main>
+  </main>
     <hr>
     <footer>
       <small id="generated-by-footer">

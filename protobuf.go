@@ -8,12 +8,12 @@ import (
 )
 
 func (m Message) Get(key Number) func() (Message, bool) {
-   var i int
+   var index int
    return func() (Message, bool) {
       vs := m[key]
-      for i < len(vs) {
-         i++
-         switch v := vs[i-1].(type) {
+      for index < len(vs) {
+         index++
+         switch v := vs[index-1].(type) {
          case Message:
             return v, true
          case Unknown:
@@ -25,12 +25,12 @@ func (m Message) Get(key Number) func() (Message, bool) {
 }
 
 func (m Message) GetBytes(key Number) func() (Bytes, bool) {
-   var i int
+   var index int
    return func() (Bytes, bool) {
       vs := m[key]
-      for i < len(vs) {
-         i++
-         switch v := vs[i-1].(type) {
+      for index < len(vs) {
+         index++
+         switch v := vs[index-1].(type) {
          case Bytes:
             return v, true
          case Unknown:
@@ -42,12 +42,12 @@ func (m Message) GetBytes(key Number) func() (Bytes, bool) {
 }
 
 func get[T Value](m Message, key Number) func() (T, bool) {
-   var i int
+   var index int
    return func() (T, bool) {
       vs := m[key]
-      for i < len(vs) {
-         i++
-         if v, ok := vs[i-1].(T); ok {
+      for index < len(vs) {
+         index++
+         if v, ok := vs[index-1].(T); ok {
             return v, true
          }
       }
