@@ -7,6 +7,21 @@ import (
    "slices"
 )
 
+var Length = -1
+
+func (u Unknown) GoString() string {
+   if Length >= 0 {
+      if Length < len(u.Bytes) {
+         u.Bytes = u.Bytes[:Length]
+      }
+   }
+   b := fmt.Appendf(nil, "%T{\n", u)
+   b = fmt.Appendf(b, "%#v,\n", u.Bytes)
+   b = fmt.Appendf(b, "%#v,\n", u.Message)
+   b = append(b, '}')
+   return string(b)
+}
+
 func (m Message) Get(key Number) func() (Message, bool) {
    var index int
    return func() (Message, bool) {
@@ -72,14 +87,6 @@ func (v Bytes) Append(b []byte, num Number) []byte {
    return protowire.AppendBytes(b, v)
 }
 
-func (b Bytes) GoString() string {
-   return fmt.Sprintf("%T(%q)", b, []byte(b))
-}
-
-func (f Fixed32) GoString() string {
-   return fmt.Sprintf("%T(%v)", f, f)
-}
-
 type Fixed32 uint32
 
 func (v Fixed32) Append(b []byte, num Number) []byte {
@@ -92,30 +99,6 @@ type Fixed64 uint64
 func (v Fixed64) Append(b []byte, num Number) []byte {
    b = protowire.AppendTag(b, num, protowire.Fixed64Type)
    return protowire.AppendFixed64(b, uint64(v))
-}
-
-func (f Fixed64) GoString() string {
-   return fmt.Sprintf("%T(%v)", f, f)
-}
-
-func (m Message) GoString() string {
-   b := fmt.Appendf(nil, "%T{\n", m)
-   for _, key := range m.keys() {
-      values := m[key]
-      b = fmt.Appendf(b, "%v: {", key)
-      if len(values) >= 2 {
-         b = append(b, '\n')
-      }
-      for _, v := range values {
-         b = fmt.Appendf(b, "%#v", v)
-         if len(values) >= 2 {
-            b = append(b, ",\n"...)
-         }
-      }
-      b = append(b, "},\n"...)
-   }
-   b = append(b, '}')
-   return string(b)
 }
 
 func (m Message) GetVarint(key Number) func() (Varint, bool) {
@@ -233,21 +216,9 @@ type Unknown struct {
    Message Message
 }
 
-func (u Unknown) GoString() string {
-   b := fmt.Appendf(nil, "%T{\n", u)
-   b = fmt.Appendf(b, "%#v,\n", u.Bytes)
-   b = fmt.Appendf(b, "%#v,\n", u.Message)
-   b = append(b, '}')
-   return string(b)
-}
-
 type Value interface {
    Append([]byte, Number) []byte
    fmt.GoStringer
-}
-
-func (v Varint) GoString() string {
-   return fmt.Sprintf("%T(%v)", v, v)
 }
 
 type Varint uint64
@@ -255,4 +226,40 @@ type Varint uint64
 func (v Varint) Append(b []byte, num Number) []byte {
    b = protowire.AppendTag(b, num, protowire.VarintType)
    return protowire.AppendVarint(b, uint64(v))
+}
+
+func (f Fixed32) GoString() string {
+   return fmt.Sprintf("%T(%v)", f, f)
+}
+
+func (f Fixed64) GoString() string {
+   return fmt.Sprintf("%T(%v)", f, f)
+}
+
+func (v Varint) GoString() string {
+   return fmt.Sprintf("%T(%v)", v, v)
+}
+
+func (b Bytes) GoString() string {
+   return fmt.Sprintf("%T(%q)", b, []byte(b))
+}
+
+func (m Message) GoString() string {
+   b := fmt.Appendf(nil, "%T{\n", m)
+   for _, key := range m.keys() {
+      values := m[key]
+      b = fmt.Appendf(b, "%v: {", key)
+      if len(values) >= 2 {
+         b = append(b, '\n')
+      }
+      for _, v := range values {
+         b = fmt.Appendf(b, "%#v", v)
+         if len(values) >= 2 {
+            b = append(b, ",\n"...)
+         }
+      }
+      b = append(b, "},\n"...)
+   }
+   b = append(b, '}')
+   return string(b)
 }
