@@ -9,53 +9,6 @@ import (
 
 var Length = -1
 
-func (u Unknown) GoString() string {
-   if Length >= 0 {
-      if Length < len(u.Bytes) {
-         u.Bytes = u.Bytes[:Length]
-      }
-   }
-   b := fmt.Appendf(nil, "%T{\n", u)
-   b = fmt.Appendf(b, "%#v,\n", u.Bytes)
-   b = fmt.Appendf(b, "%#v,\n", u.Message)
-   b = append(b, '}')
-   return string(b)
-}
-
-func (m Message) Get(key Number) func() (Message, bool) {
-   var index int
-   return func() (Message, bool) {
-      vs := m[key]
-      for index < len(vs) {
-         index++
-         switch v := vs[index-1].(type) {
-         case Message:
-            return v, true
-         case Unknown:
-            return v.Message, true
-         }
-      }
-      return nil, false
-   }
-}
-
-func (m Message) GetBytes(key Number) func() (Bytes, bool) {
-   var index int
-   return func() (Bytes, bool) {
-      vs := m[key]
-      for index < len(vs) {
-         index++
-         switch v := vs[index-1].(type) {
-         case Bytes:
-            return v, true
-         case Unknown:
-            return v.Bytes, true
-         }
-      }
-      return nil, false
-   }
-}
-
 func get[T Value](m Message, key Number) func() (T, bool) {
    var index int
    return func() (T, bool) {
@@ -87,6 +40,14 @@ func (v Bytes) Append(b []byte, num Number) []byte {
    return protowire.AppendBytes(b, v)
 }
 
+func (b Bytes) GoString() string {
+   return fmt.Sprintf("%T(%q)", b, []byte(b))
+}
+
+func (f Fixed32) GoString() string {
+   return fmt.Sprintf("%T(%v)", f, f)
+}
+
 type Fixed32 uint32
 
 func (v Fixed32) Append(b []byte, num Number) []byte {
@@ -94,11 +55,35 @@ func (v Fixed32) Append(b []byte, num Number) []byte {
    return protowire.AppendFixed32(b, uint32(v))
 }
 
+func (f Fixed64) GoString() string {
+   return fmt.Sprintf("%T(%v)", f, f)
+}
+
 type Fixed64 uint64
 
 func (v Fixed64) Append(b []byte, num Number) []byte {
    b = protowire.AppendTag(b, num, protowire.Fixed64Type)
    return protowire.AppendFixed64(b, uint64(v))
+}
+
+func (m Message) GoString() string {
+   b := fmt.Appendf(nil, "%T{\n", m)
+   for _, key := range m.keys() {
+      values := m[key]
+      b = fmt.Appendf(b, "%v: {", key)
+      if len(values) >= 2 {
+         b = append(b, '\n')
+      }
+      for _, v := range values {
+         b = fmt.Appendf(b, "%#v", v)
+         if len(values) >= 2 {
+            b = append(b, ",\n"...)
+         }
+      }
+      b = append(b, "},\n"...)
+   }
+   b = append(b, '}')
+   return string(b)
 }
 
 func (m Message) GetVarint(key Number) func() (Varint, bool) {
@@ -205,7 +190,54 @@ func (m Message) Unmarshal(data []byte) error {
    return nil
 }
 
+func (m Message) Get(key Number) func() (Message, bool) {
+   var index int
+   return func() (Message, bool) {
+      vs := m[key]
+      for index < len(vs) {
+         index++
+         switch v := vs[index-1].(type) {
+         case Message:
+            return v, true
+         case Unknown:
+            return v.Message, true
+         }
+      }
+      return nil, false
+   }
+}
+
+func (m Message) GetBytes(key Number) func() (Bytes, bool) {
+   var index int
+   return func() (Bytes, bool) {
+      vs := m[key]
+      for index < len(vs) {
+         index++
+         switch v := vs[index-1].(type) {
+         case Bytes:
+            return v, true
+         case Unknown:
+            return v.Bytes, true
+         }
+      }
+      return nil, false
+   }
+}
+
 type Number = protowire.Number
+
+func (u Unknown) GoString() string {
+   if Length >= 0 {
+      if Length < len(u.Bytes) {
+         u.Bytes = u.Bytes[:Length]
+      }
+   }
+   b := fmt.Appendf(nil, "%T{\n", u)
+   b = fmt.Appendf(b, "%#v,\n", u.Bytes)
+   b = fmt.Appendf(b, "%#v,\n", u.Message)
+   b = append(b, '}')
+   return string(b)
+}
 
 func (u Unknown) Append(b []byte, num Number) []byte {
    return u.Bytes.Append(b, num)
@@ -228,38 +260,6 @@ func (v Varint) Append(b []byte, num Number) []byte {
    return protowire.AppendVarint(b, uint64(v))
 }
 
-func (f Fixed32) GoString() string {
-   return fmt.Sprintf("%T(%v)", f, f)
-}
-
-func (f Fixed64) GoString() string {
-   return fmt.Sprintf("%T(%v)", f, f)
-}
-
 func (v Varint) GoString() string {
    return fmt.Sprintf("%T(%v)", v, v)
-}
-
-func (b Bytes) GoString() string {
-   return fmt.Sprintf("%T(%q)", b, []byte(b))
-}
-
-func (m Message) GoString() string {
-   b := fmt.Appendf(nil, "%T{\n", m)
-   for _, key := range m.keys() {
-      values := m[key]
-      b = fmt.Appendf(b, "%v: {", key)
-      if len(values) >= 2 {
-         b = append(b, '\n')
-      }
-      for _, v := range values {
-         b = fmt.Appendf(b, "%#v", v)
-         if len(values) >= 2 {
-            b = append(b, ",\n"...)
-         }
-      }
-      b = append(b, "},\n"...)
-   }
-   b = append(b, '}')
-   return string(b)
 }
