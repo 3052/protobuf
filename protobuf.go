@@ -7,6 +7,80 @@ import (
    "slices"
 )
 
+func (m Message) Get(key Number) func() (Message, bool) {
+   var index int
+   return func() (Message, bool) {
+      vs := m[key]
+      for index < len(vs) {
+         index++
+         switch v := vs[index-1].(type) {
+         case Message:
+            return v, true
+         case Unknown:
+            return v.Message, true
+         }
+      }
+      return nil, false
+   }
+}
+
+func (m Message) GetBytes(key Number) func() (Bytes, bool) {
+   var index int
+   return func() (Bytes, bool) {
+      vs := m[key]
+      for index < len(vs) {
+         index++
+         switch v := vs[index-1].(type) {
+         case Bytes:
+            return v, true
+         case Unknown:
+            return v.Bytes, true
+         }
+      }
+      return nil, false
+   }
+}
+
+type Number = protowire.Number
+
+func (u Unknown) GoString() string {
+   if Length >= 0 {
+      if Length < len(u.Bytes) {
+         u.Bytes = u.Bytes[:Length]
+      }
+   }
+   b := fmt.Appendf(nil, "%T{\n", u)
+   b = fmt.Appendf(b, "%#v,\n", u.Bytes)
+   b = fmt.Appendf(b, "%#v,\n", u.Message)
+   b = append(b, '}')
+   return string(b)
+}
+
+func (u Unknown) Append(b []byte, num Number) []byte {
+   return u.Bytes.Append(b, num)
+}
+
+type Unknown struct {
+   Bytes   Bytes
+   Message Message
+}
+
+type Value interface {
+   Append([]byte, Number) []byte
+   fmt.GoStringer
+}
+
+type Varint uint64
+
+func (v Varint) Append(b []byte, num Number) []byte {
+   b = protowire.AppendTag(b, num, protowire.VarintType)
+   return protowire.AppendVarint(b, uint64(v))
+}
+
+func (v Varint) GoString() string {
+   return fmt.Sprintf("%T(%v)", v, v)
+}
+
 var Length = -1
 
 func get[T Value](m Message, key Number) func() (T, bool) {
@@ -21,16 +95,6 @@ func get[T Value](m Message, key Number) func() (T, bool) {
       }
       return *new(T), false
    }
-}
-
-func unmarshal(data []byte) Value {
-   if len(data) >= 1 {
-      m := Message{}
-      if m.Unmarshal(data) == nil {
-         return Unknown{data, m}
-      }
-   }
-   return Bytes(data)
 }
 
 type Bytes []byte
@@ -180,7 +244,6 @@ func (m Message) Unmarshal(data []byte) error {
          if err := protowire.ParseError(length); err != nil {
             return err
          }
-         v = slices.Clip(v)
          m[key] = append(m[key], unmarshal(v))
          data = data[length:]
       default:
@@ -190,76 +253,13 @@ func (m Message) Unmarshal(data []byte) error {
    return nil
 }
 
-func (m Message) Get(key Number) func() (Message, bool) {
-   var index int
-   return func() (Message, bool) {
-      vs := m[key]
-      for index < len(vs) {
-         index++
-         switch v := vs[index-1].(type) {
-         case Message:
-            return v, true
-         case Unknown:
-            return v.Message, true
-         }
-      }
-      return nil, false
-   }
-}
-
-func (m Message) GetBytes(key Number) func() (Bytes, bool) {
-   var index int
-   return func() (Bytes, bool) {
-      vs := m[key]
-      for index < len(vs) {
-         index++
-         switch v := vs[index-1].(type) {
-         case Bytes:
-            return v, true
-         case Unknown:
-            return v.Bytes, true
-         }
-      }
-      return nil, false
-   }
-}
-
-type Number = protowire.Number
-
-func (u Unknown) GoString() string {
-   if Length >= 0 {
-      if Length < len(u.Bytes) {
-         u.Bytes = u.Bytes[:Length]
+func unmarshal(data []byte) Value {
+   data = slices.Clip(data)
+   if len(data) >= 1 {
+      m := Message{}
+      if m.Unmarshal(data) == nil {
+         return Unknown{data, m}
       }
    }
-   b := fmt.Appendf(nil, "%T{\n", u)
-   b = fmt.Appendf(b, "%#v,\n", u.Bytes)
-   b = fmt.Appendf(b, "%#v,\n", u.Message)
-   b = append(b, '}')
-   return string(b)
-}
-
-func (u Unknown) Append(b []byte, num Number) []byte {
-   return u.Bytes.Append(b, num)
-}
-
-type Unknown struct {
-   Bytes   Bytes
-   Message Message
-}
-
-type Value interface {
-   Append([]byte, Number) []byte
-   fmt.GoStringer
-}
-
-type Varint uint64
-
-func (v Varint) Append(b []byte, num Number) []byte {
-   b = protowire.AppendTag(b, num, protowire.VarintType)
-   return protowire.AppendVarint(b, uint64(v))
-}
-
-func (v Varint) GoString() string {
-   return fmt.Sprintf("%T(%v)", v, v)
+   return Bytes(data)
 }
