@@ -7,6 +7,26 @@ import (
    "slices"
 )
 
+func (u Unknown) Append(b []byte, num Number) []byte {
+   if Length >= 0 {
+      return u.Message.Append(b, num)
+   }
+   return u.Bytes.Append(b, num)
+}
+
+func (u Unknown) GoString() string {
+   if Length >= 0 {
+      if Length < len(u.Bytes) {
+         u.Bytes = u.Bytes[:Length]
+      }
+   }
+   b := fmt.Appendf(nil, "%T{\n", u)
+   b = fmt.Appendf(b, "%#v,\n", u.Bytes)
+   b = fmt.Appendf(b, "%#v,\n", u.Message)
+   b = append(b, '}')
+   return string(b)
+}
+
 func (m Message) Get(key Number) func() (Message, bool) {
    var index int
    return func() (Message, bool) {
@@ -42,23 +62,6 @@ func (m Message) GetBytes(key Number) func() (Bytes, bool) {
 }
 
 type Number = protowire.Number
-
-func (u Unknown) GoString() string {
-   if Length >= 0 {
-      if Length < len(u.Bytes) {
-         u.Bytes = u.Bytes[:Length]
-      }
-   }
-   b := fmt.Appendf(nil, "%T{\n", u)
-   b = fmt.Appendf(b, "%#v,\n", u.Bytes)
-   b = fmt.Appendf(b, "%#v,\n", u.Message)
-   b = append(b, '}')
-   return string(b)
-}
-
-func (u Unknown) Append(b []byte, num Number) []byte {
-   return u.Bytes.Append(b, num)
-}
 
 type Unknown struct {
    Bytes   Bytes
