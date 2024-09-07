@@ -2,10 +2,32 @@ package protobuf
 
 import (
    "bytes"
+   "fmt"
    "google.golang.org/protobuf/testing/protopack"
    "os"
+   "reflect"
    "testing"
 )
+
+func TestSize(t *testing.T) {
+   size := reflect.TypeOf(&struct{}{}).Size()
+   for _, test := range size_tests {
+      if reflect.TypeOf(test).Size() > size {
+         fmt.Printf("*%T\n", test)
+      } else {
+         fmt.Printf("%T\n", test)
+      }
+   }
+}
+
+var size_tests = []any{
+   Bytes{},
+   Fixed32(0),
+   Fixed64(0),
+   Message{},
+   Unknown{},
+   Varint(0),
+}
 
 func TestMarshal(t *testing.T) {
    a, b := message_old(), message_new()
