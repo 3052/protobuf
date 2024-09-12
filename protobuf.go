@@ -7,6 +7,32 @@ import (
    "slices"
 )
 
+type Fixed32 uint32
+
+type Fixed64 uint64
+
+type Number = protowire.Number
+
+type Message map[Number][]Value
+
+type Value interface {
+   Append([]byte, Number) []byte
+   fmt.GoStringer
+}
+
+type Varint uint64
+
+var Length = -1
+
+type Bytes []byte
+
+type Unknown struct {
+   Bytes   Bytes
+   Message Message
+}
+
+///
+
 func (m Message) Get(key Number) func() (Message, bool) {
    var index int
    return func() (Message, bool) {
@@ -24,23 +50,6 @@ func (m Message) Get(key Number) func() (Message, bool) {
    }
 }
 
-type Fixed32 uint32
-
-type Fixed64 uint64
-
-type Message map[Number][]Value
-
-type Number = protowire.Number
-
-type Value interface {
-   Append([]byte, Number) []byte
-   fmt.GoStringer
-}
-
-type Varint uint64
-
-var Length = -1
-
 func get[T Value](m Message, key Number) func() (T, bool) {
    var index int
    return func() (T, bool) {
@@ -54,8 +63,6 @@ func get[T Value](m Message, key Number) func() (T, bool) {
       return *new(T), false
    }
 }
-
-type Bytes []byte
 
 func (u Unknown) Append(b []byte, num Number) []byte {
    if Length >= 0 {
@@ -236,11 +243,6 @@ func (m Message) GetBytes(key Number) func() (Bytes, bool) {
       }
       return nil, false
    }
-}
-
-type Unknown struct {
-   Bytes   Bytes
-   Message Message
 }
 
 func unmarshal(data []byte) Value {
