@@ -7,6 +7,36 @@ import (
    "slices"
 )
 
+func (m Message) Marshal() []byte {
+   var data []byte
+   for key, values := range m {
+      for _, v := range values {
+         data = v.Append(data, key)
+      }
+   }
+   return data
+}
+
+func (m Message) GoString() string {
+   b := fmt.Appendf(nil, "%T{\n", m)
+   for _, key := range m.keys() {
+      values := m[key]
+      b = fmt.Appendf(b, "%v: {", key)
+      if len(values) >= 2 {
+         b = append(b, '\n')
+      }
+      for _, v := range values {
+         b = fmt.Appendf(b, "%#v", v)
+         if len(values) >= 2 {
+            b = append(b, ",\n"...)
+         }
+      }
+      b = append(b, "},\n"...)
+   }
+   b = append(b, '}')
+   return string(b)
+}
+
 var Length = -1
 
 func get[T Value](m Message, key Number) func() (T, bool) {
@@ -68,26 +98,6 @@ func (f Fixed64) GoString() string {
 }
 
 type Message map[Number][]Value
-
-func (m Message) GoString() string {
-   b := fmt.Appendf(nil, "%T{\n", m)
-   for _, key := range m.keys() {
-      values := m[key]
-      b = fmt.Appendf(b, "%v: {", key)
-      if len(values) >= 2 {
-         b = append(b, '\n')
-      }
-      for _, v := range values {
-         b = fmt.Appendf(b, "%#v", v)
-         if len(values) >= 2 {
-            b = append(b, ",\n"...)
-         }
-      }
-      b = append(b, "},\n"...)
-   }
-   b = append(b, '}')
-   return string(b)
-}
 
 func (m Message) GetVarint(key Number) func() (Varint, bool) {
    return get[Varint](m, key)
@@ -191,16 +201,6 @@ func (m Message) keys() []Number {
    }
    slices.Sort(keys)
    return keys
-}
-
-func (m Message) Marshal() []byte {
-   var data []byte
-   for key, values := range m {
-      for _, v := range values {
-         data = v.Append(data, key)
-      }
-   }
-   return data
 }
 
 func (v Message) Append(b []byte, num Number) []byte {
