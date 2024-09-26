@@ -14,13 +14,13 @@
   <body>
     <nav>
         154.pages.dev/protobuf<span class="navbar-right">
-          v1.2.9 | <a href="">Root</a> | <a href="#pkg-index">Index</a></span>
+          v1.3.0 | <a href="">Root</a> | <a href="#pkg-index">Index</a></span>
       </nav>
     <main><h2 id="pkg-overview">package protobuf</h2>
 <pre class="chroma"><span class="kn">import</span> <span class="s">&#34;154.pages.dev/protobuf&#34;</span></pre>
 <h3 id="pkg-index">Index</h3>
 <ul>
-  <li><a href="#pkg-variables">Variables</a></li><li>
+  <li>
       <a href="#Bytes">type Bytes</a>
       <ul>
           <li><a href="#Bytes.Append">func (v Bytes) Append(b []byte, num Number) []byte</a></li>
@@ -44,16 +44,18 @@
   <li>
       <a href="#Message">type Message</a>
       <ul>
-          <li><a href="#Message.Add">func (m Message) Add(key Number, f func(Message))</a></li>
+          <li><a href="#Message.Add">func (m Message) Add(key Number, v Message)</a></li>
           <li><a href="#Message.AddBytes">func (m Message) AddBytes(key Number, v Bytes)</a></li>
           <li><a href="#Message.AddFixed32">func (m Message) AddFixed32(key Number, v Fixed32)</a></li>
           <li><a href="#Message.AddFixed64">func (m Message) AddFixed64(key Number, v Fixed64)</a></li>
+          <li><a href="#Message.AddFunc">func (m Message) AddFunc(key Number, f func(Message))</a></li>
           <li><a href="#Message.AddVarint">func (m Message) AddVarint(key Number, v Varint)</a></li>
           <li><a href="#Message.Append">func (v Message) Append(b []byte, num Number) []byte</a></li>
           <li><a href="#Message.Get">func (m Message) Get(key Number) func() (Message, bool)</a></li>
           <li><a href="#Message.GetBytes">func (m Message) GetBytes(key Number) func() (Bytes, bool)</a></li>
           <li><a href="#Message.GetFixed32">func (m Message) GetFixed32(key Number) func() (Fixed32, bool)</a></li>
           <li><a href="#Message.GetFixed64">func (m Message) GetFixed64(key Number) func() (Fixed64, bool)</a></li>
+          <li><a href="#Message.GetFunc">func (m Message) GetFunc(key Number, f func(Message) bool)</a></li>
           <li><a href="#Message.GetVarint">func (m Message) GetVarint(key Number) func() (Varint, bool)</a></li>
           <li><a href="#Message.GoString">func (m Message) GoString() string</a></li>
           <li><a href="#Message.Marshal">func (m Message) Marshal() []byte</a></li>
@@ -80,9 +82,7 @@
           <li><a href="#Varint.GoString">func (v Varint) GoString() string</a></li>
           </ul>
       </li>
-  </ul><h3 id="pkg-variables">Variables</h3>
-  <pre class="chroma"><span class="kd">var</span> <span id="Length"><span class="nx">Length</span></span> <span class="p">=</span> <span class="o">-</span><span class="mi">1</span></pre>
-  <h3 id="pkg-types">Types</h3>
+  </ul><h3 id="pkg-types">Types</h3>
   <h3 id="Bytes">type Bytes</h3>
     <pre class="chroma"><span class="kd">type</span> <span class="nx">Bytes</span> <span class="p">[]</span><a href="https://pkg.go.dev/builtin#byte"><span class="kt">byte</span></a></pre>
     <h4 id="Bytes.Append">func (Bytes) Append</h4>
@@ -104,13 +104,15 @@
   <h3 id="Message">type Message</h3>
     <pre class="chroma"><span class="kd">type</span> <span class="nx">Message</span> <span class="kd">map</span><span class="p">[</span><a href="#Number"><span class="nx">Number</span></a><span class="p">][]</span><a href="#Value"><span class="nx">Value</span></a></pre>
     <h4 id="Message.Add">func (Message) Add</h4>
-  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">Add</span><span class="p">(</span><span class="nx">key</span> <a href="#Number"><span class="nx">Number</span></a><span class="p">,</span> <span class="nx">f</span> <span class="kd">func</span><span class="p">(</span><a href="#Message"><span class="nx">Message</span></a><span class="p">))</span></pre>
+  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">Add</span><span class="p">(</span><span class="nx">key</span> <a href="#Number"><span class="nx">Number</span></a><span class="p">,</span> <span class="nx">v</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span></pre>
   <h4 id="Message.AddBytes">func (Message) AddBytes</h4>
   <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">AddBytes</span><span class="p">(</span><span class="nx">key</span> <a href="#Number"><span class="nx">Number</span></a><span class="p">,</span> <span class="nx">v</span> <a href="#Bytes"><span class="nx">Bytes</span></a><span class="p">)</span></pre>
   <h4 id="Message.AddFixed32">func (Message) AddFixed32</h4>
   <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">AddFixed32</span><span class="p">(</span><span class="nx">key</span> <a href="#Number"><span class="nx">Number</span></a><span class="p">,</span> <span class="nx">v</span> <a href="#Fixed32"><span class="nx">Fixed32</span></a><span class="p">)</span></pre>
   <h4 id="Message.AddFixed64">func (Message) AddFixed64</h4>
   <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">AddFixed64</span><span class="p">(</span><span class="nx">key</span> <a href="#Number"><span class="nx">Number</span></a><span class="p">,</span> <span class="nx">v</span> <a href="#Fixed64"><span class="nx">Fixed64</span></a><span class="p">)</span></pre>
+  <h4 id="Message.AddFunc">func (Message) AddFunc</h4>
+  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">AddFunc</span><span class="p">(</span><span class="nx">key</span> <a href="#Number"><span class="nx">Number</span></a><span class="p">,</span> <span class="nx">f</span> <span class="kd">func</span><span class="p">(</span><a href="#Message"><span class="nx">Message</span></a><span class="p">))</span></pre>
   <h4 id="Message.AddVarint">func (Message) AddVarint</h4>
   <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">AddVarint</span><span class="p">(</span><span class="nx">key</span> <a href="#Number"><span class="nx">Number</span></a><span class="p">,</span> <span class="nx">v</span> <a href="#Varint"><span class="nx">Varint</span></a><span class="p">)</span></pre>
   <h4 id="Message.Append">func (Message) Append</h4>
@@ -123,6 +125,8 @@
   <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">GetFixed32</span><span class="p">(</span><span class="nx">key</span> <a href="#Number"><span class="nx">Number</span></a><span class="p">)</span> <span class="kd">func</span><span class="p">()</span> <span class="p">(</span><a href="#Fixed32"><span class="nx">Fixed32</span></a><span class="p">,</span> <a href="https://pkg.go.dev/builtin#bool"><span class="kt">bool</span></a><span class="p">)</span></pre>
   <h4 id="Message.GetFixed64">func (Message) GetFixed64</h4>
   <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">GetFixed64</span><span class="p">(</span><span class="nx">key</span> <a href="#Number"><span class="nx">Number</span></a><span class="p">)</span> <span class="kd">func</span><span class="p">()</span> <span class="p">(</span><a href="#Fixed64"><span class="nx">Fixed64</span></a><span class="p">,</span> <a href="https://pkg.go.dev/builtin#bool"><span class="kt">bool</span></a><span class="p">)</span></pre>
+  <h4 id="Message.GetFunc">func (Message) GetFunc</h4>
+  <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">GetFunc</span><span class="p">(</span><span class="nx">key</span> <a href="#Number"><span class="nx">Number</span></a><span class="p">,</span> <span class="nx">f</span> <span class="kd">func</span><span class="p">(</span><a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <a href="https://pkg.go.dev/builtin#bool"><span class="kt">bool</span></a><span class="p">)</span></pre>
   <h4 id="Message.GetVarint">func (Message) GetVarint</h4>
   <pre class="chroma"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <a href="#Message"><span class="nx">Message</span></a><span class="p">)</span> <span class="nf">GetVarint</span><span class="p">(</span><span class="nx">key</span> <a href="#Number"><span class="nx">Number</span></a><span class="p">)</span> <span class="kd">func</span><span class="p">()</span> <span class="p">(</span><a href="#Varint"><span class="nx">Varint</span></a><span class="p">,</span> <a href="https://pkg.go.dev/builtin#bool"><span class="kt">bool</span></a><span class="p">)</span></pre>
   <h4 id="Message.GoString">func (Message) GoString</h4>
