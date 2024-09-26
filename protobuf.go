@@ -210,16 +210,6 @@ func (m Message) AddBytes(key Number, v Bytes) {
    m[key] = append(m[key], v)
 }
 
-func (m Message) Add(key Number, v Message) {
-   m[key] = append(m[key], v)
-}
-
-func (m Message) AddFunc(key Number, f func(Message)) {
-   v := Message{}
-   f(v)
-   m[key] = append(m[key], v)
-}
-
 func (m Message) GetVarint(key Number) func() (Varint, bool) {
    return get[Varint](m, key)
 }
@@ -249,6 +239,10 @@ func (m Message) GetBytes(key Number) func() (Bytes, bool) {
    }
 }
 
+func (m Message) Add(key Number, v Message) {
+   m[key] = append(m[key], v)
+}
+
 func (m Message) Get(key Number) func() (Message, bool) {
    var index int
    return func() (Message, bool) {
@@ -266,15 +260,8 @@ func (m Message) Get(key Number) func() (Message, bool) {
    }
 }
 
-func (m Message) GetFunc(key Number, f func(Message) bool) {
-   next := m.Get(key)
-   for {
-      v, ok := next()
-      if !ok {
-         break
-      }
-      if !f(v) {
-         break
-      }
-   }
+func (m Message) Func(key Number, f func(Message)) {
+   v := Message{}
+   f(v)
+   m[key] = append(m[key], v)
 }
