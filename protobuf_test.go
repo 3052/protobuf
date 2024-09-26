@@ -66,8 +66,8 @@ func message_old() []byte {
 
 func message_new() []byte {
    m := Message{}
-   m.AddFunc(4, func(m Message) {
-      m.AddFunc(1, func(m Message) {
+   m.Add(4, func(m Message) {
+      m.Add(1, func(m Message) {
          m.AddVarint(10, 30)
       })
    })
@@ -90,7 +90,7 @@ func message_new() []byte {
          m.AddBytes(15, []byte(ext))
       }
       for _, feat := range feats {
-         m.AddFunc(26, func(m Message) {
+         m.Add(26, func(m Message) {
             m.AddBytes(1, []byte(feat))
          })
       }
