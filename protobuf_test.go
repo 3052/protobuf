@@ -2,15 +2,22 @@ package protobuf
 
 import (
    "bytes"
+   "fmt"
    "google.golang.org/protobuf/testing/protopack"
    "os"
    "testing"
 )
 
+func TestBytes(t *testing.T) {
+   fmt.Printf("%#v\n", Bytes("hello"))
+   fmt.Printf("%#v\n", Bytes{'h'})
+   fmt.Printf("%#v\n", Bytes{})
+}
+
 func TestMarshal(t *testing.T) {
    a, b := message_old(), message_new()
    if !bytes.Equal(a, b) {
-      t.Fatalf("\n% x\n% x", a, b)
+      t.Fatalf("\n%q\n%q", a, b)
    }
 }
 
@@ -72,8 +79,7 @@ func message_new() []byte {
       })
    })
    m.AddVarint(14, 3)
-   m.AddBytes(18, func() []byte {
-      m := Message{}
+   m.Add(18, func(m Message) {
       m.AddVarint(1, 3)
       m.AddVarint(2, 2)
       m.AddVarint(3, 2)
@@ -94,21 +100,9 @@ func message_new() []byte {
             m.AddBytes(1, []byte(feat))
          })
       }
-      var data []byte
-      for _, key := range m.keys() {
-         for _, v := range m[key] {
-            data = v.Append(data, key)
-         }
-      }
-      return data
-   }())
-   var data []byte
-   for _, key := range m.keys() {
-      for _, v := range m[key] {
-         data = v.Append(data, key)
-      }
-   }
-   return data
+   })
+   Deterministic = true
+   return m.Marshal()
 }
 
 func TestUnmarshal(t *testing.T) {
