@@ -97,17 +97,6 @@ func unmarshal(data []byte) Value {
    return Bytes(data)
 }
 
-func (v Bytes) Append(b []byte, num Number) []byte {
-   b = protowire.AppendTag(b, num, protowire.BytesType)
-   return protowire.AppendBytes(b, v)
-}
-
-type Bytes []byte
-
-func (b Bytes) GoString() string {
-   return fmt.Sprintf("%T(%q)", b, []byte(b))
-}
-
 func (f Fixed32) GoString() string {
    return fmt.Sprintf("%T(%v)", f, f)
 }
@@ -206,39 +195,6 @@ func (m Message) AddFixed32(key Number, v Fixed32) {
    m[key] = append(m[key], v)
 }
 
-func (m Message) AddBytes(key Number, v Bytes) {
-   m[key] = append(m[key], v)
-}
-
-func (m Message) GetVarint(key Number) func() (Varint, bool) {
-   return get[Varint](m, key)
-}
-
-func (m Message) GetFixed64(key Number) func() (Fixed64, bool) {
-   return get[Fixed64](m, key)
-}
-
-func (m Message) GetFixed32(key Number) func() (Fixed32, bool) {
-   return get[Fixed32](m, key)
-}
-
-func (m Message) GetBytes(key Number) func() (Bytes, bool) {
-   var index int
-   return func() (Bytes, bool) {
-      vs := m[key]
-      for index < len(vs) {
-         index++
-         switch v := vs[index-1].(type) {
-         case Bytes:
-            return v, true
-         case Unknown:
-            return v.Bytes, true
-         }
-      }
-      return nil, false
-   }
-}
-
 func (m Message) Get(key Number) func() (Message, bool) {
    var index int
    return func() (Message, bool) {
@@ -264,4 +220,52 @@ func (m Message) Add(key Number, f func(Message)) {
 
 func (m Message) AddMessage(key Number, v Message) {
    m[key] = append(m[key], v)
+}
+
+func (m Message) GetVarint(key Number) func() (Varint, bool) {
+   return get[Varint](m, key)
+}
+
+func (m Message) GetFixed64(key Number) func() (Fixed64, bool) {
+   return get[Fixed64](m, key)
+}
+
+func (m Message) GetFixed32(key Number) func() (Fixed32, bool) {
+   return get[Fixed32](m, key)
+}
+
+func (v Bytes) Append(b []byte, num Number) []byte {
+   b = protowire.AppendTag(b, num, protowire.BytesType)
+   return protowire.AppendBytes(b, v)
+}
+
+func (b Bytes) GoString() string {
+   return fmt.Sprintf("%T(%q)", b, []byte(b))
+}
+
+func (m Message) AddBytes(key Number, v Bytes) {
+   m[key] = append(m[key], v)
+}
+
+func (m Message) GetBytes(key Number) func() (Bytes, bool) {
+   var index int
+   return func() (Bytes, bool) {
+      vs := m[key]
+      for index < len(vs) {
+         index++
+         switch v := vs[index-1].(type) {
+         case Bytes:
+            return v, true
+         case Unknown:
+            return v.Bytes, true
+         }
+      }
+      return nil, false
+   }
+}
+
+type Bytes []byte
+
+func (b Bytes) MarshalText() ([]byte, error) {
+   return b, nil
 }
