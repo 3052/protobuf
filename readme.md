@@ -14,3 +14,10 @@ This module parses and formats the raw wire encoding.
 - <https://wikipedia.org/wiki/Protocol_Buffers>
 
 [1]://youtube.com/watch?v=4R2St68Kl-g
+
+## prior art
+
+- https://github.com/VictoriaMetrics/easyproto/issues/5
+- https://github.com/philpearl/plenc/issues/9
+- https://github.com/richardartoul/molecule/issues/24
+- https://github.com/segmentio/encoding/issues/135

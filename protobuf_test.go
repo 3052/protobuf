@@ -2,10 +2,17 @@ package protobuf
 
 import (
    "bytes"
+   "fmt"
    "google.golang.org/protobuf/testing/protopack"
    "os"
    "testing"
 )
+
+func TestBytes(t *testing.T) {
+   fmt.Printf("%#v\n", Bytes("hello"))
+   fmt.Printf("%#v\n", Bytes{'h'})
+   fmt.Printf("%#v\n", Bytes{})
+}
 
 func TestMarshal(t *testing.T) {
    a, b := message_old(), message_new()
