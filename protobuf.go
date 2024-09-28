@@ -7,6 +7,59 @@ import (
    "slices"
 )
 
+func (m Message) GoString() string {
+   b := fmt.Appendf(nil, "%T{\n", m)
+   for _, key := range m.keys() {
+      values := m[key]
+      b = fmt.Appendf(b, "%v: {", key)
+      if len(values) >= 2 {
+         b = append(b, '\n')
+      }
+      for _, v := range values {
+         b = fmt.Appendf(b, "%#v", v)
+         if len(values) >= 2 {
+            b = append(b, ",\n"...)
+         }
+      }
+      b = append(b, "},\n"...)
+   }
+   b = append(b, '}')
+   return string(b)
+}
+
+func (m Message) keys() []Number {
+   var keys []Number
+   for key := range m {
+      keys = append(keys, key)
+   }
+   slices.Sort(keys)
+   return keys
+}
+
+func (m Message) Append(data []byte, key Number) []byte {
+   data = protowire.AppendTag(data, key, protowire.BytesType)
+   return protowire.AppendBytes(data, m.Marshal())
+}
+
+var Deterministic bool
+
+func (m Message) Marshal() []byte {
+   var data []byte
+   if Deterministic {
+      for _, key := range m.keys() {
+         for _, v := range m[key] {
+            data = v.Append(data, key)
+         }
+      }
+   } else {
+      for key := range m {
+         for _, v := range m[key] {
+            data = v.Append(data, key)
+         }
+      }
+   }
+   return data
+}
 func get[T Value](m Message, key Number) func() (T, bool) {
    var index int
    return func() (T, bool) {
@@ -143,26 +196,6 @@ func (m Message) GetFixed64(key Number) func() (Fixed64, bool) {
 
 func (m Message) GetFixed32(key Number) func() (Fixed32, bool) {
    return get[Fixed32](m, key)
-}
-
-func (m Message) GoString() string {
-   b := fmt.Appendf(nil, "%T{\n", m)
-   for _, key := range m.keys() {
-      values := m[key]
-      b = fmt.Appendf(b, "%v: {", key)
-      if len(values) >= 2 {
-         b = append(b, '\n')
-      }
-      for _, v := range values {
-         b = fmt.Appendf(b, "%#v", v)
-         if len(values) >= 2 {
-            b = append(b, ",\n"...)
-         }
-      }
-      b = append(b, "},\n"...)
-   }
-   b = append(b, '}')
-   return string(b)
 }
 
 type Number = protowire.Number
