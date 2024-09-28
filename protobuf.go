@@ -233,15 +233,6 @@ func (u Unknown) Append(data []byte, key Number) []byte {
    return u.Bytes.Append(data, key)
 }
 
-func (m Message) keys() []Number {
-   var keys []Number
-   for key := range m {
-      keys = append(keys, key)
-   }
-   slices.Sort(keys)
-   return keys
-}
-
 func (f Fixed32) Append(data []byte, key Number) []byte {
    data = protowire.AppendTag(data, key, protowire.Fixed32Type)
    return protowire.AppendFixed32(data, uint32(f))
@@ -255,32 +246,4 @@ func (f Fixed64) Append(data []byte, key Number) []byte {
 func (b Bytes) Append(data []byte, key Number) []byte {
    data = protowire.AppendTag(data, key, protowire.BytesType)
    return protowire.AppendBytes(data, b)
-}
-
-func (m Message) Append(data []byte, key Number) []byte {
-   data = protowire.AppendTag(data, key, protowire.BytesType)
-   return protowire.AppendBytes(data, m.Marshal())
-}
-
-var Deterministic bool
-
-func (m Message) field(data []byte, key Number) []byte {
-   for _, v := range m[key] {
-      data = v.Append(data, key)
-   }
-   return data
-}
-
-func (m Message) Marshal() []byte {
-   var data []byte
-   if Deterministic {
-      for _, key := range m.keys() { 
-         data = m.field(data, key)
-      }
-   } else {
-      for key := range m {
-         data = m.field(data, key)
-      }
-   }
-   return data
 }
