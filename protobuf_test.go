@@ -8,7 +8,7 @@ import (
    "testing"
 )
 
-func message_new() []byte {
+func message_new() Sort {
    ascend := slices.Sort[[]Number]
    return Sort{ascend, Message{
       4: {Message{
@@ -44,17 +44,18 @@ func message_new() []byte {
             },
          },
       }}},
-   }}.Marshal()
+   }}
 }
 
 func TestMarshal(t *testing.T) {
-   a, b := message_old(), message_new()
+   a := message_old().Marshal()
+   b := message_new().Marshal()
    if !bytes.Equal(a, b) {
       t.Fatalf("\n%q\n%q", a, b)
    }
 }
 
-func message_old() []byte {
+func message_old() protopack.Message {
    return protopack.Message{
       protopack.Tag{4, protopack.BytesType}, protopack.LengthPrefix{
          protopack.Tag{1, protopack.BytesType}, protopack.LengthPrefix{
@@ -83,7 +84,7 @@ func message_old() []byte {
             protopack.Tag{1, protopack.BytesType}, protopack.String("world"),
          },
       },
-   }.Marshal()
+   }
 }
 
 func TestUnmarshal(t *testing.T) {

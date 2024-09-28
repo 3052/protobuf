@@ -32,11 +32,33 @@ func unmarshal(data []byte) Value {
    return Bytes(data)
 }
 
+type Bytes []byte
+
+func (b Bytes) Append(data []byte, key Number) []byte {
+   data = protowire.AppendTag(data, key, protowire.BytesType)
+   return protowire.AppendBytes(data, b)
+}
+
+func (b Bytes) GoString() string {
+   switch len(b) {
+   case 0:
+      return fmt.Sprintf("%T{}", b)
+   case 1:
+      return fmt.Sprintf("%T{%q}", b, b[0])
+   }
+   return fmt.Sprintf("%T(%q)", b, []byte(b))
+}
+
+type Fixed32 uint32
+
 func (f Fixed32) GoString() string {
    return fmt.Sprintf("%T(%v)", f, f)
 }
 
-type Fixed32 uint32
+func (f Fixed32) Append(data []byte, key Number) []byte {
+   data = protowire.AppendTag(data, key, protowire.Fixed32Type)
+   return protowire.AppendFixed32(data, uint32(f))
+}
 
 type Fixed64 uint64
 
@@ -44,7 +66,39 @@ func (f Fixed64) GoString() string {
    return fmt.Sprintf("%T(%v)", f, f)
 }
 
+func (f Fixed64) Append(data []byte, key Number) []byte {
+   data = protowire.AppendTag(data, key, protowire.Fixed64Type)
+   return protowire.AppendFixed64(data, uint64(f))
+}
+
 type Message map[Number][]Value
+
+func (m Message) GoString() string {
+   keys := m.keys()
+   slices.Sort(keys)
+   b := fmt.Appendf(nil, "%T{\n", m)
+   for _, key := range keys {
+      values := m[key]
+      b = fmt.Appendf(b, "%v: {", key)
+      if len(values) >= 2 {
+         b = append(b, '\n')
+      }
+      for _, v := range values {
+         b = fmt.Appendf(b, "%#v", v)
+         if len(values) >= 2 {
+            b = append(b, ",\n"...)
+         }
+      }
+      b = append(b, "},\n"...)
+   }
+   b = append(b, '}')
+   return string(b)
+}
+
+func (m Message) Append(data []byte, key Number) []byte {
+   data = protowire.AppendTag(data, key, protowire.BytesType)
+   return protowire.AppendBytes(data, m.Marshal())
+}
 
 func (m Message) Unmarshal(data []byte) error {
    for len(data) >= 1 {
@@ -145,10 +199,6 @@ func (m Message) GetFixed32(key Number) func() (Fixed32, bool) {
    return get[Fixed32](m, key)
 }
 
-type Number = protowire.Number
-
-type Bytes []byte
-
 func (m Message) AddBytes(key Number, v Bytes) {
    m[key] = append(m[key], v)
 }
@@ -170,56 +220,6 @@ func (m Message) GetBytes(key Number) func() (Bytes, bool) {
    }
 }
 
-func (b Bytes) GoString() string {
-   switch len(b) {
-   case 0:
-      return fmt.Sprintf("%T{}", b)
-   case 1:
-      return fmt.Sprintf("%T{%q}", b, b[0])
-   }
-   return fmt.Sprintf("%T(%q)", b, []byte(b))
-}
-
-type Varint uint64
-
-func (v Varint) GoString() string {
-   return fmt.Sprintf("%T(%v)", v, v)
-}
-
-type Value interface {
-   Append([]byte, Number) []byte
-   fmt.GoStringer
-}
-
-func (v Varint) Append(data []byte, key Number) []byte {
-   data = protowire.AppendTag(data, key, protowire.VarintType)
-   return protowire.AppendVarint(data, uint64(v))
-}
-
-func (u Unknown) Append(data []byte, key Number) []byte {
-   return u.Bytes.Append(data, key)
-}
-
-func (f Fixed32) Append(data []byte, key Number) []byte {
-   data = protowire.AppendTag(data, key, protowire.Fixed32Type)
-   return protowire.AppendFixed32(data, uint32(f))
-}
-
-func (f Fixed64) Append(data []byte, key Number) []byte {
-   data = protowire.AppendTag(data, key, protowire.Fixed64Type)
-   return protowire.AppendFixed64(data, uint64(f))
-}
-
-func (b Bytes) Append(data []byte, key Number) []byte {
-   data = protowire.AppendTag(data, key, protowire.BytesType)
-   return protowire.AppendBytes(data, b)
-}
-
-type Unknown struct {
-   Bytes   Bytes
-   Message Message
-}
-
 func (m Message) Marshal() []byte {
    var data []byte
    for key := range m {
@@ -231,50 +231,27 @@ func (m Message) Marshal() []byte {
 }
 
 func (m Message) keys() []Number {
-   var keys []Number
+   keys := make([]Number, 0, len(m))
    for key := range m {
       keys = append(keys, key)
    }
    return keys
 }
 
-func (m Message) GoString() string {
-   keys := m.keys()
-   slices.Sort(keys)
-   b := fmt.Appendf(nil, "%T{\n", m)
-   for _, key := range keys {
-      values := m[key]
-      b = fmt.Appendf(b, "%v: {", key)
-      if len(values) >= 2 {
-         b = append(b, '\n')
-      }
-      for _, v := range values {
-         b = fmt.Appendf(b, "%#v", v)
-         if len(values) >= 2 {
-            b = append(b, ",\n"...)
-         }
-      }
-      b = append(b, "},\n"...)
-   }
-   b = append(b, '}')
-   return string(b)
-}
-
-func (u Unknown) GoString() string {
-   b := fmt.Appendf(nil, "%T{\n", u)
-   b = fmt.Appendf(b, "%#v,\n", u.Bytes)
-   b = fmt.Appendf(b, "%#v,\n", u.Message)
-   b = append(b, '}')
-   return string(b)
-}
-
-func (s Sort) GoString() string {
-   return s.Message.GoString()
-}
+type Number = protowire.Number
 
 type Sort struct {
    Sort    func([]Number)
    Message Message
+}
+
+func (s Sort) Append(data []byte, key Number) []byte {
+   data = protowire.AppendTag(data, key, protowire.BytesType)
+   return protowire.AppendBytes(data, s.Marshal())
+}
+
+func (s Sort) GoString() string {
+   return s.Message.GoString()
 }
 
 func (s Sort) Marshal() []byte {
@@ -289,12 +266,35 @@ func (s Sort) Marshal() []byte {
    return data
 }
 
-func (s Sort) Append(data []byte, key Number) []byte {
-   data = protowire.AppendTag(data, key, protowire.BytesType)
-   return protowire.AppendBytes(data, s.Marshal())
+type Unknown struct {
+   Bytes   Bytes
+   Message Message
 }
 
-func (m Message) Append(data []byte, key Number) []byte {
-   data = protowire.AppendTag(data, key, protowire.BytesType)
-   return protowire.AppendBytes(data, m.Marshal())
+func (u Unknown) Append(data []byte, key Number) []byte {
+   return u.Bytes.Append(data, key)
+}
+
+func (u Unknown) GoString() string {
+   b := fmt.Appendf(nil, "%T{\n", u)
+   b = fmt.Appendf(b, "%#v,\n", u.Bytes)
+   b = fmt.Appendf(b, "%#v,\n", u.Message)
+   b = append(b, '}')
+   return string(b)
+}
+
+type Value interface {
+   Append([]byte, Number) []byte
+   fmt.GoStringer
+}
+
+type Varint uint64
+
+func (v Varint) Append(data []byte, key Number) []byte {
+   data = protowire.AppendTag(data, key, protowire.VarintType)
+   return protowire.AppendVarint(data, uint64(v))
+}
+
+func (v Varint) GoString() string {
+   return fmt.Sprintf("%T(%v)", v, v)
 }
