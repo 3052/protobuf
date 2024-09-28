@@ -7,59 +7,6 @@ import (
    "slices"
 )
 
-func (m Message) GoString() string {
-   b := fmt.Appendf(nil, "%T{\n", m)
-   for _, key := range m.keys() {
-      values := m[key]
-      b = fmt.Appendf(b, "%v: {", key)
-      if len(values) >= 2 {
-         b = append(b, '\n')
-      }
-      for _, v := range values {
-         b = fmt.Appendf(b, "%#v", v)
-         if len(values) >= 2 {
-            b = append(b, ",\n"...)
-         }
-      }
-      b = append(b, "},\n"...)
-   }
-   b = append(b, '}')
-   return string(b)
-}
-
-func (m Message) keys() []Number {
-   var keys []Number
-   for key := range m {
-      keys = append(keys, key)
-   }
-   slices.Sort(keys)
-   return keys
-}
-
-func (m Message) Append(data []byte, key Number) []byte {
-   data = protowire.AppendTag(data, key, protowire.BytesType)
-   return protowire.AppendBytes(data, m.Marshal())
-}
-
-var Deterministic bool
-
-func (m Message) Marshal() []byte {
-   var data []byte
-   if Deterministic {
-      for _, key := range m.keys() {
-         for _, v := range m[key] {
-            data = v.Append(data, key)
-         }
-      }
-   } else {
-      for key := range m {
-         for _, v := range m[key] {
-            data = v.Append(data, key)
-         }
-      }
-   }
-   return data
-}
 func get[T Value](m Message, key Number) func() (T, bool) {
    var index int
    return func() (T, bool) {
@@ -200,19 +147,6 @@ func (m Message) GetFixed32(key Number) func() (Fixed32, bool) {
 
 type Number = protowire.Number
 
-type Unknown struct {
-   Bytes   Bytes
-   Message Message
-}
-
-func (u Unknown) GoString() string {
-   b := fmt.Appendf(nil, "%T{\n", u)
-   b = fmt.Appendf(b, "%#v,\n", u.Bytes)
-   b = fmt.Appendf(b, "%#v,\n", u.Message)
-   b = append(b, '}')
-   return string(b)
-}
-
 type Bytes []byte
 
 func (m Message) AddBytes(key Number, v Bytes) {
@@ -279,4 +213,88 @@ func (f Fixed64) Append(data []byte, key Number) []byte {
 func (b Bytes) Append(data []byte, key Number) []byte {
    data = protowire.AppendTag(data, key, protowire.BytesType)
    return protowire.AppendBytes(data, b)
+}
+
+type Unknown struct {
+   Bytes   Bytes
+   Message Message
+}
+
+func (m Message) Marshal() []byte {
+   var data []byte
+   for key := range m {
+      for _, v := range m[key] {
+         data = v.Append(data, key)
+      }
+   }
+   return data
+}
+
+func (m Message) keys() []Number {
+   var keys []Number
+   for key := range m {
+      keys = append(keys, key)
+   }
+   return keys
+}
+
+func (m Message) GoString() string {
+   keys := m.keys()
+   slices.Sort(keys)
+   b := fmt.Appendf(nil, "%T{\n", m)
+   for _, key := range keys {
+      values := m[key]
+      b = fmt.Appendf(b, "%v: {", key)
+      if len(values) >= 2 {
+         b = append(b, '\n')
+      }
+      for _, v := range values {
+         b = fmt.Appendf(b, "%#v", v)
+         if len(values) >= 2 {
+            b = append(b, ",\n"...)
+         }
+      }
+      b = append(b, "},\n"...)
+   }
+   b = append(b, '}')
+   return string(b)
+}
+
+func (u Unknown) GoString() string {
+   b := fmt.Appendf(nil, "%T{\n", u)
+   b = fmt.Appendf(b, "%#v,\n", u.Bytes)
+   b = fmt.Appendf(b, "%#v,\n", u.Message)
+   b = append(b, '}')
+   return string(b)
+}
+
+func (s Sort) GoString() string {
+   return s.Message.GoString()
+}
+
+type Sort struct {
+   Sort    func([]Number)
+   Message Message
+}
+
+func (s Sort) Marshal() []byte {
+   keys := s.Message.keys()
+   s.Sort(keys)
+   var data []byte
+   for _, key := range keys {
+      for _, v := range s.Message[key] {
+         data = v.Append(data, key)
+      }
+   }
+   return data
+}
+
+func (s Sort) Append(data []byte, key Number) []byte {
+   data = protowire.AppendTag(data, key, protowire.BytesType)
+   return protowire.AppendBytes(data, s.Marshal())
+}
+
+func (m Message) Append(data []byte, key Number) []byte {
+   data = protowire.AppendTag(data, key, protowire.BytesType)
+   return protowire.AppendBytes(data, m.Marshal())
 }
