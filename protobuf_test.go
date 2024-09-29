@@ -4,47 +4,51 @@ import (
    "bytes"
    "google.golang.org/protobuf/testing/protopack"
    "os"
-   "slices"
    "testing"
 )
 
-func message_new() Sort {
-   ascend := slices.Sort[[]Number]
-   return Sort{ascend, Message{
-      4: {Message{
-         1: {Message{
-            10: {Varint(30)},
+func message_new() Unknown {
+   return Unknown{
+      nil,
+      Message{
+         4: {Message{
+            1: {Message{
+               10: {Varint(30)},
+            }},
          }},
-      }},
-      14: {Varint(3)},
-      18: {Sort{ascend, Message{
-         1: {Varint(3)},
-         2: {Varint(2)},
-         3: {Varint(2)},
-         4: {Varint(2)},
-         5: {Varint(1)},
-         6: {Varint(1)},
-         7: {Varint(420)},
-         8: {Varint(196609)},
-         9: {
-            Bytes("hello"),
-            Bytes("world"),
-         },
-         11: {Bytes("hello")},
-         15: {
-            Bytes("hello"),
-            Bytes("world"),
-         },
-         26: {
+         14: {Varint(3)},
+         18: {Unknown{
+            nil,
             Message{
-               1: {Bytes("hello")},
+               1: {Varint(3)},
+               2: {Varint(2)},
+               3: {Varint(2)},
+               4: {Varint(2)},
+               5: {Varint(1)},
+               6: {Varint(1)},
+               7: {Varint(420)},
+               8: {Varint(196609)},
+               9: {
+                  Bytes("hello"),
+                  Bytes("world"),
+               },
+               11: {Bytes("hello")},
+               15: {
+                  Bytes("hello"),
+                  Bytes("world"),
+               },
+               26: {
+                  Message{
+                     1: {Bytes("hello")},
+                  },
+                  Message{
+                     1: {Bytes("world")},
+                  },
+               },
             },
-            Message{
-               1: {Bytes("world")},
-            },
-         },
-      }}},
-   }}
+         }},
+      },
+   }
 }
 
 func TestMarshal(t *testing.T) {
