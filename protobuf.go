@@ -21,17 +21,6 @@ func get[T Value](m Message, key Number) func() (T, bool) {
    }
 }
 
-func unmarshal(data []byte) Value {
-   data = slices.Clip(data)
-   if len(data) >= 1 {
-      m := Message{}
-      if m.Unmarshal(data) == nil {
-         return Unknown{data, m}
-      }
-   }
-   return Bytes(data)
-}
-
 type Bytes []byte
 
 func (b Bytes) Append(data []byte, key Number) []byte {
@@ -266,23 +255,6 @@ func (s Sort) Marshal() []byte {
    return data
 }
 
-type Unknown struct {
-   Bytes   Bytes
-   Message Message
-}
-
-func (u Unknown) Append(data []byte, key Number) []byte {
-   return u.Bytes.Append(data, key)
-}
-
-func (u Unknown) GoString() string {
-   b := fmt.Appendf(nil, "%T{\n", u)
-   b = fmt.Appendf(b, "%#v,\n", u.Bytes)
-   b = fmt.Appendf(b, "%#v,\n", u.Message)
-   b = append(b, '}')
-   return string(b)
-}
-
 type Value interface {
    Append([]byte, Number) []byte
    fmt.GoStringer
@@ -297,4 +269,32 @@ func (v Varint) Append(data []byte, key Number) []byte {
 
 func (v Varint) GoString() string {
    return fmt.Sprintf("%T(%v)", v, v)
+}
+
+func (u Unknown) GoString() string {
+   b := fmt.Appendf(nil, "%T{\n", u)
+   b = fmt.Appendf(b, "%#v,\n", u.Bytes)
+   b = fmt.Appendf(b, "%#v,\n", u.Message)
+   b = append(b, '}')
+   return string(b)
+}
+
+type Unknown struct {
+   Bytes   Bytes
+   Message Message
+}
+
+func unmarshal(data []byte) Value {
+   data = slices.Clip(data)
+   if len(data) >= 1 {
+      m := Message{}
+      if m.Unmarshal(data) == nil {
+         return Unknown{data, m}
+      }
+   }
+   return Bytes(data)
+}
+
+func (u Unknown) Append(data []byte, key Number) []byte {
+   return u.Bytes.Append(data, key)
 }
