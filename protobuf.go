@@ -240,24 +240,6 @@ type Unknown struct {
    Message Message
 }
 
-func (u Unknown) Marshal() []byte {
-   var data []byte
-   for _, key := range u.Message.keys() {
-      for _, v := range u.Message[key] {
-         data = v.Append(data, key)
-      }
-   }
-   return data
-}
-
-func (u Unknown) Append(data []byte, key Number) []byte {
-   if len(u.Bytes) >= 1 {
-      return u.Bytes.Append(data, key)
-   }
-   data = protowire.AppendTag(data, key, protowire.BytesType)
-   return protowire.AppendBytes(data, u.Marshal())
-}
-
 type Value interface {
    Append([]byte, Number) []byte
    fmt.GoStringer
@@ -283,4 +265,22 @@ func (v Varint) Append(data []byte, key Number) []byte {
 
 func (v Varint) GoString() string {
    return fmt.Sprintf("%T(%v)", v, v)
+}
+
+func (u Unknown) Marshal() []byte {
+   if len(u.Bytes) >= 1 {
+      return u.Bytes
+   }
+   var data []byte
+   for _, key := range u.Message.keys() {
+      for _, v := range u.Message[key] {
+         data = v.Append(data, key)
+      }
+   }
+   return data
+}
+
+func (u Unknown) Append(data []byte, key Number) []byte {
+   data = protowire.AppendTag(data, key, protowire.BytesType)
+   return protowire.AppendBytes(data, u.Marshal())
 }
