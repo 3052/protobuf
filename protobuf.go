@@ -6,6 +6,16 @@ import (
    "slices"
 )
 
+func (b Bytes) GoString() string {
+   switch len(b) {
+   case 0:
+      return fmt.Sprintf("%T(nil)", b)
+   case 1:
+      return fmt.Sprintf("%T{%q}", b, b[0])
+   }
+   return fmt.Sprintf("%T(%q)", b, []byte(b))
+}
+
 func (m Message) Unmarshal(data []byte) error {
    for len(data) >= 1 {
       key, wire_type, length := protowire.ConsumeTag(data)
@@ -73,16 +83,6 @@ type Bytes []byte
 func (b Bytes) Append(data []byte, key Number) []byte {
    data = protowire.AppendTag(data, key, protowire.BytesType)
    return protowire.AppendBytes(data, b)
-}
-
-func (b Bytes) GoString() string {
-   switch len(b) {
-   case 0:
-      return fmt.Sprintf("%T{}", b)
-   case 1:
-      return fmt.Sprintf("%T{%q}", b, b[0])
-   }
-   return fmt.Sprintf("%T(%q)", b, []byte(b))
 }
 
 type Fixed32 uint32
