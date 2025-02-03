@@ -21,6 +21,8 @@ func (u Unknown) Append(data []byte, key Number) []byte {
    return protowire.AppendBytes(data, u.Marshal())
 }
 
+type Bytes []byte
+
 ///
 
 func (m Message) Unmarshal(data []byte) error {
@@ -84,8 +86,6 @@ func get[T Value](m Message, key Number) func() (T, bool) {
       return *new(T), false
    }
 }
-
-type Bytes []byte
 
 func (b Bytes) Append(data []byte, key Number) []byte {
    data = protowire.AppendTag(data, key, protowire.BytesType)
