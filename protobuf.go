@@ -16,6 +16,13 @@ func (b Bytes) GoString() string {
    return fmt.Sprintf("%T(%q)", b, []byte(b))
 }
 
+func (u Unknown) Append(data []byte, key Number) []byte {
+   data = protowire.AppendTag(data, key, protowire.BytesType)
+   return protowire.AppendBytes(data, u.Marshal())
+}
+
+///
+
 func (m Message) Unmarshal(data []byte) error {
    for len(data) >= 1 {
       key, wire_type, length := protowire.ConsumeTag(data)
@@ -278,9 +285,4 @@ func (u Unknown) Marshal() []byte {
       }
    }
    return data
-}
-
-func (u Unknown) Append(data []byte, key Number) []byte {
-   data = protowire.AppendTag(data, key, protowire.BytesType)
-   return protowire.AppendBytes(data, u.Marshal())
 }
