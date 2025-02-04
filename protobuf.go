@@ -6,6 +6,15 @@ import (
    "slices"
 )
 
+func (m Message) keys() []Number {
+   keys := make([]Number, 0, len(m))
+   for key := range m {
+      keys = append(keys, key)
+   }
+   slices.Sort(keys)
+   return keys
+}
+
 func (b Bytes) Append(data []byte, key Number) []byte {
    data = protowire.AppendTag(data, key, protowire.BytesType)
    return protowire.AppendBytes(data, b)
@@ -160,7 +169,25 @@ func (f Fixed64) GoString() string {
    return fmt.Sprintf("%T(%v)", f, f)
 }
 
-///
+func (m Message) GoString() string {
+   b := fmt.Appendf(nil, "%T{\n", m)
+   for _, key := range m.keys() {
+      values := m[key]
+      b = fmt.Appendf(b, "%v: {", key)
+      if len(values) >= 2 {
+         b = append(b, '\n')
+      }
+      for _, value0 := range values {
+         b = fmt.Appendf(b, "%#v", value0)
+         if len(values) >= 2 {
+            b = append(b, ",\n"...)
+         }
+      }
+      b = append(b, "},\n"...)
+   }
+   b = append(b, '}')
+   return string(b)
+}
 
 func (m Message) Unmarshal(data []byte) error {
    for len(data) >= 1 {
@@ -213,57 +240,29 @@ func (m Message) Unmarshal(data []byte) error {
 func get[T Value](m Message, key Number) func() (T, bool) {
    var index int
    return func() (T, bool) {
-      vs := m[key]
-      for index < len(vs) {
+      values := m[key]
+      for index < len(values) {
          index++
-         if v, ok := vs[index-1].(T); ok {
-            return v, true
+         value0, ok := values[index-1].(T)
+         if ok {
+            return value0, true
          }
       }
       return *new(T), false
    }
 }
 
-func (m Message) keys() []Number {
-   keys := make([]Number, 0, len(m))
-   for key := range m {
-      keys = append(keys, key)
-   }
-   slices.Sort(keys)
-   return keys
-}
-
-func (m Message) GoString() string {
-   b := fmt.Appendf(nil, "%T{\n", m)
-   for _, key := range m.keys() {
-      values := m[key]
-      b = fmt.Appendf(b, "%v: {", key)
-      if len(values) >= 2 {
-         b = append(b, '\n')
-      }
-      for _, v := range values {
-         b = fmt.Appendf(b, "%#v", v)
-         if len(values) >= 2 {
-            b = append(b, ",\n"...)
-         }
-      }
-      b = append(b, "},\n"...)
-   }
-   b = append(b, '}')
-   return string(b)
-}
-
 func (m Message) Get(key Number) func() (Message, bool) {
    var index int
    return func() (Message, bool) {
-      vs := m[key]
-      for index < len(vs) {
+      values := m[key]
+      for index < len(values) {
          index++
-         switch v := vs[index-1].(type) {
+         switch value0 := values[index-1].(type) {
          case Message:
-            return v, true
+            return value0, true
          case Unknown:
-            return v.Message, true
+            return value0.Message, true
          }
       }
       return nil, false
@@ -273,14 +272,14 @@ func (m Message) Get(key Number) func() (Message, bool) {
 func (m Message) GetBytes(key Number) func() (Bytes, bool) {
    var index int
    return func() (Bytes, bool) {
-      vs := m[key]
-      for index < len(vs) {
+      values := m[key]
+      for index < len(values) {
          index++
-         switch v := vs[index-1].(type) {
+         switch value0 := values[index-1].(type) {
          case Bytes:
-            return v, true
+            return value0, true
          case Unknown:
-            return v.Bytes, true
+            return value0.Bytes, true
          }
       }
       return nil, false
