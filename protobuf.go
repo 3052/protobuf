@@ -6,6 +6,89 @@ import (
    "slices"
 )
 
+func unmarshal(data []byte) Value {
+   data = slices.Clip(data)
+   if len(data) >= 1 {
+      m := Message{}
+      if m.Unmarshal(data) == nil {
+         return Unknown{Bytes: data, Message: m}
+      }
+   }
+   return Bytes(data)
+}
+
+type Unknown struct {
+   Bytes   Bytes
+   Fixed32 []Fixed32
+   Fixed64 []Fixed64
+   Message Message
+   Varint  []Varint
+}
+
+func (m Message) GoString() string {
+   b := fmt.Appendf(nil, "%T{\n", m)
+   for _, key := range m.keys() {
+      values := m[key]
+      b = fmt.Appendf(b, "%v: {", key)
+      if len(values) >= 2 {
+         b = append(b, '\n')
+      }
+      for _, value0 := range values {
+         b = fmt.Appendf(b, "%#v", value0)
+         if len(values) >= 2 {
+            b = append(b, ",\n"...)
+         }
+      }
+      b = append(b, "},\n"...)
+   }
+   b = append(b, '}')
+   return string(b)
+}
+
+func (m Message) AddBytes(key Number, v Bytes) {
+   m[key] = append(m[key], v)
+}
+
+func (m Message) AddFixed32(key Number, v uint32) {
+   m[key] = append(m[key], Fixed32{v})
+}
+
+func (m Message) AddFixed64(key Number, v uint64) {
+   m[key] = append(m[key], Fixed64{v})
+}
+
+func (m Message) AddVarint(key Number, v uint64) {
+   m[key] = append(m[key], Varint{v})
+}
+
+func (m Message) GetVarint(key Number) func() (Varint, bool) {
+   return get[Varint](m, key)
+}
+
+func (v Varint) Append(data []byte, key Number) []byte {
+   data = protowire.AppendTag(data, key, protowire.VarintType)
+   return protowire.AppendVarint(data, v[0])
+}
+
+func (u Unknown) Append(data []byte, key Number) []byte {
+   data = protowire.AppendTag(data, key, protowire.BytesType)
+   return protowire.AppendBytes(data, u.Bytes)
+}
+
+type Fixed32 [1]uint32
+
+type Fixed64 [1]uint64
+
+type Value interface {
+   Append([]byte, Number) []byte
+}
+
+type Message map[Number][]Value
+
+type Number = protowire.Number
+
+///
+
 func (m Message) Unmarshal(data []byte) error {
    for len(data) >= 1 {
       key, wire_type, length := protowire.ConsumeTag(data)
@@ -54,59 +137,12 @@ func (m Message) Unmarshal(data []byte) error {
    return nil
 }
 
-func (m Message) AddBytes(key Number, v Bytes) {
-   m[key] = append(m[key], v)
-}
-
-func (m Message) AddFixed32(key Number, v uint32) {
-   m[key] = append(m[key], Fixed32{v})
-}
-
-func (m Message) AddFixed64(key Number, v uint64) {
-   m[key] = append(m[key], Fixed64{v})
-}
-
-func (m Message) AddVarint(key Number, v uint64) {
-   m[key] = append(m[key], Varint{v})
-}
-
-func (m Message) GetVarint(key Number) func() (Varint, bool) {
-   return get[Varint](m, key)
-}
-
 func (u Unknown) GoString() string {
    b := fmt.Appendf(nil, "%T{\n", u)
    b = fmt.Appendf(b, "%#v,\n", u.Bytes)
    b = fmt.Appendf(b, "%#v,\n", u.Message)
    b = append(b, '}')
    return string(b)
-}
-
-func (v Varint) Append(data []byte, key Number) []byte {
-   data = protowire.AppendTag(data, key, protowire.VarintType)
-   return protowire.AppendVarint(data, v[0])
-}
-
-func (u Unknown) Append(data []byte, key Number) []byte {
-   data = protowire.AppendTag(data, key, protowire.BytesType)
-   return protowire.AppendBytes(data, u.Bytes)
-}
-
-type Fixed32 [1]uint32
-
-type Fixed64 [1]uint64
-
-type Value interface {
-   Append([]byte, Number) []byte
-}
-
-type Message map[Number][]Value
-
-type Number = protowire.Number
-
-type Unknown struct {
-   Bytes   Bytes
-   Message Message
 }
 
 type Bytes []byte
@@ -228,34 +264,4 @@ func (m Message) GetBytes(key Number) func() (Bytes, bool) {
       }
       return nil, false
    }
-}
-
-func (m Message) GoString() string {
-   b := fmt.Appendf(nil, "%T{\n", m)
-   for _, key := range m.keys() {
-      values := m[key]
-      b = fmt.Appendf(b, "%v: {", key)
-      if len(values) >= 2 {
-         b = append(b, '\n')
-      }
-      for _, value0 := range values {
-         b = fmt.Appendf(b, "%#v", value0)
-         if len(values) >= 2 {
-            b = append(b, ",\n"...)
-         }
-      }
-      b = append(b, "},\n"...)
-   }
-   b = append(b, '}')
-   return string(b)
-}
-func unmarshal(data []byte) Value {
-   data = slices.Clip(data)
-   if len(data) >= 1 {
-      m := Message{}
-      if m.Unmarshal(data) == nil {
-         return Unknown{data, m}
-      }
-   }
-   return Bytes(data)
 }
