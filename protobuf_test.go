@@ -13,21 +13,21 @@ func message_new() Unknown {
       Message{
          4: {Message{
             1: {Message{
-               10: {Varint(30)},
+               10: {Varint{30}},
             }},
          }},
-         14: {Varint(3)},
+         14: {Varint{3}},
          18: {Unknown{
             nil,
             Message{
-               1: {Varint(3)},
-               2: {Varint(2)},
-               3: {Varint(2)},
-               4: {Varint(2)},
-               5: {Varint(1)},
-               6: {Varint(1)},
-               7: {Varint(420)},
-               8: {Varint(196609)},
+               1: {Varint{3}},
+               2: {Varint{2}},
+               3: {Varint{2}},
+               4: {Varint{2}},
+               5: {Varint{1}},
+               6: {Varint{1}},
+               7: {Varint{420}},
+               8: {Varint{196609}},
                9: {
                   Bytes("hello"),
                   Bytes("world"),
@@ -118,13 +118,13 @@ func TestUnmarshal(t *testing.T) {
    }
    m, _ = m.Get(13)()
    m, _ = m.Get(1)()
-   if v, _ := m.GetVarint(3)(); v != 10448020 {
+   if v, _ := m.GetVarint(3)(); v[0] != 10448020 {
       t.Fatal(13, 1, 3, v)
    }
    if v, _ := m.GetBytes(4)(); string(v) != "10.44.0" {
       t.Fatal(13, 1, 4, v)
    }
-   if v, _ := m.GetVarint(9)(); v != 29945887 {
+   if v, _ := m.GetVarint(9)(); v[0] != 29945887 {
       t.Fatal(13, 1, 9, v)
    }
    if v, _ := m.GetBytes(16)(); string(v) != "Dec 5, 2022" {
@@ -147,7 +147,7 @@ func TestUnmarshal(t *testing.T) {
          break
       }
    }
-   if v, _ := m.GetVarint(70)(); v != 818092752 {
+   if v, _ := m.GetVarint(70)(); v[0] != 818092752 {
       t.Fatal(13, 1, 70, v)
    }
 }
