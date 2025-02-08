@@ -91,6 +91,7 @@ func (u Unknown) Append(data []byte, key Number) []byte {
    data = protowire.AppendTag(data, key, protowire.BytesType)
    return protowire.AppendBytes(data, u.Bytes)
 }
+
 type Fixed32 [1]uint32
 
 type Fixed64 [1]uint64
@@ -111,17 +112,6 @@ type Unknown struct {
 type Bytes []byte
 
 type Varint [1]uint64
-
-func unmarshal(data []byte) Value {
-   data = slices.Clip(data)
-   if len(data) >= 1 {
-      m := Message{}
-      if m.Unmarshal(data) == nil {
-         return Unknown{data, m}
-      }
-   }
-   return Bytes(data)
-}
 
 func get[T Value](m Message, key Number) func() (T, bool) {
    var index int
@@ -258,4 +248,14 @@ func (m Message) GoString() string {
    }
    b = append(b, '}')
    return string(b)
+}
+func unmarshal(data []byte) Value {
+   data = slices.Clip(data)
+   if len(data) >= 1 {
+      m := Message{}
+      if m.Unmarshal(data) == nil {
+         return Unknown{data, m}
+      }
+   }
+   return Bytes(data)
 }
