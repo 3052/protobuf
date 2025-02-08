@@ -6,6 +6,121 @@ import (
    "slices"
 )
 
+type Message map[Number][]Value
+
+func (v Varint) Append(data []byte, key Number) []byte {
+   data = protowire.AppendTag(data, key, protowire.VarintType)
+   return protowire.AppendVarint(data, v[0])
+}
+
+func (m Message) AddVarint(key Number, v Varint) {
+   m[key] = append(m[key], v)
+}
+
+func get[T Value](m Message, key Number) func() (T, bool) {
+   var index int
+   return func() (T, bool) {
+      values := m[key]
+      for index < len(values) {
+         index++
+         value0, ok := values[index-1].(T)
+         if ok {
+            return value0, true
+         }
+      }
+      return *new(T), false
+   }
+}
+
+func (m Message) GetVarint(key Number) func() (Varint, bool) {
+   return get[Varint](m, key)
+}
+
+func (m Message) Unmarshal(data []byte) error {
+   for len(data) >= 1 {
+      key, wire_type, length := protowire.ConsumeTag(data)
+      err := protowire.ParseError(length)
+      if err != nil {
+         return err
+      }
+      data = data[length:]
+      switch wire_type {
+      case protowire.VarintType:
+         v, length := protowire.ConsumeVarint(data)
+         err := protowire.ParseError(length)
+         if err != nil {
+            return err
+         }
+         m[key] = append(m[key], Varint{v})
+         data = data[length:]
+      case protowire.Fixed64Type:
+         v, length := protowire.ConsumeFixed64(data)
+         err := protowire.ParseError(length)
+         if err != nil {
+            return err
+         }
+         m[key] = append(m[key], Fixed64(v))
+         data = data[length:]
+      case protowire.Fixed32Type:
+         v, length := protowire.ConsumeFixed32(data)
+         err := protowire.ParseError(length)
+         if err != nil {
+            return err
+         }
+         m[key] = append(m[key], Fixed32(v))
+         data = data[length:]
+      case protowire.BytesType:
+         v, length := protowire.ConsumeBytes(data)
+         err := protowire.ParseError(length)
+         if err != nil {
+            return err
+         }
+         m[key] = append(m[key], unmarshal(v))
+         data = data[length:]
+      default:
+         return fmt.Errorf("wire type %v", wire_type)
+      }
+   }
+   return nil
+}
+
+type Varint [1]uint64
+
+///
+
+func (m Message) Get(key Number) func() (Message, bool) {
+   var index int
+   return func() (Message, bool) {
+      values := m[key]
+      for index < len(values) {
+         index++
+         switch value0 := values[index-1].(type) {
+         case Message:
+            return value0, true
+         case Unknown:
+            return value0.Message, true
+         }
+      }
+      return nil, false
+   }
+}
+
+func (m Message) GetBytes(key Number) func() (Bytes, bool) {
+   var index int
+   return func() (Bytes, bool) {
+      values := m[key]
+      for index < len(values) {
+         index++
+         switch value0 := values[index-1].(type) {
+         case Bytes:
+            return value0, true
+         case Unknown:
+            return value0.Bytes, true
+         }
+      }
+      return nil, false
+   }
+}
 // this does not pre allocate:
 // slices.Sorted(maps.Keys(m))
 // this turns slice into iterator into slice:
@@ -55,11 +170,6 @@ func (m Message) Marshal() []byte {
    return data
 }
 
-type Message map[Number][]Value
-
-func (m Message) AddVarint(key Number, v Varint) {
-   m[key] = append(m[key], v)
-}
 
 func (m Message) AddFixed64(key Number, v Fixed64) {
    m[key] = append(m[key], v)
@@ -103,10 +213,6 @@ func (m Message) AddMessage(key Number, v Message) {
    m[key] = append(m[key], v)
 }
 
-func (m Message) GetVarint(key Number) func() (Varint, bool) {
-   return get[Varint](m, key)
-}
-
 func (m Message) GetFixed64(key Number) func() (Fixed64, bool) {
    return get[Fixed64](m, key)
 }
@@ -136,18 +242,6 @@ type Unknown struct {
 
 type Value interface {
    Append([]byte, Number) []byte
-   fmt.GoStringer
-}
-
-type Varint uint64
-
-func (v Varint) Append(data []byte, key Number) []byte {
-   data = protowire.AppendTag(data, key, protowire.VarintType)
-   return protowire.AppendVarint(data, uint64(v))
-}
-
-func (v Varint) GoString() string {
-   return fmt.Sprintf("%T(%v)", v, v)
 }
 
 func (b Bytes) GoString() string {
@@ -191,101 +285,4 @@ func (m Message) GoString() string {
    }
    b = append(b, '}')
    return string(b)
-}
-
-func (m Message) Unmarshal(data []byte) error {
-   for len(data) >= 1 {
-      key, wire_type, length := protowire.ConsumeTag(data)
-      err := protowire.ParseError(length)
-      if err != nil {
-         return err
-      }
-      data = data[length:]
-      switch wire_type {
-      case protowire.VarintType:
-         v, length := protowire.ConsumeVarint(data)
-         err := protowire.ParseError(length)
-         if err != nil {
-            return err
-         }
-         m[key] = append(m[key], Varint(v))
-         data = data[length:]
-      case protowire.Fixed64Type:
-         v, length := protowire.ConsumeFixed64(data)
-         err := protowire.ParseError(length)
-         if err != nil {
-            return err
-         }
-         m[key] = append(m[key], Fixed64(v))
-         data = data[length:]
-      case protowire.Fixed32Type:
-         v, length := protowire.ConsumeFixed32(data)
-         err := protowire.ParseError(length)
-         if err != nil {
-            return err
-         }
-         m[key] = append(m[key], Fixed32(v))
-         data = data[length:]
-      case protowire.BytesType:
-         v, length := protowire.ConsumeBytes(data)
-         err := protowire.ParseError(length)
-         if err != nil {
-            return err
-         }
-         m[key] = append(m[key], unmarshal(v))
-         data = data[length:]
-      default:
-         return fmt.Errorf("wire type %v", wire_type)
-      }
-   }
-   return nil
-}
-
-func get[T Value](m Message, key Number) func() (T, bool) {
-   var index int
-   return func() (T, bool) {
-      values := m[key]
-      for index < len(values) {
-         index++
-         value0, ok := values[index-1].(T)
-         if ok {
-            return value0, true
-         }
-      }
-      return *new(T), false
-   }
-}
-
-func (m Message) Get(key Number) func() (Message, bool) {
-   var index int
-   return func() (Message, bool) {
-      values := m[key]
-      for index < len(values) {
-         index++
-         switch value0 := values[index-1].(type) {
-         case Message:
-            return value0, true
-         case Unknown:
-            return value0.Message, true
-         }
-      }
-      return nil, false
-   }
-}
-
-func (m Message) GetBytes(key Number) func() (Bytes, bool) {
-   var index int
-   return func() (Bytes, bool) {
-      values := m[key]
-      for index < len(values) {
-         index++
-         switch value0 := values[index-1].(type) {
-         case Bytes:
-            return value0, true
-         case Unknown:
-            return value0.Bytes, true
-         }
-      }
-      return nil, false
-   }
 }
