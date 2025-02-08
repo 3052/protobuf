@@ -6,6 +6,10 @@ import (
    "slices"
 )
 
+// this does not pre allocate:
+// slices.Sorted(maps.Keys(m))
+// this turns slice into iterator into slice:
+// slices.Sorted(slices.Values(keys))
 func (m Message) keys() []Number {
    keys := make([]Number, 0, len(m))
    for key := range m {
