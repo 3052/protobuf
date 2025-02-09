@@ -7,119 +7,129 @@ import (
    "slices"
 )
 
+// protobuf.dev/programming-guides/encoding#cheat-sheet
 type Bytes []byte
-
-func (b Bytes) Append(data []byte) []byte {
-   return protowire.AppendBytes(data, b)
-}
 
 func (b Bytes) GoString() string {
    return fmt.Sprintf("protobuf.Bytes(%q)", []byte(b))
 }
 
+func (b Bytes) Append(data []byte, n protowire.Number) []byte {
+   data = protowire.AppendTag(data, n, protowire.BytesType)
+   return protowire.AppendBytes(data, b)
+}
+
+// protobuf.dev/programming-guides/encoding#cheat-sheet-key
 type Field struct {
    Number protowire.Number
-   Value  value
+   Value  Value
 }
 
+// protobuf.dev/programming-guides/encoding#cheat-sheet
 type I32 uint32
-
-func (i I32) Append(data []byte) []byte {
-   return protowire.AppendFixed32(data, uint32(i))
-}
 
 func (i I32) GoString() string {
    return fmt.Sprintf("protobuf.I32(%v)", i)
 }
 
-type I64 uint64
-
-func (i I64) Append(data []byte) []byte {
-   return protowire.AppendFixed64(data, uint64(i))
+func (i I32) Append(data []byte, n protowire.Number) []byte {
+   data = protowire.AppendTag(data, n, protowire.Fixed32Type)
+   return protowire.AppendFixed32(data, uint32(i))
 }
+
+// protobuf.dev/programming-guides/encoding#cheat-sheet
+type I64 uint64
 
 func (i I64) GoString() string {
    return fmt.Sprintf("protobuf.I64(%v)", i)
 }
 
-func (n *Len) Append(data []byte) []byte {
-   return protowire.AppendBytes(data, n.Bytes)
+func (i I64) Append(data []byte, n protowire.Number) []byte {
+   data = protowire.AppendTag(data, n, protowire.Fixed64Type)
+   return protowire.AppendFixed64(data, uint64(i))
 }
 
-func (m Message) Append(data []byte) []byte {
-   return protowire.AppendBytes(data, m.marshal())
+// protobuf.dev/programming-guides/encoding#cheat-sheet
+type LenPrefix struct {
+   Bytes   Bytes
+   Message Message
 }
 
+func (p *LenPrefix) GoString() string {
+   data := []byte("&protobuf.LenPrefix{\n")
+   data = fmt.Appendf(data, "%#v,\n", p.Bytes)
+   data = fmt.Appendf(data, "%#v,\n", p.Message)
+   data = append(data, '}')
+   return string(data)
+}
+
+func (p *LenPrefix) Append(data []byte, n protowire.Number) []byte {
+   data = protowire.AppendTag(data, n, protowire.BytesType)
+   return protowire.AppendBytes(data, p.Bytes)
+}
+
+// protobuf.dev/programming-guides/encoding#cheat-sheet
 type Message []Field
 
-func (m Message) marshal() []byte {
-   var data []byte
+func (m Message) GoString() string {
+   data := []byte("protobuf.Message{\n")
    for _, f := range m {
-      switch f.Value.(type) {
-      case Varint:
-         data = protowire.AppendTag(data, f.Number, protowire.VarintType)
-      case I64:
-         data = protowire.AppendTag(data, f.Number, protowire.Fixed64Type)
-      case I32:
-         data = protowire.AppendTag(data, f.Number, protowire.Fixed32Type)
-      case Bytes, Message:
-         data = protowire.AppendTag(data, f.Number, protowire.BytesType)
-      }
-      data = f.Value.Append(data)
+      data = fmt.Appendf(data, "{%v, %#v},\n", f.Number, f.Value)
    }
-   return data
+   data = append(data, '}')
+   return string(data)
 }
 
-func (m *Message) unmarshal(data []byte) error {
+func (m *Message) Unmarshal(data []byte) error {
    for len(data) >= 1 {
-      num, typ, n := protowire.ConsumeTag(data)
-      err := protowire.ParseError(n)
+      number, wire_type, size := protowire.ConsumeTag(data)
+      err := protowire.ParseError(size)
       if err != nil {
          return err
       }
-      data = data[n:]
+      data = data[size:]
       // google.golang.org/protobuf/encoding/protowire#ConsumeFieldValue
-      switch typ {
+      switch wire_type {
       case protowire.BytesType:
-         v, n := protowire.ConsumeBytes(data)
-         err := protowire.ParseError(n)
+         v, size := protowire.ConsumeBytes(data)
+         err := protowire.ParseError(size)
          if err != nil {
             return err
          }
          *m = append(*m, Field{
-            num, unmarshal(v),
+            number, unmarshal(v),
          })
-         data = data[n:]
+         data = data[size:]
       case protowire.Fixed32Type:
-         v, n := protowire.ConsumeFixed32(data)
-         err := protowire.ParseError(n)
+         v, size := protowire.ConsumeFixed32(data)
+         err := protowire.ParseError(size)
          if err != nil {
             return err
          }
          *m = append(*m, Field{
-            num, I32(v),
+            number, I32(v),
          })
-         data = data[n:]
+         data = data[size:]
       case protowire.Fixed64Type:
-         v, n := protowire.ConsumeFixed64(data)
-         err := protowire.ParseError(n)
+         v, size := protowire.ConsumeFixed64(data)
+         err := protowire.ParseError(size)
          if err != nil {
             return err
          }
          *m = append(*m, Field{
-            num, I64(v),
+            number, I64(v),
          })
-         data = data[n:]
+         data = data[size:]
       case protowire.VarintType:
-         v, n := protowire.ConsumeVarint(data)
-         err := protowire.ParseError(n)
+         v, size := protowire.ConsumeVarint(data)
+         err := protowire.ParseError(size)
          if err != nil {
             return err
          }
          *m = append(*m, Field{
-            num, Varint(v),
+            number, Varint(v),
          })
-         data = data[n:]
+         data = data[size:]
       default:
          return errors.New("cannot parse reserved wire type")
       }
@@ -127,53 +137,44 @@ func (m *Message) unmarshal(data []byte) error {
    return nil
 }
 
-func (v Varint) GoString() string {
-   return fmt.Sprintf("protobuf.Varint(%v)", v)
-}
-
-type Varint uint64
-
-func (v Varint) Append(data []byte) []byte {
-   return protowire.AppendVarint(data, uint64(v))
-}
-
-type value interface {
-   Append([]byte) []byte
-   fmt.GoStringer
-}
-
-func (m Message) GoString() string {
-   data := []byte("protobuf.Message{\n")
-   for _, f := range m {
-      data = fmt.Appendf(data, "{Number:%v, Value:%#v},\n", f.Number, f.Value)
+func (m Message) Marshal() []byte {
+   var data []byte
+   for _, field0 := range m {
+      data = field0.Value.Append(data, field0.Number)
    }
-   data = append(data, '}')
-   return string(data)
+   return data
 }
 
-// this can also be package repeated fields:
-// protobuf.dev/programming-guides/encoding#structure
-// but in practice I have never come across those, even with JSON
-type Len struct {
-   Bytes   Bytes
-   Message Message
+func (m Message) Append(data []byte, n protowire.Number) []byte {
+   data = protowire.AppendTag(data, n, protowire.BytesType)
+   return protowire.AppendBytes(data, m.Marshal())
 }
 
-func (n *Len) GoString() string {
-   b := []byte("&protobuf.Len{\n")
-   b = fmt.Appendf(b, "%#v,\n", n.Bytes)
-   b = fmt.Appendf(b, "%#v,\n", n.Message)
-   b = append(b, '}')
-   return string(b)
-}
-
-func unmarshal(data []byte) value {
+func unmarshal(data []byte) Value {
    data = slices.Clip(data)
    if len(data) >= 1 {
       var m Message
-      if m.unmarshal(data) == nil {
-         return &Len{data, m}
+      if m.Unmarshal(data) == nil {
+         return &LenPrefix{data, m}
       }
    }
    return Bytes(data)
 }
+
+// protobuf.dev/programming-guides/encoding#cheat-sheet
+type Value interface {
+   Append([]byte, protowire.Number) []byte
+   fmt.GoStringer
+}
+
+func (v Varint) Append(data []byte, n protowire.Number) []byte {
+   data = protowire.AppendTag(data, n, protowire.VarintType)
+   return protowire.AppendVarint(data, uint64(v))
+}
+
+func (v Varint) GoString() string {
+   return fmt.Sprintf("protobuf.Varint(%v)", v)
+}
+
+// protobuf.dev/programming-guides/encoding#cheat-sheet
+type Varint uint64
