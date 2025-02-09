@@ -57,38 +57,10 @@ func main() {
    fmt.Println(v2)
 }
 
-func consume_fixed64(data []byte) ([]uint64, error) {
-   var vs []uint64
-   for len(data) >= 1 {
-      v, n := protowire.ConsumeFixed64(data)
-      err := protowire.ParseError(n)
-      if err != nil {
-         return nil, err
-      }
-      vs = append(vs, v)
-      data = data[n:]
-   }
-   return vs, nil
-}
-
 func consume_fixed32(data []byte) ([]uint32, error) {
    var vs []uint32
    for len(data) >= 1 {
       v, n := protowire.ConsumeFixed32(data)
-      err := protowire.ParseError(n)
-      if err != nil {
-         return nil, err
-      }
-      vs = append(vs, v)
-      data = data[n:]
-   }
-   return vs, nil
-}
-
-func consume_varint(data []byte) ([]uint64, error) {
-   var vs []uint64
-   for len(data) >= 1 {
-      v, n := protowire.ConsumeVarint(data)
       err := protowire.ParseError(n)
       if err != nil {
          return nil, err

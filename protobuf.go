@@ -6,6 +6,65 @@ import (
    "slices"
 )
 
+func (m Message) Unmarshal(data []byte) error {
+   for len(data) >= 1 {
+      key, wire_type, length := protowire.ConsumeTag(data)
+      err := protowire.ParseError(length)
+      if err != nil {
+         return err
+      }
+      data = data[length:]
+      switch wire_type {
+      case protowire.VarintType:
+         v, length := protowire.ConsumeVarint(data)
+         err := protowire.ParseError(length)
+         if err != nil {
+            return err
+         }
+         m[key] = append(m[key], Varint{v})
+         data = data[length:]
+      case protowire.Fixed64Type:
+         v, length := protowire.ConsumeFixed64(data)
+         err := protowire.ParseError(length)
+         if err != nil {
+            return err
+         }
+         m[key] = append(m[key], Fixed64{v})
+         data = data[length:]
+      case protowire.Fixed32Type:
+         v, length := protowire.ConsumeFixed32(data)
+         err := protowire.ParseError(length)
+         if err != nil {
+            return err
+         }
+         m[key] = append(m[key], Fixed32{v})
+         data = data[length:]
+      case protowire.BytesType:
+         v, length := protowire.ConsumeBytes(data)
+         err := protowire.ParseError(length)
+         if err != nil {
+            return err
+         }
+         m[key] = append(m[key], unmarshal(v))
+         data = data[length:]
+      default:
+         return fmt.Errorf("wire type %v", wire_type)
+      }
+   }
+   return nil
+}
+
+func unmarshal(data []byte) Value {
+   data = slices.Clip(data)
+   if len(data) >= 1 {
+      m := Message{}
+      if m.Unmarshal(data) == nil {
+         return Unknown{Bytes: data, Message: m}
+      }
+   }
+   return Bytes(data)
+}
+
 func get[T Value](m Message, key Number) func() (T, bool) {
    var index int
    return func() (T, bool) {
@@ -203,65 +262,4 @@ type Unknown struct {
 func (u Unknown) Append(data []byte, key Number) []byte {
    data = protowire.AppendTag(data, key, protowire.BytesType)
    return protowire.AppendBytes(data, u.Bytes)
-}
-
-///
-
-func (m Message) Unmarshal(data []byte) error {
-   for len(data) >= 1 {
-      key, wire_type, length := protowire.ConsumeTag(data)
-      err := protowire.ParseError(length)
-      if err != nil {
-         return err
-      }
-      data = data[length:]
-      switch wire_type {
-      case protowire.VarintType:
-         v, length := protowire.ConsumeVarint(data)
-         err := protowire.ParseError(length)
-         if err != nil {
-            return err
-         }
-         m[key] = append(m[key], Varint{v})
-         data = data[length:]
-      case protowire.Fixed64Type:
-         v, length := protowire.ConsumeFixed64(data)
-         err := protowire.ParseError(length)
-         if err != nil {
-            return err
-         }
-         m[key] = append(m[key], Fixed64{v})
-         data = data[length:]
-      case protowire.Fixed32Type:
-         v, length := protowire.ConsumeFixed32(data)
-         err := protowire.ParseError(length)
-         if err != nil {
-            return err
-         }
-         m[key] = append(m[key], Fixed32{v})
-         data = data[length:]
-      case protowire.BytesType:
-         v, length := protowire.ConsumeBytes(data)
-         err := protowire.ParseError(length)
-         if err != nil {
-            return err
-         }
-         m[key] = append(m[key], unmarshal(v))
-         data = data[length:]
-      default:
-         return fmt.Errorf("wire type %v", wire_type)
-      }
-   }
-   return nil
-}
-
-func unmarshal(data []byte) Value {
-   data = slices.Clip(data)
-   if len(data) >= 1 {
-      m := Message{}
-      if m.Unmarshal(data) == nil {
-         return Unknown{Bytes: data, Message: m}
-      }
-   }
-   return Bytes(data)
 }
