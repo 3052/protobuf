@@ -29,14 +29,72 @@ func TestBytes(t *testing.T) {
    })
 }
 
+func TestI32(t *testing.T) {
+   t.Run("Append", func(t *testing.T) {
+      data := protopack.Message{
+         protopack.Tag{2, protopack.Fixed32Type}, protopack.Int32(2),
+      }.Marshal()
+      data1 := Message{
+         {2, I32(2)},
+      }.Marshal()
+      if !bytes.Equal(data1, data) {
+         t.Fatal(data1)
+      }
+   })
+   t.Run("GoString", func(t *testing.T) {
+      data := I32.GoString(2)
+      if data != "protobuf.I32(2)" {
+         t.Fatal(data)
+      }
+   })
+}
+
+func TestI64(t *testing.T) {
+   t.Run("Append", func(t *testing.T) {
+      data := protopack.Message{
+         protopack.Tag{2, protopack.Fixed64Type}, protopack.Int64(2),
+      }.Marshal()
+      data1 := Message{
+         {2, I64(2)},
+      }.Marshal()
+      if !bytes.Equal(data1, data) {
+         t.Fatal(data1)
+      }
+   })
+   t.Run("GoString", func(t *testing.T) {
+      data := I64.GoString(2)
+      if data != "protobuf.I64(2)" {
+         t.Fatal(data)
+      }
+   })
+}
+
 func TestMessage(t *testing.T) {
-   data, err := os.ReadFile(youtube)
-   if err != nil {
-      t.Fatal(err)
-   }
-   var message0 Message
-   err = message0.Unmarshal(data)
-   if err != nil {
-      t.Fatal(err)
-   }
+   t.Run("AddBytes", func(t *testing.T) {
+      var m Message
+      m.AddBytes(2, []byte("hello world"))
+   })
+   t.Run("AddI32", func(t *testing.T) {
+      var m Message
+      m.AddI32(2, 2)
+   })
+   t.Run("AddI64", func(t *testing.T) {
+      var m Message
+      m.AddI64(2, 2)
+   })
+   t.Run("AddVarint", func(t *testing.T) {
+      var m Message
+      m.AddVarint(2, 2)
+   })
+   t.Run("Unmarshal", func(t *testing.T) {
+      data, err := os.ReadFile(youtube)
+      if err != nil {
+         t.Fatal(err)
+      }
+      var message0 Message
+      err = message0.Unmarshal(data)
+      if err != nil {
+         t.Fatal(err)
+      }
+   })
 }

@@ -7,24 +7,6 @@ import (
    "slices"
 )
 
-func (i I32) GoString() string {
-   return fmt.Sprintf("protobuf.I32(%v)", i)
-}
-
-func (i I32) Append(data []byte, num Number) []byte {
-   data = protowire.AppendTag(data, num, protowire.Fixed32Type)
-   return protowire.AppendFixed32(data, uint32(i))
-}
-
-func (i I64) GoString() string {
-   return fmt.Sprintf("protobuf.I64(%v)", i)
-}
-
-func (i I64) Append(data []byte, num Number) []byte {
-   data = protowire.AppendTag(data, num, protowire.Fixed64Type)
-   return protowire.AppendFixed64(data, uint64(i))
-}
-
 func (p *LenPrefix) GoString() string {
    data := []byte("&protobuf.LenPrefix{\n")
    data = fmt.Appendf(data, "%#v,\n", p.Bytes)
@@ -115,22 +97,6 @@ func (m Message) Marshal() []byte {
 func (m Message) Append(data []byte, num Number) []byte {
    data = protowire.AppendTag(data, num, protowire.BytesType)
    return protowire.AppendBytes(data, m.Marshal())
-}
-
-func (m *Message) AddVarint(num Number, v Varint) {
-   *m = append(*m, Field{num, v})
-}
-
-func (m *Message) AddI64(num Number, v I64) {
-   *m = append(*m, Field{num, v})
-}
-
-func (m *Message) AddI32(num Number, v I32) {
-   *m = append(*m, Field{num, v})
-}
-
-func (m *Message) AddBytes(num Number, v Bytes) {
-   *m = append(*m, Field{num, v})
 }
 
 // wikipedia.org/wiki/Continuation-passing_style
@@ -261,4 +227,38 @@ type I32 uint32
 func (b Bytes) Append(data []byte, num Number) []byte {
    data = protowire.AppendTag(data, num, protowire.BytesType)
    return protowire.AppendBytes(data, b)
+}
+
+func (i I32) GoString() string {
+   return fmt.Sprintf("protobuf.I32(%v)", i)
+}
+
+func (i I32) Append(data []byte, num Number) []byte {
+   data = protowire.AppendTag(data, num, protowire.Fixed32Type)
+   return protowire.AppendFixed32(data, uint32(i))
+}
+
+func (i I64) GoString() string {
+   return fmt.Sprintf("protobuf.I64(%v)", i)
+}
+
+func (i I64) Append(data []byte, num Number) []byte {
+   data = protowire.AppendTag(data, num, protowire.Fixed64Type)
+   return protowire.AppendFixed64(data, uint64(i))
+}
+
+func (m *Message) AddVarint(num Number, v Varint) {
+   *m = append(*m, Field{num, v})
+}
+
+func (m *Message) AddI64(num Number, v I64) {
+   *m = append(*m, Field{num, v})
+}
+
+func (m *Message) AddI32(num Number, v I32) {
+   *m = append(*m, Field{num, v})
+}
+
+func (m *Message) AddBytes(num Number, v Bytes) {
+   *m = append(*m, Field{num, v})
 }
