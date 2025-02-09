@@ -6,6 +6,21 @@ import (
    "slices"
 )
 
+func get[T Value](m Message, key Number) func() (T, bool) {
+   var index int
+   return func() (T, bool) {
+      values := m[key]
+      for index < len(values) {
+         index++
+         value0, ok := values[index-1].(T)
+         if ok {
+            return value0, true
+         }
+      }
+      return *new(T), false
+   }
+}
+
 func (m Message) Get(key Number) func() (Message, bool) {
    var index int
    return func() (Message, bool) {
@@ -126,14 +141,21 @@ func (v Varint) Append(data []byte, key Number) []byte {
    return protowire.AppendVarint(data, v[0])
 }
 
-///
+type Fixed64 [1]uint64
 
 func (f Fixed64) Append(data []byte, key Number) []byte {
    data = protowire.AppendTag(data, key, protowire.Fixed64Type)
    return protowire.AppendFixed64(data, f[0])
 }
 
-type Fixed64 [1]uint64
+type Fixed32 [1]uint32
+
+func (f Fixed32) Append(data []byte, key Number) []byte {
+   data = protowire.AppendTag(data, key, protowire.Fixed32Type)
+   return protowire.AppendFixed32(data, f[0])
+}
+
+type Number = protowire.Number
 
 // this does not pre allocate:
 // slices.Sorted(maps.Keys(m))
@@ -148,15 +170,26 @@ func (m Message) keys() []Number {
    return keys
 }
 
-func unmarshal(data []byte) Value {
-   data = slices.Clip(data)
-   if len(data) >= 1 {
-      m := Message{}
-      if m.Unmarshal(data) == nil {
-         return Unknown{Bytes: data, Message: m}
+type Bytes []byte
+
+func (b Bytes) Append(data []byte, key Number) []byte {
+   data = protowire.AppendTag(data, key, protowire.BytesType)
+   return protowire.AppendBytes(data, b)
+}
+
+func (m Message) Marshal() []byte {
+   var data []byte
+   for key := range m {
+      for _, value0 := range m[key] {
+         data = value0.Append(data, key)
       }
    }
-   return Bytes(data)
+   return data
+}
+
+func (m Message) Append(data []byte, key Number) []byte {
+   data = protowire.AppendTag(data, key, protowire.BytesType)
+   return protowire.AppendBytes(data, m.Marshal())
 }
 
 type Unknown struct {
@@ -172,9 +205,7 @@ func (u Unknown) Append(data []byte, key Number) []byte {
    return protowire.AppendBytes(data, u.Bytes)
 }
 
-type Fixed32 [1]uint32
-
-type Number = protowire.Number
+///
 
 func (m Message) Unmarshal(data []byte) error {
    for len(data) >= 1 {
@@ -224,44 +255,13 @@ func (m Message) Unmarshal(data []byte) error {
    return nil
 }
 
-type Bytes []byte
-
-func get[T Value](m Message, key Number) func() (T, bool) {
-   var index int
-   return func() (T, bool) {
-      values := m[key]
-      for index < len(values) {
-         index++
-         value0, ok := values[index-1].(T)
-         if ok {
-            return value0, true
-         }
-      }
-      return *new(T), false
-   }
-}
-
-func (b Bytes) Append(data []byte, key Number) []byte {
-   data = protowire.AppendTag(data, key, protowire.BytesType)
-   return protowire.AppendBytes(data, b)
-}
-
-func (f Fixed32) Append(data []byte, key Number) []byte {
-   data = protowire.AppendTag(data, key, protowire.Fixed32Type)
-   return protowire.AppendFixed32(data, f[0])
-}
-
-func (m Message) Marshal() []byte {
-   var data []byte
-   for key := range m {
-      for _, value0 := range m[key] {
-         data = value0.Append(data, key)
+func unmarshal(data []byte) Value {
+   data = slices.Clip(data)
+   if len(data) >= 1 {
+      m := Message{}
+      if m.Unmarshal(data) == nil {
+         return Unknown{Bytes: data, Message: m}
       }
    }
-   return data
-}
-
-func (m Message) Append(data []byte, key Number) []byte {
-   data = protowire.AppendTag(data, key, protowire.BytesType)
-   return protowire.AppendBytes(data, m.Marshal())
+   return Bytes(data)
 }
