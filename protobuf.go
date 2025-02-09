@@ -180,10 +180,20 @@ func (m Message) GoString() string {
    return string(b)
 }
 
-///
-
 func (m Message) AddVarint(key Number, v uint64) {
    m[key] = append(m[key], Varint{v})
+}
+
+func (m Message) AddFixed64(key Number, v uint64) {
+   m[key] = append(m[key], Fixed64{v})
+}
+
+func (m Message) AddFixed32(key Number, v uint32) {
+   m[key] = append(m[key], Fixed32{v})
+}
+
+func (m Message) AddBytes(key Number, v Bytes) {
+   m[key] = append(m[key], v)
 }
 
 // wikipedia.org/wiki/Continuation-passing_style
@@ -191,18 +201,6 @@ func (m Message) Add(key Number, v func(Message)) {
    message0 := Message{}
    v(message0)
    m[key] = append(m[key], message0)
-}
-
-func (m Message) AddBytes(key Number, v Bytes) {
-   m[key] = append(m[key], v)
-}
-
-func (m Message) AddFixed32(key Number, v uint32) {
-   m[key] = append(m[key], Fixed32{v})
-}
-
-func (m Message) AddFixed64(key Number, v uint64) {
-   m[key] = append(m[key], Fixed64{v})
 }
 
 func get[T Value](m Message, key Number) func() (T, bool) {
@@ -220,22 +218,19 @@ func get[T Value](m Message, key Number) func() (T, bool) {
    }
 }
 
-func (m Message) Get(key Number) func() (Message, bool) {
-   var index int
-   return func() (Message, bool) {
-      values := m[key]
-      for index < len(values) {
-         index++
-         switch value0 := values[index-1].(type) {
-         case Message:
-            return value0, true
-         case Unknown:
-            return value0.Message, true
-         }
-      }
-      return nil, false
-   }
+func (m Message) GetVarint(key Number) func() (Varint, bool) {
+   return get[Varint](m, key)
 }
+
+func (m Message) GetFixed64(key Number) func() (Fixed64, bool) {
+   return get[Fixed64](m, key)
+}
+
+func (m Message) GetFixed32(key Number) func() (Fixed32, bool) {
+   return get[Fixed32](m, key)
+}
+
+///
 
 func (m Message) GetBytes(key Number) func() (Bytes, bool) {
    var index int
@@ -254,14 +249,19 @@ func (m Message) GetBytes(key Number) func() (Bytes, bool) {
    }
 }
 
-func (m Message) GetFixed64(key Number) func() (Fixed64, bool) {
-   return get[Fixed64](m, key)
-}
-
-func (m Message) GetFixed32(key Number) func() (Fixed32, bool) {
-   return get[Fixed32](m, key)
-}
-
-func (m Message) GetVarint(key Number) func() (Varint, bool) {
-   return get[Varint](m, key)
+func (m Message) Get(key Number) func() (Message, bool) {
+   var index int
+   return func() (Message, bool) {
+      values := m[key]
+      for index < len(values) {
+         index++
+         switch value0 := values[index-1].(type) {
+         case Message:
+            return value0, true
+         case Unknown:
+            return value0.Message, true
+         }
+      }
+      return nil, false
+   }
 }
