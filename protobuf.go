@@ -6,43 +6,46 @@ import (
    "slices"
 )
 
-func unmarshal(data []byte) Value {
-   data = slices.Clip(data)
-   if len(data) >= 1 {
-      m := Message{}
-      if m.Unmarshal(data) == nil {
-         return Unknown{Bytes: data, Message: m}
-      }
-   }
-   return Bytes(data)
-}
-
-type Unknown struct {
-   Bytes   Bytes
-   Fixed32 []Fixed32
-   Fixed64 []Fixed64
-   Message Message
-   Varint  []Varint
-}
-
-func (m Message) GoString() string {
-   b := fmt.Appendf(nil, "%T{\n", m)
-   for _, key := range m.keys() {
+func (m Message) Get(key Number) func() (Message, bool) {
+   var index int
+   return func() (Message, bool) {
       values := m[key]
-      b = fmt.Appendf(b, "%v: {", key)
-      if len(values) >= 2 {
-         b = append(b, '\n')
-      }
-      for _, value0 := range values {
-         b = fmt.Appendf(b, "%#v", value0)
-         if len(values) >= 2 {
-            b = append(b, ",\n"...)
+      for index < len(values) {
+         index++
+         switch value0 := values[index-1].(type) {
+         case Message:
+            return value0, true
+         case Unknown:
+            return value0.Message, true
          }
       }
-      b = append(b, "},\n"...)
+      return nil, false
    }
-   b = append(b, '}')
-   return string(b)
+}
+
+func (m Message) GetBytes(key Number) func() (Bytes, bool) {
+   var index int
+   return func() (Bytes, bool) {
+      values := m[key]
+      for index < len(values) {
+         index++
+         switch value0 := values[index-1].(type) {
+         case Bytes:
+            return value0, true
+         case Unknown:
+            return value0.Bytes, true
+         }
+      }
+      return nil, false
+   }
+}
+
+func (m Message) GetFixed64(key Number) func() (Fixed64, bool) {
+   return get[Fixed64](m, key)
+}
+
+func (m Message) GetFixed32(key Number) func() (Fixed32, bool) {
+   return get[Fixed32](m, key)
 }
 
 func (m Message) AddBytes(key Number, v Bytes) {
@@ -65,9 +68,103 @@ func (m Message) GetVarint(key Number) func() (Varint, bool) {
    return get[Varint](m, key)
 }
 
+func (u Unknown) GoString() string {
+   b := fmt.Appendf(nil, "%T{\n", u)
+   b = fmt.Appendf(b, "%#v,\n", u.Bytes)
+   b = fmt.Appendf(b, "%#v,\n", u.Message)
+   b = append(b, '}')
+   return string(b)
+}
+
+func (b Bytes) GoString() string {
+   switch len(b) {
+   case 0:
+      return fmt.Sprintf("%T(nil)", b)
+   case 1:
+      return fmt.Sprintf("%T{%q}", b, b[0])
+   }
+   return fmt.Sprintf("%T(%q)", b, []byte(b))
+}
+
+func (m Message) GoString() string {
+   b := fmt.Appendf(nil, "%T{\n", m)
+   for _, key := range m.keys() {
+      values := m[key]
+      b = fmt.Appendf(b, "%v: {", key)
+      if len(values) >= 2 {
+         b = append(b, '\n')
+      }
+      for _, value0 := range values {
+         b = fmt.Appendf(b, "%#v", value0)
+         if len(values) >= 2 {
+            b = append(b, ",\n"...)
+         }
+      }
+      b = append(b, "},\n"...)
+   }
+   b = append(b, '}')
+   return string(b)
+}
+
+// wikipedia.org/wiki/Continuation-passing_style
+func (m Message) Add(key Number, v func(Message)) {
+   message0 := Message{}
+   v(message0)
+   m[key] = append(m[key], message0)
+}
+
+type Value interface {
+   Append([]byte, Number) []byte
+}
+
+type Message map[Number][]Value
+
+type Varint [1]uint64
+
 func (v Varint) Append(data []byte, key Number) []byte {
    data = protowire.AppendTag(data, key, protowire.VarintType)
    return protowire.AppendVarint(data, v[0])
+}
+
+///
+
+func (f Fixed64) Append(data []byte, key Number) []byte {
+   data = protowire.AppendTag(data, key, protowire.Fixed64Type)
+   return protowire.AppendFixed64(data, f[0])
+}
+
+type Fixed64 [1]uint64
+
+// this does not pre allocate:
+// slices.Sorted(maps.Keys(m))
+// this turns slice into iterator into slice:
+// slices.Sorted(slices.Values(keys))
+func (m Message) keys() []Number {
+   keys := make([]Number, 0, len(m))
+   for key := range m {
+      keys = append(keys, key)
+   }
+   slices.Sort(keys)
+   return keys
+}
+
+func unmarshal(data []byte) Value {
+   data = slices.Clip(data)
+   if len(data) >= 1 {
+      m := Message{}
+      if m.Unmarshal(data) == nil {
+         return Unknown{Bytes: data, Message: m}
+      }
+   }
+   return Bytes(data)
+}
+
+type Unknown struct {
+   Bytes   Bytes
+   Fixed32 []Fixed32
+   Fixed64 []Fixed64
+   Message Message
+   Varint  []Varint
 }
 
 func (u Unknown) Append(data []byte, key Number) []byte {
@@ -76,14 +173,6 @@ func (u Unknown) Append(data []byte, key Number) []byte {
 }
 
 type Fixed32 [1]uint32
-
-type Fixed64 [1]uint64
-
-type Value interface {
-   Append([]byte, Number) []byte
-}
-
-type Message map[Number][]Value
 
 type Number = protowire.Number
 
@@ -135,17 +224,7 @@ func (m Message) Unmarshal(data []byte) error {
    return nil
 }
 
-func (u Unknown) GoString() string {
-   b := fmt.Appendf(nil, "%T{\n", u)
-   b = fmt.Appendf(b, "%#v,\n", u.Bytes)
-   b = fmt.Appendf(b, "%#v,\n", u.Message)
-   b = append(b, '}')
-   return string(b)
-}
-
 type Bytes []byte
-
-type Varint [1]uint64
 
 func get[T Value](m Message, key Number) func() (T, bool) {
    var index int
@@ -167,52 +246,9 @@ func (b Bytes) Append(data []byte, key Number) []byte {
    return protowire.AppendBytes(data, b)
 }
 
-func (b Bytes) GoString() string {
-   switch len(b) {
-   case 0:
-      return fmt.Sprintf("%T(nil)", b)
-   case 1:
-      return fmt.Sprintf("%T{%q}", b, b[0])
-   }
-   return fmt.Sprintf("%T(%q)", b, []byte(b))
-}
-
 func (f Fixed32) Append(data []byte, key Number) []byte {
    data = protowire.AppendTag(data, key, protowire.Fixed32Type)
    return protowire.AppendFixed32(data, f[0])
-}
-
-func (f Fixed64) Append(data []byte, key Number) []byte {
-   data = protowire.AppendTag(data, key, protowire.Fixed64Type)
-   return protowire.AppendFixed64(data, f[0])
-}
-
-// wikipedia.org/wiki/Continuation-passing_style
-func (m Message) Add(key Number, v func(Message)) {
-   message0 := Message{}
-   v(message0)
-   m[key] = append(m[key], message0)
-}
-
-func (m Message) GetFixed64(key Number) func() (Fixed64, bool) {
-   return get[Fixed64](m, key)
-}
-
-func (m Message) GetFixed32(key Number) func() (Fixed32, bool) {
-   return get[Fixed32](m, key)
-}
-
-// this does not pre allocate:
-// slices.Sorted(maps.Keys(m))
-// this turns slice into iterator into slice:
-// slices.Sorted(slices.Values(keys))
-func (m Message) keys() []Number {
-   keys := make([]Number, 0, len(m))
-   for key := range m {
-      keys = append(keys, key)
-   }
-   slices.Sort(keys)
-   return keys
 }
 
 func (m Message) Marshal() []byte {
@@ -228,38 +264,4 @@ func (m Message) Marshal() []byte {
 func (m Message) Append(data []byte, key Number) []byte {
    data = protowire.AppendTag(data, key, protowire.BytesType)
    return protowire.AppendBytes(data, m.Marshal())
-}
-
-func (m Message) Get(key Number) func() (Message, bool) {
-   var index int
-   return func() (Message, bool) {
-      values := m[key]
-      for index < len(values) {
-         index++
-         switch value0 := values[index-1].(type) {
-         case Message:
-            return value0, true
-         case Unknown:
-            return value0.Message, true
-         }
-      }
-      return nil, false
-   }
-}
-
-func (m Message) GetBytes(key Number) func() (Bytes, bool) {
-   var index int
-   return func() (Bytes, bool) {
-      values := m[key]
-      for index < len(values) {
-         index++
-         switch value0 := values[index-1].(type) {
-         case Bytes:
-            return value0, true
-         case Unknown:
-            return value0.Bytes, true
-         }
-      }
-      return nil, false
-   }
 }
