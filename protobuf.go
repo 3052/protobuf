@@ -83,44 +83,6 @@ func (m Message) GetVarint(key Number) func() (Varint, bool) {
    return get[Varint](m, key)
 }
 
-func (u Unknown) GoString() string {
-   b := fmt.Appendf(nil, "%T{\n", u)
-   b = fmt.Appendf(b, "%#v,\n", u.Bytes)
-   b = fmt.Appendf(b, "%#v,\n", u.Message)
-   b = append(b, '}')
-   return string(b)
-}
-
-func (b Bytes) GoString() string {
-   switch len(b) {
-   case 0:
-      return fmt.Sprintf("%T(nil)", b)
-   case 1:
-      return fmt.Sprintf("%T{%q}", b, b[0])
-   }
-   return fmt.Sprintf("%T(%q)", b, []byte(b))
-}
-
-func (m Message) GoString() string {
-   b := fmt.Appendf(nil, "%T{\n", m)
-   for _, key := range m.keys() {
-      values := m[key]
-      b = fmt.Appendf(b, "%v: {", key)
-      if len(values) >= 2 {
-         b = append(b, '\n')
-      }
-      for _, value0 := range values {
-         b = fmt.Appendf(b, "%#v", value0)
-         if len(values) >= 2 {
-            b = append(b, ",\n"...)
-         }
-      }
-      b = append(b, "},\n"...)
-   }
-   b = append(b, '}')
-   return string(b)
-}
-
 // wikipedia.org/wiki/Continuation-passing_style
 func (m Message) Add(key Number, v func(Message)) {
    message0 := Message{}
@@ -216,8 +178,6 @@ func unmarshal(data []byte) Value {
    return Bytes(data)
 }
 
-///
-
 func (m Message) Unmarshal(data []byte) error {
    for len(data) >= 1 {
       key, wire_type, length := protowire.ConsumeTag(data)
@@ -264,4 +224,42 @@ func (m Message) Unmarshal(data []byte) error {
       }
    }
    return nil
+}
+
+func (b Bytes) GoString() string {
+   switch len(b) {
+   case 0:
+      return fmt.Sprintf("%T(nil)", b)
+   case 1:
+      return fmt.Sprintf("%T{%q}", b, b[0])
+   }
+   return fmt.Sprintf("%T(%q)", b, []byte(b))
+}
+
+func (u Unknown) GoString() string {
+   b := fmt.Appendf(nil, "%T{\n", u)
+   b = fmt.Appendf(b, "%#v,\n", u.Bytes)
+   b = fmt.Appendf(b, "%#v,\n", u.Message)
+   b = append(b, '}')
+   return string(b)
+}
+
+func (m Message) GoString() string {
+   b := fmt.Appendf(nil, "%T{\n", m)
+   for _, key := range m.keys() {
+      values := m[key]
+      b = fmt.Appendf(b, "%v: {", key)
+      if len(values) >= 2 {
+         b = append(b, '\n')
+      }
+      for _, value0 := range values {
+         b = fmt.Appendf(b, "%#v", value0)
+         if len(values) >= 2 {
+            b = append(b, ",\n"...)
+         }
+      }
+      b = append(b, "},\n"...)
+   }
+   b = append(b, '}')
+   return string(b)
 }

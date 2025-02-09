@@ -10,38 +10,38 @@ import (
 func unmarshal(data []byte) value {
    data = slices.Clip(data)
    if len(data) >= 1 {
-      var u *unknown
+      var u *Unknown
       if v, err := consume_fixed32(data); err == nil {
-         u = &unknown{fixed32: v}
+         u = &Unknown{fixed32: v}
       }
       if v, err := consume_fixed64(data); err == nil {
          if u == nil {
-            u = &unknown{}
+            u = &Unknown{}
          }
          u.fixed64 = v
       }
-      var v message
+      var v Message
       if v.unmarshal(data) == nil {
          if u == nil {
-            u = &unknown{}
+            u = &Unknown{}
          }
          u.message = v
       }
       if v, err := consume_varint(data); err == nil {
          if u == nil {
-            u = &unknown{}
+            u = &Unknown{}
          }
-         u.varint = v
+         u.Varint = v
       }
       if u != nil {
-         u.bytes = data
+         u.Bytes = data
          return u
       }
    }
-   return bytes(data)
+   return Bytes(data)
 }
 
-func (m *message) unmarshal(data []byte) error {
+func (m *Message) unmarshal(data []byte) error {
    for len(data) >= 1 {
       num, typ, n := protowire.ConsumeTag(data)
       err := protowire.ParseError(n)
@@ -57,8 +57,28 @@ func (m *message) unmarshal(data []byte) error {
          if err != nil {
             return err
          }
-         *m = append(*m, field{
-            num, typ, varint(v),
+         *m = append(*m, Field{
+            num, typ, Varint(v),
+         })
+         data = data[n:]
+      case protowire.Fixed64Type:
+         v, n := protowire.ConsumeFixed64(data)
+         err := protowire.ParseError(n)
+         if err != nil {
+            return err
+         }
+         *m = append(*m, Field{
+            num, typ, fixed64(v),
+         })
+         data = data[n:]
+      case protowire.Fixed32Type:
+         v, n := protowire.ConsumeFixed32(data)
+         err := protowire.ParseError(n)
+         if err != nil {
+            return err
+         }
+         *m = append(*m, Field{
+            num, typ, fixed32(v),
          })
          data = data[n:]
       case protowire.BytesType:
@@ -67,7 +87,7 @@ func (m *message) unmarshal(data []byte) error {
          if err != nil {
             return err
          }
-         *m = append(*m, field{
+         *m = append(*m, Field{
             num, typ, unmarshal(v),
          })
          data = data[n:]
@@ -76,14 +96,6 @@ func (m *message) unmarshal(data []byte) error {
       }
    }
    return nil
-}
-
-type unknown struct {
-   bytes   bytes
-   varint  []varint
-   fixed32 []fixed32
-   fixed64 []fixed64
-   message message
 }
 
 func consume_fixed32(data []byte) ([]fixed32, error) {
@@ -100,11 +112,6 @@ func consume_fixed32(data []byte) ([]fixed32, error) {
    return vs, nil
 }
 
-func (u *unknown) String() string {
-   type unknown1 unknown
-   return fmt.Sprintf("%+v\n", (*unknown1)(u))
-}
-
 func consume_fixed64(data []byte) ([]fixed64, error) {
    var vs []fixed64
    for len(data) >= 1 {
@@ -119,15 +126,15 @@ func consume_fixed64(data []byte) ([]fixed64, error) {
    return vs, nil
 }
 
-func consume_varint(data []byte) ([]varint, error) {
-   var vs []varint
+func consume_varint(data []byte) ([]Varint, error) {
+   var vs []Varint
    for len(data) >= 1 {
       v, n := protowire.ConsumeVarint(data)
       err := protowire.ParseError(n)
       if err != nil {
          return nil, err
       }
-      vs = append(vs, varint(v))
+      vs = append(vs, Varint(v))
       data = data[n:]
    }
    return vs, nil
@@ -137,9 +144,9 @@ type value interface {
    Append([]byte) []byte
 }
 
-type varint uint64
+type Varint uint64
 
-func (v varint) Append(data []byte) []byte {
+func (v Varint) Append(data []byte) []byte {
    return protowire.AppendVarint(data, uint64(v))
 }
 
@@ -155,13 +162,13 @@ func (f fixed32) Append(data []byte) []byte {
    return protowire.AppendFixed32(data, uint32(f))
 }
 
-type bytes []byte
+type Bytes []byte
 
-func (b bytes) Append(data []byte) []byte {
+func (b Bytes) Append(data []byte) []byte {
    return protowire.AppendBytes(data, b)
 }
 
-func (m message) marshal() []byte {
+func (m Message) marshal() []byte {
    var data []byte
    for _, field0 := range m {
       data = protowire.AppendTag(data, field0.Number, field0.Type)
@@ -170,19 +177,59 @@ func (m message) marshal() []byte {
    return data
 }
 
-func (m message) Append(data []byte) []byte {
+func (m Message) Append(data []byte) []byte {
    return protowire.AppendBytes(data, m.marshal())
 }
 
-type message []field
+type Message []Field
 
-func (u *unknown) Append(data []byte) []byte {
-   return protowire.AppendBytes(data, u.bytes)
+func (u *Unknown) Append(data []byte) []byte {
+   return protowire.AppendBytes(data, u.Bytes)
 }
 
 // const i int = 2
-type field struct {
+type Field struct {
    Number protowire.Number
-   Type protowire.Type
-   Value value
+   Type   protowire.Type
+   Value  value
+}
+
+func (b Bytes) GoString() string {
+   return fmt.Sprintf("%T(%q)", b, []byte(b))
+}
+
+func (m Message) GoString() string {
+   b := fmt.Appendf(nil, "%T{\n", m)
+   for _, field0 := range m {
+      b = fmt.Appendf(b, "%#v,\n", field0)
+   }
+   b = append(b, '}')
+   return string(b)
+}
+
+type Unknown struct {
+   Bytes   Bytes
+   Varint  []Varint
+   fixed32 []fixed32
+   fixed64 []fixed64
+   message Message
+}
+
+func (u *Unknown) GoString() string {
+   b := fmt.Appendf(nil, "%T{\n", u)
+   b = fmt.Appendf(b, "Bytes: %#v,\n", u.Bytes)
+   if u.Varint != nil {
+      b = fmt.Appendf(b, "Varint: %#v,\n", u.Varint)
+   }
+   if u.fixed32 != nil {
+      b = fmt.Appendf(b, "fixed32: %#v,\n", u.fixed32)
+   }
+   if u.fixed64 != nil {
+      b = fmt.Appendf(b, "fixed64: %#v,\n", u.fixed64)
+   }
+   if u.message != nil {
+      b = fmt.Appendf(b, "message: %#v,\n", u.message)
+   }
+   b = append(b, '}')
+   return string(b)
 }
