@@ -19,7 +19,7 @@ func TestUnmarshal(t *testing.T) {
    if err != nil {
       t.Fatal(err)
    }
-   file, err := os.Create("hello.go")
+   file, err := os.Create("../ignore.go")
    if err != nil {
       t.Fatal(err)
    }
