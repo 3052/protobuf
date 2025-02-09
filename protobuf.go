@@ -7,27 +7,6 @@ import (
    "slices"
 )
 
-// protobuf.dev/programming-guides/encoding#cheat-sheet
-type Bytes []byte
-
-func (b Bytes) GoString() string {
-   return fmt.Sprintf("protobuf.Bytes(%q)", []byte(b))
-}
-
-func (b Bytes) Append(data []byte, num Number) []byte {
-   data = protowire.AppendTag(data, num, protowire.BytesType)
-   return protowire.AppendBytes(data, b)
-}
-
-// protobuf.dev/programming-guides/encoding#cheat-sheet-key
-type Field struct {
-   Number Number
-   Value  Value
-}
-
-// protobuf.dev/programming-guides/encoding#cheat-sheet
-type I32 uint32
-
 func (i I32) GoString() string {
    return fmt.Sprintf("protobuf.I32(%v)", i)
 }
@@ -37,9 +16,6 @@ func (i I32) Append(data []byte, num Number) []byte {
    return protowire.AppendFixed32(data, uint32(i))
 }
 
-// protobuf.dev/programming-guides/encoding#cheat-sheet
-type I64 uint64
-
 func (i I64) GoString() string {
    return fmt.Sprintf("protobuf.I64(%v)", i)
 }
@@ -47,12 +23,6 @@ func (i I64) GoString() string {
 func (i I64) Append(data []byte, num Number) []byte {
    data = protowire.AppendTag(data, num, protowire.Fixed64Type)
    return protowire.AppendFixed64(data, uint64(i))
-}
-
-// protobuf.dev/programming-guides/encoding#cheat-sheet
-type LenPrefix struct {
-   Bytes   Bytes
-   Message Message
 }
 
 func (p *LenPrefix) GoString() string {
@@ -134,9 +104,6 @@ func (m Message) GoString() string {
    return string(data)
 }
 
-// protobuf.dev/programming-guides/encoding#cheat-sheet
-type Message []Field
-
 func (m Message) Marshal() []byte {
    var data []byte
    for _, field0 := range m {
@@ -149,37 +116,6 @@ func (m Message) Append(data []byte, num Number) []byte {
    data = protowire.AppendTag(data, num, protowire.BytesType)
    return protowire.AppendBytes(data, m.Marshal())
 }
-
-type Number = protowire.Number
-
-func unmarshal(data []byte) Value {
-   data = slices.Clip(data)
-   if len(data) >= 1 {
-      var m Message
-      if m.Unmarshal(data) == nil {
-         return &LenPrefix{data, m}
-      }
-   }
-   return Bytes(data)
-}
-
-// protobuf.dev/programming-guides/encoding#cheat-sheet
-type Value interface {
-   Append([]byte, Number) []byte
-   fmt.GoStringer
-}
-
-func (v Varint) Append(data []byte, num Number) []byte {
-   data = protowire.AppendTag(data, num, protowire.VarintType)
-   return protowire.AppendVarint(data, uint64(v))
-}
-
-func (v Varint) GoString() string {
-   return fmt.Sprintf("protobuf.Varint(%v)", v)
-}
-
-// protobuf.dev/programming-guides/encoding#cheat-sheet
-type Varint uint64
 
 func (m *Message) AddVarint(num Number, v Varint) {
    *m = append(*m, Field{num, v})
@@ -216,20 +152,6 @@ func (m Message) GetI32(num Number) func() (I32, bool) {
    return get[I32](m, num)
 }
 
-func get[V Value](m Message, num Number) func() (V, bool) {
-   var index int
-   return func() (V, bool) {
-      for index < len(m) {
-         index++
-         value0, ok := m[index-1].Value.(V)
-         if ok {
-            return value0, true
-         }
-      }
-      return *new(V), false
-   }
-}
-
 func (m Message) GetBytes(num Number) func() (Bytes, bool) {
    var index int
    return func() (Bytes, bool) {
@@ -260,4 +182,83 @@ func (m Message) Get(num Number) func() (Message, bool) {
       }
       return nil, false
    }
+}
+
+func unmarshal(data []byte) Value {
+   data = slices.Clip(data)
+   if len(data) >= 1 {
+      var m Message
+      if m.Unmarshal(data) == nil {
+         return &LenPrefix{data, m}
+      }
+   }
+   return Bytes(data)
+}
+
+func (v Varint) Append(data []byte, num Number) []byte {
+   data = protowire.AppendTag(data, num, protowire.VarintType)
+   return protowire.AppendVarint(data, uint64(v))
+}
+
+func (v Varint) GoString() string {
+   return fmt.Sprintf("protobuf.Varint(%v)", v)
+}
+
+func get[V Value](m Message, num Number) func() (V, bool) {
+   var index int
+   return func() (V, bool) {
+      for index < len(m) {
+         index++
+         value0, ok := m[index-1].Value.(V)
+         if ok {
+            return value0, true
+         }
+      }
+      return *new(V), false
+   }
+}
+
+// protobuf.dev/programming-guides/encoding#cheat-sheet
+type I64 uint64
+
+// protobuf.dev/programming-guides/encoding#cheat-sheet
+type LenPrefix struct {
+   Bytes   Bytes
+   Message Message
+}
+
+// protobuf.dev/programming-guides/encoding#cheat-sheet
+type Message []Field
+
+// protobuf.dev/programming-guides/encoding#cheat-sheet-key
+type Number = protowire.Number
+
+// protobuf.dev/programming-guides/encoding#cheat-sheet
+type Value interface {
+   Append([]byte, Number) []byte
+   fmt.GoStringer
+}
+
+// protobuf.dev/programming-guides/encoding#cheat-sheet
+type Varint uint64
+
+// protobuf.dev/programming-guides/encoding#cheat-sheet
+type Bytes []byte
+
+func (b Bytes) GoString() string {
+   return fmt.Sprintf("protobuf.Bytes(%q)", []byte(b))
+}
+
+// protobuf.dev/programming-guides/encoding#cheat-sheet-key
+type Field struct {
+   Number Number
+   Value  Value
+}
+
+// protobuf.dev/programming-guides/encoding#cheat-sheet
+type I32 uint32
+
+func (b Bytes) Append(data []byte, num Number) []byte {
+   data = protowire.AppendTag(data, num, protowire.BytesType)
+   return protowire.AppendBytes(data, b)
 }

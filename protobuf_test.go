@@ -1,14 +1,35 @@
 package protobuf
 
 import (
-   "fmt"
+   "bytes"
+   "google.golang.org/protobuf/testing/protopack"
    "os"
    "testing"
 )
 
 const youtube = "testdata/com.google.android.youtube.20.05.44.binpb"
 
-func Test(t *testing.T) {
+func TestBytes(t *testing.T) {
+   t.Run("Append", func(t *testing.T) {
+      data := protopack.Message{
+         protopack.Tag{2, protopack.BytesType}, protopack.String("hello world"),
+      }.Marshal()
+      data1 := Message{
+         {2, Bytes("hello world")},
+      }.Marshal()
+      if !bytes.Equal(data1, data) {
+         t.Fatal(data1)
+      }
+   })
+   t.Run("GoString", func(t *testing.T) {
+      data := Bytes("hello world").GoString()
+      if data != `protobuf.Bytes("hello world")` {
+         t.Fatal(data)
+      }
+   })
+}
+
+func TestMessage(t *testing.T) {
    data, err := os.ReadFile(youtube)
    if err != nil {
       t.Fatal(err)
@@ -18,12 +39,4 @@ func Test(t *testing.T) {
    if err != nil {
       t.Fatal(err)
    }
-   file, err := os.Create("internal/ignore.go")
-   if err != nil {
-      t.Fatal(err)
-   }
-   defer file.Close()
-   fmt.Fprintln(file, "package protobuf")
-   fmt.Fprintln(file, `import "41.neocities.org/protobuf/internal/protobuf"`)
-   fmt.Fprintf(file, "var _ = %#v\n", message0)
 }
