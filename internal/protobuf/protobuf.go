@@ -7,28 +7,109 @@ import (
    "slices"
 )
 
+func (m *message) unmarshal(data []byte) error {
+   for len(data) >= 1 {
+      num, typ, n := protowire.ConsumeTag(data)
+      err := protowire.ParseError(n)
+      if err != nil {
+         return err
+      }
+      data = data[n:]
+      // google.golang.org/protobuf/encoding/protowire#ConsumeFieldValue
+      switch typ {
+      case protowire.VarintType:
+         v, n := protowire.ConsumeVarint(data)
+         err := protowire.ParseError(n)
+         if err != nil {
+            return err
+         }
+         *m = append(*m, field{
+            num, typ, varint(v),
+         })
+         data = data[n:]
+      case protowire.BytesType:
+         v, n := protowire.ConsumeBytes(data)
+         err := protowire.ParseError(n)
+         if err != nil {
+            return err
+         }
+         *m = append(*m, field{
+            num, typ, unmarshal(v),
+         })
+         data = data[n:]
+      default:
+         return errors.New("cannot parse reserved wire type")
+      }
+   }
+   return nil
+}
+
+type unknown struct {
+   bytes   bytes
+   varint  []varint
+   fixed32 []fixed32
+   fixed64 []fixed64
+   message message
+}
+
+func unmarshal(data []byte) value {
+   data = slices.Clip(data)
+   if len(data) >= 1 {
+      var u *unknown
+      if v, err := consume_varint(data); err == nil {
+         if u == nil {
+            u = &unknown{}
+         }
+         u.varint = v
+      }
+      if v, err := consume_fixed32(data); err == nil {
+         if u == nil {
+            u = &unknown{}
+         }
+         u.fixed32 = v
+      }
+      if v, err := consume_fixed64(data); err == nil {
+         if u == nil {
+            u = &unknown{}
+         }
+         u.fixed64 = v
+      }
+      if u != nil {
+         u.bytes = data
+         return u
+      }
+   }
+   return bytes(data)
+}
+
+func consume_fixed32(data []byte) ([]fixed32, error) {
+   var vs []fixed32
+   for len(data) >= 1 {
+      v, n := protowire.ConsumeFixed32(data)
+      err := protowire.ParseError(n)
+      if err != nil {
+         return nil, err
+      }
+      vs = append(vs, fixed32(v))
+      data = data[n:]
+   }
+   return vs, nil
+}
+
 func (u *unknown) String() string {
    type unknown1 unknown
    return fmt.Sprintf("%+v\n", (*unknown1)(u))
 }
 
-type unknown struct {
-   bytes   bytes
-   fixed32 []fixed32
-   fixed64 []fixed64
-   message message
-   varint  []varint
-}
-
-func consume_fixed64(data []byte) ([]uint64, error) {
-   var vs []uint64
+func consume_fixed64(data []byte) ([]fixed64, error) {
+   var vs []fixed64
    for len(data) >= 1 {
       v, n := protowire.ConsumeFixed64(data)
       err := protowire.ParseError(n)
       if err != nil {
          return nil, err
       }
-      vs = append(vs, v)
+      vs = append(vs, fixed64(v))
       data = data[n:]
    }
    return vs, nil
@@ -46,17 +127,6 @@ func consume_varint(data []byte) ([]varint, error) {
       data = data[n:]
    }
    return vs, nil
-}
-
-func unmarshal(data []byte) value {
-   data = slices.Clip(data)
-   if len(data) >= 1 {
-      v, err := consume_varint(data)
-      if err == nil {
-         return &unknown{bytes: data, varint: v}
-      }
-   }
-   return bytes(data)
 }
 
 type value interface {
@@ -104,43 +174,6 @@ type message []field
 
 func (u *unknown) Append(data []byte) []byte {
    return protowire.AppendBytes(data, u.bytes)
-}
-
-func (m *message) unmarshal(data []byte) error {
-   for len(data) >= 1 {
-      num, typ, n := protowire.ConsumeTag(data)
-      err := protowire.ParseError(n)
-      if err != nil {
-         return err
-      }
-      data = data[n:]
-      // google.golang.org/protobuf/encoding/protowire#ConsumeFieldValue
-      switch typ {
-      case protowire.VarintType:
-         v, n := protowire.ConsumeVarint(data)
-         err := protowire.ParseError(n)
-         if err != nil {
-            return err
-         }
-         *m = append(*m, field{
-            num, typ, varint(v),
-         })
-         data = data[n:]
-      case protowire.BytesType:
-         v, n := protowire.ConsumeBytes(data)
-         err := protowire.ParseError(n)
-         if err != nil {
-            return err
-         }
-         *m = append(*m, field{
-            num, typ, unmarshal(v),
-         })
-         data = data[n:]
-      default:
-         return errors.New("cannot parse reserved wire type")
-      }
-   }
-   return nil
 }
 
 // const i int = 2

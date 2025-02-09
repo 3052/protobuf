@@ -9,7 +9,14 @@ import (
 func Test(t *testing.T) {
    data := protopack.Message{
       protopack.Tag{2, protopack.BytesType}, protopack.LengthPrefix{
-         protopack.Varint(3), protopack.Varint(4), protopack.Varint(5),
+         protopack.Varint(1),
+         protopack.Varint(2),
+         protopack.Varint(3),
+         protopack.Varint(4),
+         protopack.Varint(5),
+         protopack.Varint(6),
+         protopack.Varint(7),
+         protopack.Varint(8),
       },
    }.Marshal()
    var message0 message
