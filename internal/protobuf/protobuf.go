@@ -7,6 +7,69 @@ import (
    "slices"
 )
 
+func consume_i64(data []byte) ([]I64, error) {
+   var vs []I64
+   for len(data) >= 1 {
+      v, n := protowire.ConsumeFixed64(data)
+      err := protowire.ParseError(n)
+      if err != nil {
+         return nil, err
+      }
+      vs = append(vs, I64(v))
+      data = data[n:]
+   }
+   return vs, nil
+}
+
+func consume_i32(data []byte) ([]I32, error) {
+   var vs []I32
+   for len(data) >= 1 {
+      v, n := protowire.ConsumeFixed32(data)
+      err := protowire.ParseError(n)
+      if err != nil {
+         return nil, err
+      }
+      vs = append(vs, I32(v))
+      data = data[n:]
+   }
+   return vs, nil
+}
+
+type Bytes []byte
+
+func (b Bytes) Append(data []byte) []byte {
+   return protowire.AppendBytes(data, b)
+}
+
+func (b Bytes) GoString() string {
+   return fmt.Sprintf("protobuf.Bytes(%q)", []byte(b))
+}
+
+type Field struct {
+   Number protowire.Number
+   Value  value
+}
+
+type I32 uint32
+
+func (i I32) Append(data []byte) []byte {
+   return protowire.AppendFixed32(data, uint32(i))
+}
+
+func (i I32) GoString() string {
+   return fmt.Sprintf("protobuf.I32(%v)", i)
+}
+
+type I64 uint64
+
+func (i I64) Append(data []byte) []byte {
+   return protowire.AppendFixed64(data, uint64(i))
+}
+
+func (i I64) GoString() string {
+   return fmt.Sprintf("protobuf.I64(%v)", i)
+}
+
 func (n *Len) Append(data []byte) []byte {
    return protowire.AppendBytes(data, n.Bytes)
 }
@@ -59,139 +122,11 @@ func (n *Len) GoString() string {
    return string(b)
 }
 
-type I32 uint32
-
-func (i I32) Append(data []byte) []byte {
-   return protowire.AppendFixed32(data, uint32(i))
-}
-
-func (i I32) GoString() string {
-   return fmt.Sprintf("protobuf.I32(%v)", i)
-}
-
-func consume_i32(data []byte) ([]I32, error) {
-   var vs []I32
-   for len(data) >= 1 {
-      v, n := protowire.ConsumeFixed32(data)
-      err := protowire.ParseError(n)
-      if err != nil {
-         return nil, err
-      }
-      vs = append(vs, I32(v))
-      data = data[n:]
-   }
-   return vs, nil
-}
-
-type I64 uint64
-
-func (i I64) Append(data []byte) []byte {
-   return protowire.AppendFixed64(data, uint64(i))
-}
-
-func (i I64) GoString() string {
-   return fmt.Sprintf("protobuf.I64(%v)", i)
-}
-
-func consume_i64(data []byte) ([]I64, error) {
-   var vs []I64
-   for len(data) >= 1 {
-      v, n := protowire.ConsumeFixed64(data)
-      err := protowire.ParseError(n)
-      if err != nil {
-         return nil, err
-      }
-      vs = append(vs, I64(v))
-      data = data[n:]
-   }
-   return vs, nil
-}
-
-func (v Varint) GoString() string {
-   return fmt.Sprintf("protobuf.Varint(%v)", v)
-}
-
-func consume_varint(data []byte) ([]Varint, error) {
-   var vs []Varint
-   for len(data) >= 1 {
-      v, n := protowire.ConsumeVarint(data)
-      err := protowire.ParseError(n)
-      if err != nil {
-         return nil, err
-      }
-      vs = append(vs, Varint(v))
-      data = data[n:]
-   }
-   return vs, nil
-}
-
-type Varint uint64
-
-func (v Varint) Append(data []byte) []byte {
-   return protowire.AppendVarint(data, uint64(v))
-}
-
-///
-
-type Field struct {
-   Number protowire.Number
-   Value  value
-}
-
-type Bytes []byte
-
-func (b Bytes) Append(data []byte) []byte {
-   return protowire.AppendBytes(data, b)
-}
-
 func (m Message) Append(data []byte) []byte {
    return protowire.AppendBytes(data, m.marshal())
 }
 
 type Message []Field
-
-func (b Bytes) GoString() string {
-   return fmt.Sprintf("protobuf.Bytes(%q)", []byte(b))
-}
-
-type value interface {
-   Append([]byte) []byte
-   fmt.GoStringer
-}
-
-func unmarshal(data []byte) value {
-   data = slices.Clip(data)
-   if len(data) >= 1 {
-      var len0 *Len
-      if v, err := consume_i32(data); err == nil {
-         len0 = &Len{I32: v}
-      }
-      if v, err := consume_i64(data); err == nil {
-         if len0 == nil {
-            len0 = &Len{}
-         }
-         len0.I64 = v
-      }
-      var v Message
-      if v.unmarshal(data) == nil {
-         if len0 == nil {
-            len0 = &Len{}
-         }
-         len0.Message = v
-      }
-      if v, err := consume_varint(data); err == nil {
-         if len0 == nil {
-            len0 = &Len{}
-         }
-         len0.Varint = v
-      }
-      if len0 != nil {
-         len0.Bytes = data
-         return len0
-      }
-   }
-   return Bytes(data)
-}
 
 func (m Message) marshal() []byte {
    var data []byte
@@ -275,4 +210,69 @@ func (m Message) GoString() string {
    }
    data = append(data, '}')
    return string(data)
+}
+
+func (v Varint) GoString() string {
+   return fmt.Sprintf("protobuf.Varint(%v)", v)
+}
+
+type value interface {
+   Append([]byte) []byte
+   fmt.GoStringer
+}
+
+func unmarshal(data []byte) value {
+   data = slices.Clip(data)
+   if len(data) >= 1 {
+      var len0 *Len
+      if v, err := consume_i32(data); err == nil {
+         len0 = &Len{I32: v}
+      }
+      if v, err := consume_i64(data); err == nil {
+         if len0 == nil {
+            len0 = &Len{}
+         }
+         len0.I64 = v
+      }
+      var v Message
+      if v.unmarshal(data) == nil {
+         if len0 == nil {
+            len0 = &Len{}
+         }
+         len0.Message = v
+      }
+      if v, err := consume_varint(data); err == nil {
+         if len0 == nil {
+            len0 = &Len{}
+         }
+         len0.Varint = v
+      }
+      if len0 != nil {
+         len0.Bytes = data
+         return len0
+      }
+   }
+   return Bytes(data)
+}
+
+///
+
+func consume_varint(data []byte) ([]Varint, error) {
+   var vs []Varint
+   for len(data) >= 1 {
+      v, n := protowire.ConsumeVarint(data)
+      err := protowire.ParseError(n)
+      if err != nil {
+         return nil, err
+      }
+      vs = append(vs, Varint(v))
+      data = data[n:]
+   }
+   return vs, nil
+}
+
+type Varint uint64
+
+func (v Varint) Append(data []byte) []byte {
+   return protowire.AppendVarint(data, uint64(v))
 }
