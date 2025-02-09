@@ -10,10 +10,17 @@ import (
 func unmarshal(data []byte) value {
    data = slices.Clip(data)
    if len(data) >= 1 {
-      var (
-         u *unknown
-         v message
-      )
+      var u *unknown
+      if v, err := consume_fixed32(data); err == nil {
+         u = &unknown{fixed32: v}
+      }
+      if v, err := consume_fixed64(data); err == nil {
+         if u == nil {
+            u = &unknown{}
+         }
+         u.fixed64 = v
+      }
+      var v message
       if v.unmarshal(data) == nil {
          if u == nil {
             u = &unknown{}
@@ -25,18 +32,6 @@ func unmarshal(data []byte) value {
             u = &unknown{}
          }
          u.varint = v
-      }
-      if v, err := consume_fixed32(data); err == nil {
-         if u == nil {
-            u = &unknown{}
-         }
-         u.fixed32 = v
-      }
-      if v, err := consume_fixed64(data); err == nil {
-         if u == nil {
-            u = &unknown{}
-         }
-         u.fixed64 = v
       }
       if u != nil {
          u.bytes = data
