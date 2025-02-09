@@ -7,6 +7,45 @@ import (
    "slices"
 )
 
+func unmarshal(data []byte) value {
+   data = slices.Clip(data)
+   if len(data) >= 1 {
+      var (
+         u *unknown
+         v message
+      )
+      if v.unmarshal(data) == nil {
+         if u == nil {
+            u = &unknown{}
+         }
+         u.message = v
+      }
+      if v, err := consume_varint(data); err == nil {
+         if u == nil {
+            u = &unknown{}
+         }
+         u.varint = v
+      }
+      if v, err := consume_fixed32(data); err == nil {
+         if u == nil {
+            u = &unknown{}
+         }
+         u.fixed32 = v
+      }
+      if v, err := consume_fixed64(data); err == nil {
+         if u == nil {
+            u = &unknown{}
+         }
+         u.fixed64 = v
+      }
+      if u != nil {
+         u.bytes = data
+         return u
+      }
+   }
+   return bytes(data)
+}
+
 func (m *message) unmarshal(data []byte) error {
    for len(data) >= 1 {
       num, typ, n := protowire.ConsumeTag(data)
@@ -50,36 +89,6 @@ type unknown struct {
    fixed32 []fixed32
    fixed64 []fixed64
    message message
-}
-
-func unmarshal(data []byte) value {
-   data = slices.Clip(data)
-   if len(data) >= 1 {
-      var u *unknown
-      if v, err := consume_varint(data); err == nil {
-         if u == nil {
-            u = &unknown{}
-         }
-         u.varint = v
-      }
-      if v, err := consume_fixed32(data); err == nil {
-         if u == nil {
-            u = &unknown{}
-         }
-         u.fixed32 = v
-      }
-      if v, err := consume_fixed64(data); err == nil {
-         if u == nil {
-            u = &unknown{}
-         }
-         u.fixed64 = v
-      }
-      if u != nil {
-         u.bytes = data
-         return u
-      }
-   }
-   return bytes(data)
 }
 
 func consume_fixed32(data []byte) ([]fixed32, error) {
