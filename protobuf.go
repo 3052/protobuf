@@ -87,8 +87,6 @@ type Message map[Number][]Value
 
 type Number = protowire.Number
 
-///
-
 func (m Message) Unmarshal(data []byte) error {
    for len(data) >= 1 {
       key, wire_type, length := protowire.ConsumeTag(data)
