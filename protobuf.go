@@ -7,38 +7,6 @@ import (
    "slices"
 )
 
-func (m Message) GetBytes(num Number) func() (Bytes, bool) {
-   var index int
-   return func() (Bytes, bool) {
-      for index < len(m) {
-         index++
-         switch value0 := m[index-1].Value.(type) {
-         case Bytes:
-            return value0, true
-         case *LenPrefix:
-            return value0.Bytes, true
-         }
-      }
-      return nil, false
-   }
-}
-
-func (m Message) Get(num Number) func() (Message, bool) {
-   var index int
-   return func() (Message, bool) {
-      for index < len(m) {
-         index++
-         switch value0 := m[index-1].Value.(type) {
-         case Message:
-            return value0, true
-         case *LenPrefix:
-            return value0.Message, true
-         }
-      }
-      return nil, false
-   }
-}
-
 func (m *Message) Unmarshal(data []byte) error {
    for len(data) >= 1 {
       num, wire_type, size := protowire.ConsumeTag(data)
@@ -253,12 +221,53 @@ func get[V Value](m Message, num Number) func() (V, bool) {
    var index int
    return func() (V, bool) {
       for index < len(m) {
+         field0 := m[index]
          index++
-         value0, ok := m[index-1].Value.(V)
-         if ok {
-            return value0, true
+         if field0.Number == num {
+            value0, ok := field0.Value.(V)
+            if ok {
+               return value0, true
+            }
          }
       }
       return *new(V), false
+   }
+}
+
+func (m Message) GetBytes(num Number) func() (Bytes, bool) {
+   var index int
+   return func() (Bytes, bool) {
+      for index < len(m) {
+         field0 := m[index]
+         index++
+         if field0.Number == num {
+            switch value0 := field0.Value.(type) {
+            case Bytes:
+               return value0, true
+            case *LenPrefix:
+               return value0.Bytes, true
+            }
+         }
+      }
+      return nil, false
+   }
+}
+
+func (m Message) Get(num Number) func() (Message, bool) {
+   var index int
+   return func() (Message, bool) {
+      for index < len(m) {
+         field0 := m[index]
+         index++
+         if field0.Number == num {
+            switch value0 := field0.Value.(type) {
+            case Message:
+               return value0, true
+            case *LenPrefix:
+               return value0.Message, true
+            }
+         }
+      }
+      return nil, false
    }
 }

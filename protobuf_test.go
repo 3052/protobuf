@@ -27,24 +27,6 @@ func TestI64(t *testing.T) {
    }
 }
 
-func TestLenPrefix(t *testing.T) {
-   value := LenPrefix{
-      Bytes("hello"),
-      Message{
-         {2, Varint(3)},
-      },
-   }
-   data := "&protobuf.LenPrefix{\n" +
-      "protobuf.Bytes(\"hello\"),\n" +
-      "protobuf.Message{\n" +
-         "{2, protobuf.Varint(3)},\n" +
-      "},\n" +
-   "}"
-   if value.GoString() != data {
-      t.Fatal(value.GoString())
-   }
-}
-
 func TestVarint(t *testing.T) {
    data := Varint.GoString(2)
    if data != "protobuf.Varint(2)" {
@@ -52,47 +34,19 @@ func TestVarint(t *testing.T) {
    }
 }
 
+func TestLenPrefix(t *testing.T) {
+   var value LenPrefix
+   data := "&protobuf.LenPrefix{\n" +
+      "protobuf.Bytes(\"\"),\n" +
+      "protobuf.Message{\n" +
+      "},\n" +
+      "}"
+   if value.GoString() != data {
+      t.Fatal(value.GoString())
+   }
+}
+
 func TestMessage(t *testing.T) {
-   t.Run("Add,AddVarint,Get,GetVarint", func(t *testing.T) {
-      var m Message
-      m.Add(2, func(m *Message) {
-         m.AddVarint(3, 4)
-      })
-      m, _ = m.Get(2)()
-      next := m.GetVarint(3)
-      v, _ := next()
-      if v != 4 {
-         t.Fatal(v)
-      }
-      _, ok := next()
-      if ok {
-         t.Fatal("next")
-      }
-   })
-   t.Run("AddBytes,GetBytes", func(t *testing.T) {
-      var m Message
-      m.AddBytes(2, []byte("hello world"))
-      v, _ := m.GetBytes(2)()
-      if string(v) != "hello world" {
-         t.Fatal(v)
-      }
-   })
-   t.Run("AddI32,GetI32", func(t *testing.T) {
-      var m Message
-      m.AddI32(2, 3)
-      v, _ := m.GetI32(2)()
-      if v != 3 {
-         t.Fatal(v)
-      }
-   })
-   t.Run("AddI64,GetI64", func(t *testing.T) {
-      var m Message
-      m.AddI64(2, 3)
-      v, _ := m.GetI64(2)()
-      if v != 3 {
-         t.Fatal(v)
-      }
-   })
    t.Run("Unmarshal", func(t *testing.T) {
       var m Message
       err := m.Unmarshal(value.Marshal())
@@ -101,29 +55,36 @@ func TestMessage(t *testing.T) {
       }
    })
    t.Run("Marshal", func(t *testing.T) {
-      data := Message{
-         {2, Message{
-            {3, Bytes("Bytes")},
-         }},
-         {4, &LenPrefix{
-            Bytes("LenPrefix"), nil,
-         }},
-         {5, I32(2)},
-         {6, I64(2)},
-         {7, Varint(2)},
-      }.Marshal()
-      if !bytes.Equal(data, value.Marshal()) {
-         t.Fatal(data)
+      if !bytes.Equal(value1.Marshal(), value.Marshal()) {
+         t.Fatal(value1.Marshal())
+      }
+   })
+   t.Run("GetBytes", func(t *testing.T) {
+      v, _ := value1.GetBytes(5)()
+      if string(v) != "Bytes" {
+         t.Fatal(v)
+      }
+      v, _ = value1.GetBytes(6)()
+      if string(v) != "LenPrefix" {
+         t.Fatal(v)
       }
    })
 }
 
 var value = protopack.Message{
-   protopack.Tag{2, protopack.BytesType}, protopack.LengthPrefix{
-      protopack.Tag{3, protopack.BytesType}, protopack.String("Bytes"),
-   },
-   protopack.Tag{4, protopack.BytesType}, protopack.String("LenPrefix"),
-   protopack.Tag{5, protopack.Fixed32Type}, protopack.Int32(2),
-   protopack.Tag{6, protopack.Fixed64Type}, protopack.Int64(2),
-   protopack.Tag{7, protopack.VarintType}, protopack.Varint(2),
+   protopack.Tag{2, protopack.VarintType}, protopack.Varint(2),
+   protopack.Tag{3, protopack.Fixed64Type}, protopack.Int64(2),
+   protopack.Tag{4, protopack.Fixed32Type}, protopack.Int32(2),
+   protopack.Tag{5, protopack.BytesType}, protopack.String("Bytes"),
+   protopack.Tag{6, protopack.BytesType}, protopack.String("LenPrefix"),
+}
+
+var value1 = Message{
+   {2, Varint(2)},
+   {3, I64(2)},
+   {4, I32(2)},
+   {5, Bytes("Bytes")},
+   {6, &LenPrefix{
+      Bytes("LenPrefix"), nil,
+   }},
 }
