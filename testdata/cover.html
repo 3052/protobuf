@@ -55,7 +55,7 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">41.neocities.org/protobuf/protobuf.go (71.8%)</option>
+				<option value="file0">41.neocities.org/protobuf/protobuf.go (75.7%)</option>
 				
 				</select>
 			</div>
@@ -144,11 +144,6 @@ func (m Message) GoString() string <span class="cov8" title="1">{
    return string(data)</span>
 }
 
-func (m Message) Append(data []byte, num Number) []byte <span class="cov0" title="0">{
-   data = protowire.AppendTag(data, num, protowire.BytesType)
-   return protowire.AppendBytes(data, m.Marshal())
-}</span>
-
 // wikipedia.org/wiki/Continuation-passing_style
 func (m *Message) Add(num Number, v func(*Message)) <span class="cov0" title="0">{
    var m1 Message
@@ -188,24 +183,9 @@ func (m Message) Get(num Number) func() (Message, bool) <span class="cov0" title
    }
 }
 
-func unmarshal(data []byte) Value <span class="cov8" title="1">{
-   data = slices.Clip(data)
-   if len(data) &gt;= 1 </span><span class="cov8" title="1">{
-      var m Message
-      if m.Unmarshal(data) == nil </span><span class="cov0" title="0">{
-         return &amp;LenPrefix{data, m}
-      }</span>
-   }
-   <span class="cov8" title="1">return Bytes(data)</span>
-}
-
 func (v Varint) Append(data []byte, num Number) []byte <span class="cov8" title="1">{
    data = protowire.AppendTag(data, num, protowire.VarintType)
    return protowire.AppendVarint(data, uint64(v))
-}</span>
-
-func (v Varint) GoString() string <span class="cov0" title="0">{
-   return fmt.Sprintf("protobuf.Varint(%v)", v)
 }</span>
 
 func get[V Value](m Message, num Number) func() (V, bool) <span class="cov8" title="1">{
@@ -333,6 +313,26 @@ func (m Message) GetI64(num Number) func() (I64, bool) <span class="cov8" title=
 func (m Message) GetI32(num Number) func() (I32, bool) <span class="cov8" title="1">{
    return get[I32](m, num)
 }</span>
+
+func (v Varint) GoString() string <span class="cov8" title="1">{
+   return fmt.Sprintf("protobuf.Varint(%v)", v)
+}</span>
+
+func (m Message) Append(data []byte, num Number) []byte <span class="cov8" title="1">{
+   data = protowire.AppendTag(data, num, protowire.BytesType)
+   return protowire.AppendBytes(data, m.Marshal())
+}</span>
+
+func unmarshal(data []byte) Value <span class="cov8" title="1">{
+   data = slices.Clip(data)
+   if len(data) &gt;= 1 </span><span class="cov8" title="1">{
+      var m Message
+      if m.Unmarshal(data) == nil </span><span class="cov8" title="1">{
+         return &amp;LenPrefix{data, m}
+      }</span>
+   }
+   <span class="cov8" title="1">return Bytes(data)</span>
+}
 </pre>
 		
 		</div>

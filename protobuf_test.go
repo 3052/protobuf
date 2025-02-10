@@ -33,18 +33,17 @@ func TestLenPrefix(t *testing.T) {
       "protobuf.Message{\n" +
       "},\n" +
       "}"
-   var value LenPrefix
-   if value.GoString() != data {
-      t.Fatal(value.GoString())
+   var value1 LenPrefix
+   if value1.GoString() != data {
+      t.Fatal(value1.GoString())
    }
 }
 
-var value = protopack.Message{
-   protopack.Tag{2, protopack.BytesType}, protopack.String("Bytes"),
-   protopack.Tag{3, protopack.BytesType}, protopack.String("LenPrefix"),
-   protopack.Tag{4, protopack.Fixed32Type}, protopack.Int32(2),
-   protopack.Tag{5, protopack.Fixed64Type}, protopack.Int64(2),
-   protopack.Tag{6, protopack.VarintType}, protopack.Varint(2),
+func TestVarint(t *testing.T) {
+   data := Varint.GoString(2)
+   if data != "protobuf.Varint(2)" {
+      t.Fatal(data)
+   }
 }
 
 func TestMessage(t *testing.T) {
@@ -94,16 +93,28 @@ func TestMessage(t *testing.T) {
    })
    t.Run("Marshal", func(t *testing.T) {
       data := Message{
-         {2, Bytes("Bytes")},
-         {3, &LenPrefix{
+         {2, Message{
+            {3, Bytes("Bytes")},
+         }},
+         {4, &LenPrefix{
             Bytes("LenPrefix"), nil,
          }},
-         {4, I32(2)},
-         {5, I64(2)},
-         {6, Varint(2)},
+         {5, I32(2)},
+         {6, I64(2)},
+         {7, Varint(2)},
       }.Marshal()
       if !bytes.Equal(data, value.Marshal()) {
          t.Fatal(data)
       }
    })
+}
+
+var value = protopack.Message{
+   protopack.Tag{2, protopack.BytesType}, protopack.LengthPrefix{
+      protopack.Tag{3, protopack.BytesType}, protopack.String("Bytes"),
+   },
+   protopack.Tag{4, protopack.BytesType}, protopack.String("LenPrefix"),
+   protopack.Tag{5, protopack.Fixed32Type}, protopack.Int32(2),
+   protopack.Tag{6, protopack.Fixed64Type}, protopack.Int64(2),
+   protopack.Tag{7, protopack.VarintType}, protopack.Varint(2),
 }

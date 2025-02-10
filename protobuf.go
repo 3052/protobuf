@@ -73,11 +73,6 @@ func (m Message) GoString() string {
    return string(data)
 }
 
-func (m Message) Append(data []byte, num Number) []byte {
-   data = protowire.AppendTag(data, num, protowire.BytesType)
-   return protowire.AppendBytes(data, m.Marshal())
-}
-
 // wikipedia.org/wiki/Continuation-passing_style
 func (m *Message) Add(num Number, v func(*Message)) {
    var m1 Message
@@ -117,24 +112,9 @@ func (m Message) Get(num Number) func() (Message, bool) {
    }
 }
 
-func unmarshal(data []byte) Value {
-   data = slices.Clip(data)
-   if len(data) >= 1 {
-      var m Message
-      if m.Unmarshal(data) == nil {
-         return &LenPrefix{data, m}
-      }
-   }
-   return Bytes(data)
-}
-
 func (v Varint) Append(data []byte, num Number) []byte {
    data = protowire.AppendTag(data, num, protowire.VarintType)
    return protowire.AppendVarint(data, uint64(v))
-}
-
-func (v Varint) GoString() string {
-   return fmt.Sprintf("protobuf.Varint(%v)", v)
 }
 
 func get[V Value](m Message, num Number) func() (V, bool) {
@@ -261,4 +241,24 @@ func (m Message) GetI64(num Number) func() (I64, bool) {
 
 func (m Message) GetI32(num Number) func() (I32, bool) {
    return get[I32](m, num)
+}
+
+func (v Varint) GoString() string {
+   return fmt.Sprintf("protobuf.Varint(%v)", v)
+}
+
+func (m Message) Append(data []byte, num Number) []byte {
+   data = protowire.AppendTag(data, num, protowire.BytesType)
+   return protowire.AppendBytes(data, m.Marshal())
+}
+
+func unmarshal(data []byte) Value {
+   data = slices.Clip(data)
+   if len(data) >= 1 {
+      var m Message
+      if m.Unmarshal(data) == nil {
+         return &LenPrefix{data, m}
+      }
+   }
+   return Bytes(data)
 }
