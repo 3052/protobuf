@@ -7,6 +7,38 @@ import (
    "slices"
 )
 
+func (m Message) GetBytes(num Number) func() (Bytes, bool) {
+   var index int
+   return func() (Bytes, bool) {
+      for index < len(m) {
+         index++
+         switch value0 := m[index-1].Value.(type) {
+         case Bytes:
+            return value0, true
+         case *LenPrefix:
+            return value0.Bytes, true
+         }
+      }
+      return nil, false
+   }
+}
+
+func (m Message) Get(num Number) func() (Message, bool) {
+   var index int
+   return func() (Message, bool) {
+      for index < len(m) {
+         index++
+         switch value0 := m[index-1].Value.(type) {
+         case Message:
+            return value0, true
+         case *LenPrefix:
+            return value0.Message, true
+         }
+      }
+      return nil, false
+   }
+}
+
 func (m *Message) Unmarshal(data []byte) error {
    for len(data) >= 1 {
       num, wire_type, size := protowire.ConsumeTag(data)
@@ -78,43 +110,6 @@ func (m *Message) Add(num Number, v func(*Message)) {
    var m1 Message
    v(&m1)
    *m = append(*m, Field{num, m1})
-}
-
-func (m Message) GetBytes(num Number) func() (Bytes, bool) {
-   var index int
-   return func() (Bytes, bool) {
-      for index < len(m) {
-         index++
-         switch value0 := m[index-1].Value.(type) {
-         case Bytes:
-            return value0, true
-         case *LenPrefix:
-            return value0.Bytes, true
-         }
-      }
-      return nil, false
-   }
-}
-
-func (m Message) Get(num Number) func() (Message, bool) {
-   var index int
-   return func() (Message, bool) {
-      for index < len(m) {
-         index++
-         switch value0 := m[index-1].Value.(type) {
-         case Message:
-            return value0, true
-         case *LenPrefix:
-            return value0.Message, true
-         }
-      }
-      return nil, false
-   }
-}
-
-func (v Varint) Append(data []byte, num Number) []byte {
-   data = protowire.AppendTag(data, num, protowire.VarintType)
-   return protowire.AppendVarint(data, uint64(v))
 }
 
 func get[V Value](m Message, num Number) func() (V, bool) {
@@ -261,4 +256,9 @@ func unmarshal(data []byte) Value {
       }
    }
    return Bytes(data)
+}
+
+func (v Varint) Append(data []byte, num Number) []byte {
+   data = protowire.AppendTag(data, num, protowire.VarintType)
+   return protowire.AppendVarint(data, uint64(v))
 }

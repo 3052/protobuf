@@ -78,6 +78,38 @@ import (
    "slices"
 )
 
+func (m Message) GetBytes(num Number) func() (Bytes, bool) <span class="cov0" title="0">{
+   var index int
+   return func() (Bytes, bool) </span><span class="cov0" title="0">{
+      for index &lt; len(m) </span><span class="cov0" title="0">{
+         index++
+         switch value0 := m[index-1].Value.(type) </span>{
+         case Bytes:<span class="cov0" title="0">
+            return value0, true</span>
+         case *LenPrefix:<span class="cov0" title="0">
+            return value0.Bytes, true</span>
+         }
+      }
+      <span class="cov0" title="0">return nil, false</span>
+   }
+}
+
+func (m Message) Get(num Number) func() (Message, bool) <span class="cov0" title="0">{
+   var index int
+   return func() (Message, bool) </span><span class="cov0" title="0">{
+      for index &lt; len(m) </span><span class="cov0" title="0">{
+         index++
+         switch value0 := m[index-1].Value.(type) </span>{
+         case Message:<span class="cov0" title="0">
+            return value0, true</span>
+         case *LenPrefix:<span class="cov0" title="0">
+            return value0.Message, true</span>
+         }
+      }
+      <span class="cov0" title="0">return nil, false</span>
+   }
+}
+
 func (m *Message) Unmarshal(data []byte) error <span class="cov8" title="1">{
    for len(data) &gt;= 1 </span><span class="cov8" title="1">{
       num, wire_type, size := protowire.ConsumeTag(data)
@@ -149,43 +181,6 @@ func (m *Message) Add(num Number, v func(*Message)) <span class="cov0" title="0"
    var m1 Message
    v(&amp;m1)
    *m = append(*m, Field{num, m1})
-}</span>
-
-func (m Message) GetBytes(num Number) func() (Bytes, bool) <span class="cov0" title="0">{
-   var index int
-   return func() (Bytes, bool) </span><span class="cov0" title="0">{
-      for index &lt; len(m) </span><span class="cov0" title="0">{
-         index++
-         switch value0 := m[index-1].Value.(type) </span>{
-         case Bytes:<span class="cov0" title="0">
-            return value0, true</span>
-         case *LenPrefix:<span class="cov0" title="0">
-            return value0.Bytes, true</span>
-         }
-      }
-      <span class="cov0" title="0">return nil, false</span>
-   }
-}
-
-func (m Message) Get(num Number) func() (Message, bool) <span class="cov0" title="0">{
-   var index int
-   return func() (Message, bool) </span><span class="cov0" title="0">{
-      for index &lt; len(m) </span><span class="cov0" title="0">{
-         index++
-         switch value0 := m[index-1].Value.(type) </span>{
-         case Message:<span class="cov0" title="0">
-            return value0, true</span>
-         case *LenPrefix:<span class="cov0" title="0">
-            return value0.Message, true</span>
-         }
-      }
-      <span class="cov0" title="0">return nil, false</span>
-   }
-}
-
-func (v Varint) Append(data []byte, num Number) []byte <span class="cov8" title="1">{
-   data = protowire.AppendTag(data, num, protowire.VarintType)
-   return protowire.AppendVarint(data, uint64(v))
 }</span>
 
 func get[V Value](m Message, num Number) func() (V, bool) <span class="cov8" title="1">{
@@ -333,6 +328,11 @@ func unmarshal(data []byte) Value <span class="cov8" title="1">{
    }
    <span class="cov8" title="1">return Bytes(data)</span>
 }
+
+func (v Varint) Append(data []byte, num Number) []byte <span class="cov8" title="1">{
+   data = protowire.AppendTag(data, num, protowire.VarintType)
+   return protowire.AppendVarint(data, uint64(v))
+}</span>
 </pre>
 		
 		</div>
