@@ -55,7 +55,7 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">41.neocities.org/protobuf/protobuf.go (62.1%)</option>
+				<option value="file0">41.neocities.org/protobuf/protobuf.go (71.8%)</option>
 				
 				</select>
 			</div>
@@ -77,18 +77,6 @@ import (
    "google.golang.org/protobuf/encoding/protowire"
    "slices"
 )
-
-func (m Message) GetVarint(num Number) func() (Varint, bool) <span class="cov0" title="0">{
-   return get[Varint](m, num)
-}</span>
-
-func (m Message) GetI64(num Number) func() (I64, bool) <span class="cov0" title="0">{
-   return get[I64](m, num)
-}</span>
-
-func (m Message) GetI32(num Number) func() (I32, bool) <span class="cov0" title="0">{
-   return get[I32](m, num)
-}</span>
 
 func (m *Message) Unmarshal(data []byte) error <span class="cov8" title="1">{
    for len(data) &gt;= 1 </span><span class="cov8" title="1">{
@@ -220,13 +208,13 @@ func (v Varint) GoString() string <span class="cov0" title="0">{
    return fmt.Sprintf("protobuf.Varint(%v)", v)
 }</span>
 
-func get[V Value](m Message, num Number) func() (V, bool) <span class="cov0" title="0">{
+func get[V Value](m Message, num Number) func() (V, bool) <span class="cov8" title="1">{
    var index int
-   return func() (V, bool) </span><span class="cov0" title="0">{
-      for index &lt; len(m) </span><span class="cov0" title="0">{
+   return func() (V, bool) </span><span class="cov8" title="1">{
+      for index &lt; len(m) </span><span class="cov8" title="1">{
          index++
          value0, ok := m[index-1].Value.(V)
-         if ok </span><span class="cov0" title="0">{
+         if ok </span><span class="cov8" title="1">{
             return value0, true
          }</span>
       }
@@ -333,6 +321,18 @@ func (m Message) Marshal() []byte <span class="cov8" title="1">{
    }</span>
    <span class="cov8" title="1">return data</span>
 }
+
+func (m Message) GetVarint(num Number) func() (Varint, bool) <span class="cov8" title="1">{
+   return get[Varint](m, num)
+}</span>
+
+func (m Message) GetI64(num Number) func() (I64, bool) <span class="cov8" title="1">{
+   return get[I64](m, num)
+}</span>
+
+func (m Message) GetI32(num Number) func() (I32, bool) <span class="cov8" title="1">{
+   return get[I32](m, num)
+}</span>
 </pre>
 		
 		</div>

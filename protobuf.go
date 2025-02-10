@@ -7,18 +7,6 @@ import (
    "slices"
 )
 
-func (m Message) GetVarint(num Number) func() (Varint, bool) {
-   return get[Varint](m, num)
-}
-
-func (m Message) GetI64(num Number) func() (I64, bool) {
-   return get[I64](m, num)
-}
-
-func (m Message) GetI32(num Number) func() (I32, bool) {
-   return get[I32](m, num)
-}
-
 func (m *Message) Unmarshal(data []byte) error {
    for len(data) >= 1 {
       num, wire_type, size := protowire.ConsumeTag(data)
@@ -261,4 +249,16 @@ func (m Message) Marshal() []byte {
       data = field0.Value.Append(data, field0.Number)
    }
    return data
+}
+
+func (m Message) GetVarint(num Number) func() (Varint, bool) {
+   return get[Varint](m, num)
+}
+
+func (m Message) GetI64(num Number) func() (I64, bool) {
+   return get[I64](m, num)
+}
+
+func (m Message) GetI32(num Number) func() (I32, bool) {
+   return get[I32](m, num)
 }

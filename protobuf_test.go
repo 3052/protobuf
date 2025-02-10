@@ -59,13 +59,27 @@ func TestMessage(t *testing.T) {
          t.Fatal(v)
       }
    })
-   t.Run("AddI64", func(t *testing.T) {
+   t.Run("AddI64,GetI64", func(t *testing.T) {
       var m Message
-      m.AddI64(2, 2)
+      m.AddI64(2, 3)
+      v, ok := m.GetI64(2)()
+      if !ok {
+         t.Fatal("GetI64")
+      }
+      if v != 3 {
+         t.Fatal(v)
+      }
    })
-   t.Run("AddI32", func(t *testing.T) {
+   t.Run("AddI32,GetI32", func(t *testing.T) {
       var m Message
-      m.AddI32(2, 2)
+      m.AddI32(2, 3)
+      v, ok := m.GetI32(2)()
+      if !ok {
+         t.Fatal("GetI32")
+      }
+      if v != 3 {
+         t.Fatal(v)
+      }
    })
    t.Run("AddBytes", func(t *testing.T) {
       var m Message
