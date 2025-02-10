@@ -55,7 +55,7 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">41.neocities.org/protobuf/protobuf.go (64.1%)</option>
+				<option value="file0">41.neocities.org/protobuf/protobuf.go (62.1%)</option>
 				
 				</select>
 			</div>
@@ -94,7 +94,7 @@ func (m *Message) Unmarshal(data []byte) error <span class="cov8" title="1">{
    for len(data) &gt;= 1 </span><span class="cov8" title="1">{
       num, wire_type, size := protowire.ConsumeTag(data)
       err := protowire.ParseError(size)
-      if err != nil </span><span class="cov8" title="1">{
+      if err != nil </span><span class="cov0" title="0">{
          return err
       }</span>
       <span class="cov8" title="1">data = data[size:]
@@ -113,7 +113,7 @@ func (m *Message) Unmarshal(data []byte) error <span class="cov8" title="1">{
       case protowire.Fixed32Type:<span class="cov8" title="1">
          v, size := protowire.ConsumeFixed32(data)
          err := protowire.ParseError(size)
-         if err != nil </span><span class="cov8" title="1">{
+         if err != nil </span><span class="cov0" title="0">{
             return err
          }</span>
          <span class="cov8" title="1">*m = append(*m, Field{
@@ -123,7 +123,7 @@ func (m *Message) Unmarshal(data []byte) error <span class="cov8" title="1">{
       case protowire.Fixed64Type:<span class="cov8" title="1">
          v, size := protowire.ConsumeFixed64(data)
          err := protowire.ParseError(size)
-         if err != nil </span><span class="cov8" title="1">{
+         if err != nil </span><span class="cov0" title="0">{
             return err
          }</span>
          <span class="cov8" title="1">*m = append(*m, Field{
@@ -204,14 +204,14 @@ func unmarshal(data []byte) Value <span class="cov8" title="1">{
    data = slices.Clip(data)
    if len(data) &gt;= 1 </span><span class="cov8" title="1">{
       var m Message
-      if m.Unmarshal(data) == nil </span><span class="cov8" title="1">{
+      if m.Unmarshal(data) == nil </span><span class="cov0" title="0">{
          return &amp;LenPrefix{data, m}
       }</span>
    }
    <span class="cov8" title="1">return Bytes(data)</span>
 }
 
-func (v Varint) Append(data []byte, num Number) []byte <span class="cov0" title="0">{
+func (v Varint) Append(data []byte, num Number) []byte <span class="cov8" title="1">{
    data = protowire.AppendTag(data, num, protowire.VarintType)
    return protowire.AppendVarint(data, uint64(v))
 }</span>

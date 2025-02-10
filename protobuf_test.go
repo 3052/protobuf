@@ -3,125 +3,93 @@ package protobuf
 import (
    "bytes"
    "google.golang.org/protobuf/testing/protopack"
-   "os"
    "testing"
 )
 
-const youtube = "testdata/com.google.android.youtube.20.05.44.binpb"
-
 func TestBytes(t *testing.T) {
-   t.Run("Append", func(t *testing.T) {
-      data := protopack.Message{
-         protopack.Tag{2, protopack.BytesType}, protopack.String("hello world"),
-      }.Marshal()
-      data1 := Message{
-         {2, Bytes("hello world")},
-      }.Marshal()
-      if !bytes.Equal(data1, data) {
-         t.Fatal(data1)
-      }
-   })
-   t.Run("GoString", func(t *testing.T) {
-      data := Bytes("hello world").GoString()
-      if data != `protobuf.Bytes("hello world")` {
-         t.Fatal(data)
-      }
-   })
+   data := Bytes("hello world").GoString()
+   if data != `protobuf.Bytes("hello world")` {
+      t.Fatal(data)
+   }
 }
 
 func TestI32(t *testing.T) {
-   t.Run("Append", func(t *testing.T) {
-      data := protopack.Message{
-         protopack.Tag{2, protopack.Fixed32Type}, protopack.Int32(2),
-      }.Marshal()
-      data1 := Message{
-         {2, I32(2)},
-      }.Marshal()
-      if !bytes.Equal(data1, data) {
-         t.Fatal(data1)
-      }
-   })
-   t.Run("GoString", func(t *testing.T) {
-      data := I32.GoString(2)
-      if data != "protobuf.I32(2)" {
-         t.Fatal(data)
-      }
-   })
+   data := I32.GoString(2)
+   if data != "protobuf.I32(2)" {
+      t.Fatal(data)
+   }
 }
 
 func TestI64(t *testing.T) {
-   t.Run("Append", func(t *testing.T) {
-      data := protopack.Message{
-         protopack.Tag{2, protopack.Fixed64Type}, protopack.Int64(2),
-      }.Marshal()
-      data1 := Message{
-         {2, I64(2)},
-      }.Marshal()
-      if !bytes.Equal(data1, data) {
-         t.Fatal(data1)
-      }
-   })
-   t.Run("GoString", func(t *testing.T) {
-      data := I64.GoString(2)
-      if data != "protobuf.I64(2)" {
-         t.Fatal(data)
-      }
-   })
+   data := I64.GoString(2)
+   if data != "protobuf.I64(2)" {
+      t.Fatal(data)
+   }
 }
 
 func TestLenPrefix(t *testing.T) {
-   t.Run("Append", func(t *testing.T) {
-      data := protopack.Message{
-         protopack.Tag{2, protopack.BytesType}, protopack.String("hello"),
-      }.Marshal()
-      data1 := Message{
-         {2, &LenPrefix{
-            Bytes("hello"), nil,
-         }},
-      }.Marshal()
-      if !bytes.Equal(data, data1) {
-         t.Fatal(data, "\n", data1)
-      }
-   })
-   t.Run("GoString", func(t *testing.T) {
-      data := "&protobuf.LenPrefix{\n" +
-         "protobuf.Bytes(\"\"),\n" +
-         "protobuf.Message{\n" +
-         "},\n" +
-         "}"
-      var value LenPrefix
-      if value.GoString() != data {
-         t.Fatal(value.GoString())
-      }
-   })
+   data := "&protobuf.LenPrefix{\n" +
+      "protobuf.Bytes(\"\"),\n" +
+      "protobuf.Message{\n" +
+      "},\n" +
+      "}"
+   var value LenPrefix
+   if value.GoString() != data {
+      t.Fatal(value.GoString())
+   }
+}
+
+var value = protopack.Message{
+   protopack.Tag{2, protopack.BytesType}, protopack.String("Bytes"),
+   protopack.Tag{3, protopack.BytesType}, protopack.String("LenPrefix"),
+   protopack.Tag{4, protopack.Fixed32Type}, protopack.Int32(2),
+   protopack.Tag{5, protopack.Fixed64Type}, protopack.Int64(2),
+   protopack.Tag{6, protopack.VarintType}, protopack.Varint(2),
 }
 
 func TestMessage(t *testing.T) {
-   t.Run("AddBytes", func(t *testing.T) {
+   t.Run("AddVarint,GetVarint", func(t *testing.T) {
       var m Message
-      m.AddBytes(2, []byte("hello world"))
-   })
-   t.Run("AddI32", func(t *testing.T) {
-      var m Message
-      m.AddI32(2, 2)
+      m.AddVarint(2, 3)
+      v, ok := m.GetVarint(2)()
+      if !ok {
+         t.Fatal("GetVarint")
+      }
+      if v != 3 {
+         t.Fatal(v)
+      }
    })
    t.Run("AddI64", func(t *testing.T) {
       var m Message
       m.AddI64(2, 2)
    })
-   t.Run("AddVarint", func(t *testing.T) {
+   t.Run("AddI32", func(t *testing.T) {
       var m Message
-      m.AddVarint(2, 2)
+      m.AddI32(2, 2)
+   })
+   t.Run("AddBytes", func(t *testing.T) {
+      var m Message
+      m.AddBytes(2, []byte("hello world"))
    })
    t.Run("Unmarshal", func(t *testing.T) {
-      data, err := os.ReadFile(youtube)
+      var m Message
+      err := m.Unmarshal(value.Marshal())
       if err != nil {
          t.Fatal(err)
       }
-      var message0 Message
-      err = message0.Unmarshal(data)
-      if err != nil {
-         t.Fatal(err)
+   })
+   t.Run("Marshal", func(t *testing.T) {
+      data := Message{
+         {2, Bytes("Bytes")},
+         {3, &LenPrefix{
+            Bytes("LenPrefix"), nil,
+         }},
+         {4, I32(2)},
+         {5, I64(2)},
+         {6, Varint(2)},
+      }.Marshal()
+      if !bytes.Equal(data, value.Marshal()) {
+         t.Fatal(data)
       }
    })
 }
