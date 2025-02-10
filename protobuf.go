@@ -7,17 +7,16 @@ import (
    "slices"
 )
 
-func (p *LenPrefix) GoString() string {
-   data := []byte("&protobuf.LenPrefix{\n")
-   data = fmt.Appendf(data, "%#v,\n", p.Bytes)
-   data = fmt.Appendf(data, "%#v,\n", p.Message)
-   data = append(data, '}')
-   return string(data)
+func (m Message) GetVarint(num Number) func() (Varint, bool) {
+   return get[Varint](m, num)
 }
 
-func (p *LenPrefix) Append(data []byte, num Number) []byte {
-   data = protowire.AppendTag(data, num, protowire.BytesType)
-   return protowire.AppendBytes(data, p.Bytes)
+func (m Message) GetI64(num Number) func() (I64, bool) {
+   return get[I64](m, num)
+}
+
+func (m Message) GetI32(num Number) func() (I32, bool) {
+   return get[I32](m, num)
 }
 
 func (m *Message) Unmarshal(data []byte) error {
@@ -86,14 +85,6 @@ func (m Message) GoString() string {
    return string(data)
 }
 
-func (m Message) Marshal() []byte {
-   var data []byte
-   for _, field0 := range m {
-      data = field0.Value.Append(data, field0.Number)
-   }
-   return data
-}
-
 func (m Message) Append(data []byte, num Number) []byte {
    data = protowire.AppendTag(data, num, protowire.BytesType)
    return protowire.AppendBytes(data, m.Marshal())
@@ -104,18 +95,6 @@ func (m *Message) Add(num Number, v func(*Message)) {
    var m1 Message
    v(&m1)
    *m = append(*m, Field{num, m1})
-}
-
-func (m Message) GetVarint(num Number) func() (Varint, bool) {
-   return get[Varint](m, num)
-}
-
-func (m Message) GetI64(num Number) func() (I64, bool) {
-   return get[I64](m, num)
-}
-
-func (m Message) GetI32(num Number) func() (I32, bool) {
-   return get[I32](m, num)
 }
 
 func (m Message) GetBytes(num Number) func() (Bytes, bool) {
@@ -261,4 +240,25 @@ func (m *Message) AddI32(num Number, v I32) {
 
 func (m *Message) AddBytes(num Number, v Bytes) {
    *m = append(*m, Field{num, v})
+}
+
+func (p *LenPrefix) GoString() string {
+   data := []byte("&protobuf.LenPrefix{\n")
+   data = fmt.Appendf(data, "%#v,\n", p.Bytes)
+   data = fmt.Appendf(data, "%#v,\n", p.Message)
+   data = append(data, '}')
+   return string(data)
+}
+
+func (p *LenPrefix) Append(data []byte, num Number) []byte {
+   data = protowire.AppendTag(data, num, protowire.BytesType)
+   return protowire.AppendBytes(data, p.Bytes)
+}
+
+func (m Message) Marshal() []byte {
+   var data []byte
+   for _, field0 := range m {
+      data = field0.Value.Append(data, field0.Number)
+   }
+   return data
 }

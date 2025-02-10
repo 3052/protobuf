@@ -69,6 +69,33 @@ func TestI64(t *testing.T) {
    })
 }
 
+func TestLenPrefix(t *testing.T) {
+   t.Run("Append", func(t *testing.T) {
+      data := protopack.Message{
+         protopack.Tag{2, protopack.BytesType}, protopack.String("hello"),
+      }.Marshal()
+      data1 := Message{
+         {2, &LenPrefix{
+            Bytes("hello"), nil,
+         }},
+      }.Marshal()
+      if !bytes.Equal(data, data1) {
+         t.Fatal(data, "\n", data1)
+      }
+   })
+   t.Run("GoString", func(t *testing.T) {
+      data := "&protobuf.LenPrefix{\n" +
+         "protobuf.Bytes(\"\"),\n" +
+         "protobuf.Message{\n" +
+         "},\n" +
+         "}"
+      var value LenPrefix
+      if value.GoString() != data {
+         t.Fatal(value.GoString())
+      }
+   })
+}
+
 func TestMessage(t *testing.T) {
    t.Run("AddBytes", func(t *testing.T) {
       var m Message
