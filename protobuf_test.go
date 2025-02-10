@@ -28,14 +28,20 @@ func TestI64(t *testing.T) {
 }
 
 func TestLenPrefix(t *testing.T) {
+   value := LenPrefix{
+      Bytes("hello"),
+      Message{
+         {2, Varint(3)},
+      },
+   }
    data := "&protobuf.LenPrefix{\n" +
-      "protobuf.Bytes(\"\"),\n" +
+      "protobuf.Bytes(\"hello\"),\n" +
       "protobuf.Message{\n" +
+         "{2, protobuf.Varint(3)},\n" +
       "},\n" +
-      "}"
-   var value1 LenPrefix
-   if value1.GoString() != data {
-      t.Fatal(value1.GoString())
+   "}"
+   if value.GoString() != data {
+      t.Fatal(value.GoString())
    }
 }
 
@@ -53,9 +59,14 @@ func TestMessage(t *testing.T) {
          m.AddVarint(3, 4)
       })
       m, _ = m.Get(2)()
-      v, _ := m.GetVarint(3)()
+      next := m.GetVarint(3)
+      v, _ := next()
       if v != 4 {
          t.Fatal(v)
+      }
+      _, ok := next()
+      if ok {
+         t.Fatal("next")
       }
    })
    t.Run("AddBytes,GetBytes", func(t *testing.T) {

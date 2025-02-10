@@ -7,29 +7,6 @@ import (
    "slices"
 )
 
-func (m Message) GoString() string {
-   data := []byte("protobuf.Message{\n")
-   for _, f := range m {
-      data = fmt.Appendf(data, "{%v, %#v},\n", f.Number, f.Value)
-   }
-   data = append(data, '}')
-   return string(data)
-}
-
-func get[V Value](m Message, num Number) func() (V, bool) {
-   var index int
-   return func() (V, bool) {
-      for index < len(m) {
-         index++
-         value0, ok := m[index-1].Value.(V)
-         if ok {
-            return value0, true
-         }
-      }
-      return *new(V), false
-   }
-}
-
 func (m Message) GetBytes(num Number) func() (Bytes, bool) {
    var index int
    return func() (Bytes, bool) {
@@ -261,4 +238,27 @@ func (m *Message) Add(num Number, v func(*Message)) {
    var m1 Message
    v(&m1)
    *m = append(*m, Field{num, m1})
+}
+
+func (m Message) GoString() string {
+   data := []byte("protobuf.Message{\n")
+   for _, f := range m {
+      data = fmt.Appendf(data, "{%v, %#v},\n", f.Number, f.Value)
+   }
+   data = append(data, '}')
+   return string(data)
+}
+
+func get[V Value](m Message, num Number) func() (V, bool) {
+   var index int
+   return func() (V, bool) {
+      for index < len(m) {
+         index++
+         value0, ok := m[index-1].Value.(V)
+         if ok {
+            return value0, true
+         }
+      }
+      return *new(V), false
+   }
 }
