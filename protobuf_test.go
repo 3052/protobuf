@@ -47,13 +47,29 @@ func TestVarint(t *testing.T) {
 }
 
 func TestMessage(t *testing.T) {
-   t.Run("AddVarint,GetVarint", func(t *testing.T) {
+   t.Run("Add,AddVarint,Get,GetVarint", func(t *testing.T) {
       var m Message
-      m.AddVarint(2, 3)
-      v, ok := m.GetVarint(2)()
-      if !ok {
-         t.Fatal("GetVarint")
+      m.Add(2, func(m *Message) {
+         m.AddVarint(3, 4)
+      })
+      m, _ = m.Get(2)()
+      v, _ := m.GetVarint(3)()
+      if v != 4 {
+         t.Fatal(v)
       }
+   })
+   t.Run("AddBytes,GetBytes", func(t *testing.T) {
+      var m Message
+      m.AddBytes(2, []byte("hello world"))
+      v, _ := m.GetBytes(2)()
+      if string(v) != "hello world" {
+         t.Fatal(v)
+      }
+   })
+   t.Run("AddI32,GetI32", func(t *testing.T) {
+      var m Message
+      m.AddI32(2, 3)
+      v, _ := m.GetI32(2)()
       if v != 3 {
          t.Fatal(v)
       }
@@ -61,28 +77,10 @@ func TestMessage(t *testing.T) {
    t.Run("AddI64,GetI64", func(t *testing.T) {
       var m Message
       m.AddI64(2, 3)
-      v, ok := m.GetI64(2)()
-      if !ok {
-         t.Fatal("GetI64")
-      }
+      v, _ := m.GetI64(2)()
       if v != 3 {
          t.Fatal(v)
       }
-   })
-   t.Run("AddI32,GetI32", func(t *testing.T) {
-      var m Message
-      m.AddI32(2, 3)
-      v, ok := m.GetI32(2)()
-      if !ok {
-         t.Fatal("GetI32")
-      }
-      if v != 3 {
-         t.Fatal(v)
-      }
-   })
-   t.Run("AddBytes", func(t *testing.T) {
-      var m Message
-      m.AddBytes(2, []byte("hello world"))
    })
    t.Run("Unmarshal", func(t *testing.T) {
       var m Message

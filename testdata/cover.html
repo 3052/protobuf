@@ -55,7 +55,7 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">41.neocities.org/protobuf/protobuf.go (75.7%)</option>
+				<option value="file0">41.neocities.org/protobuf/protobuf.go (90.3%)</option>
 				
 				</select>
 			</div>
@@ -78,13 +78,36 @@ import (
    "slices"
 )
 
-func (m Message) GetBytes(num Number) func() (Bytes, bool) <span class="cov0" title="0">{
+func (m Message) GoString() string <span class="cov8" title="1">{
+   data := []byte("protobuf.Message{\n")
+   for _, f := range m </span><span class="cov0" title="0">{
+      data = fmt.Appendf(data, "{%v, %#v},\n", f.Number, f.Value)
+   }</span>
+   <span class="cov8" title="1">data = append(data, '}')
+   return string(data)</span>
+}
+
+func get[V Value](m Message, num Number) func() (V, bool) <span class="cov8" title="1">{
    var index int
-   return func() (Bytes, bool) </span><span class="cov0" title="0">{
-      for index &lt; len(m) </span><span class="cov0" title="0">{
+   return func() (V, bool) </span><span class="cov8" title="1">{
+      for index &lt; len(m) </span><span class="cov8" title="1">{
+         index++
+         value0, ok := m[index-1].Value.(V)
+         if ok </span><span class="cov8" title="1">{
+            return value0, true
+         }</span>
+      }
+      <span class="cov0" title="0">return *new(V), false</span>
+   }
+}
+
+func (m Message) GetBytes(num Number) func() (Bytes, bool) <span class="cov8" title="1">{
+   var index int
+   return func() (Bytes, bool) </span><span class="cov8" title="1">{
+      for index &lt; len(m) </span><span class="cov8" title="1">{
          index++
          switch value0 := m[index-1].Value.(type) </span>{
-         case Bytes:<span class="cov0" title="0">
+         case Bytes:<span class="cov8" title="1">
             return value0, true</span>
          case *LenPrefix:<span class="cov0" title="0">
             return value0.Bytes, true</span>
@@ -94,13 +117,13 @@ func (m Message) GetBytes(num Number) func() (Bytes, bool) <span class="cov0" ti
    }
 }
 
-func (m Message) Get(num Number) func() (Message, bool) <span class="cov0" title="0">{
+func (m Message) Get(num Number) func() (Message, bool) <span class="cov8" title="1">{
    var index int
-   return func() (Message, bool) </span><span class="cov0" title="0">{
-      for index &lt; len(m) </span><span class="cov0" title="0">{
+   return func() (Message, bool) </span><span class="cov8" title="1">{
+      for index &lt; len(m) </span><span class="cov8" title="1">{
          index++
          switch value0 := m[index-1].Value.(type) </span>{
-         case Message:<span class="cov0" title="0">
+         case Message:<span class="cov8" title="1">
             return value0, true</span>
          case *LenPrefix:<span class="cov0" title="0">
             return value0.Message, true</span>
@@ -165,36 +188,6 @@ func (m *Message) Unmarshal(data []byte) error <span class="cov8" title="1">{
       }
    }
    <span class="cov8" title="1">return nil</span>
-}
-
-func (m Message) GoString() string <span class="cov8" title="1">{
-   data := []byte("protobuf.Message{\n")
-   for _, f := range m </span><span class="cov0" title="0">{
-      data = fmt.Appendf(data, "{%v, %#v},\n", f.Number, f.Value)
-   }</span>
-   <span class="cov8" title="1">data = append(data, '}')
-   return string(data)</span>
-}
-
-// wikipedia.org/wiki/Continuation-passing_style
-func (m *Message) Add(num Number, v func(*Message)) <span class="cov0" title="0">{
-   var m1 Message
-   v(&amp;m1)
-   *m = append(*m, Field{num, m1})
-}</span>
-
-func get[V Value](m Message, num Number) func() (V, bool) <span class="cov8" title="1">{
-   var index int
-   return func() (V, bool) </span><span class="cov8" title="1">{
-      for index &lt; len(m) </span><span class="cov8" title="1">{
-         index++
-         value0, ok := m[index-1].Value.(V)
-         if ok </span><span class="cov8" title="1">{
-            return value0, true
-         }</span>
-      }
-      <span class="cov0" title="0">return *new(V), false</span>
-   }
 }
 
 // protobuf.dev/programming-guides/encoding#cheat-sheet
@@ -332,6 +325,13 @@ func unmarshal(data []byte) Value <span class="cov8" title="1">{
 func (v Varint) Append(data []byte, num Number) []byte <span class="cov8" title="1">{
    data = protowire.AppendTag(data, num, protowire.VarintType)
    return protowire.AppendVarint(data, uint64(v))
+}</span>
+
+// wikipedia.org/wiki/Continuation-passing_style
+func (m *Message) Add(num Number, v func(*Message)) <span class="cov8" title="1">{
+   var m1 Message
+   v(&amp;m1)
+   *m = append(*m, Field{num, m1})
 }</span>
 </pre>
 		

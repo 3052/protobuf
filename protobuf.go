@@ -7,6 +7,29 @@ import (
    "slices"
 )
 
+func (m Message) GoString() string {
+   data := []byte("protobuf.Message{\n")
+   for _, f := range m {
+      data = fmt.Appendf(data, "{%v, %#v},\n", f.Number, f.Value)
+   }
+   data = append(data, '}')
+   return string(data)
+}
+
+func get[V Value](m Message, num Number) func() (V, bool) {
+   var index int
+   return func() (V, bool) {
+      for index < len(m) {
+         index++
+         value0, ok := m[index-1].Value.(V)
+         if ok {
+            return value0, true
+         }
+      }
+      return *new(V), false
+   }
+}
+
 func (m Message) GetBytes(num Number) func() (Bytes, bool) {
    var index int
    return func() (Bytes, bool) {
@@ -94,36 +117,6 @@ func (m *Message) Unmarshal(data []byte) error {
       }
    }
    return nil
-}
-
-func (m Message) GoString() string {
-   data := []byte("protobuf.Message{\n")
-   for _, f := range m {
-      data = fmt.Appendf(data, "{%v, %#v},\n", f.Number, f.Value)
-   }
-   data = append(data, '}')
-   return string(data)
-}
-
-// wikipedia.org/wiki/Continuation-passing_style
-func (m *Message) Add(num Number, v func(*Message)) {
-   var m1 Message
-   v(&m1)
-   *m = append(*m, Field{num, m1})
-}
-
-func get[V Value](m Message, num Number) func() (V, bool) {
-   var index int
-   return func() (V, bool) {
-      for index < len(m) {
-         index++
-         value0, ok := m[index-1].Value.(V)
-         if ok {
-            return value0, true
-         }
-      }
-      return *new(V), false
-   }
 }
 
 // protobuf.dev/programming-guides/encoding#cheat-sheet
@@ -261,4 +254,11 @@ func unmarshal(data []byte) Value {
 func (v Varint) Append(data []byte, num Number) []byte {
    data = protowire.AppendTag(data, num, protowire.VarintType)
    return protowire.AppendVarint(data, uint64(v))
+}
+
+// wikipedia.org/wiki/Continuation-passing_style
+func (m *Message) Add(num Number, v func(*Message)) {
+   var m1 Message
+   v(&m1)
+   *m = append(*m, Field{num, m1})
 }
