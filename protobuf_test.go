@@ -46,11 +46,43 @@ func TestLenPrefix(t *testing.T) {
    }
 }
 
+var value1 = Message{
+   {2, Message{
+      {2, Varint(2)},
+   }},
+   {3, I64(2)},
+   {4, I32(2)},
+   {5, Bytes("Bytes")},
+   {6, &LenPrefix{
+      Bytes("LenPrefix"),
+      Message{
+         {2, Varint(2)},
+      },
+   }},
+}
+
 func TestMessage(t *testing.T) {
+   t.Run("Get", func(t *testing.T) {
+      next := value1.Get(6)
+      m, _ := next()
+      v, _ := m.GetVarint(2)()
+      if v != 2 {
+         t.Fatal(v)
+      }
+      _, ok := next()
+      if ok {
+         t.Fatal("next")
+      }
+   })
    t.Run("GetBytes", func(t *testing.T) {
-      v, _ := value1.GetBytes(5)()
+      next := value1.GetBytes(5)
+      v, _ := next()
       if string(v) != "Bytes" {
          t.Fatal(v)
+      }
+      _, ok := next()
+      if ok {
+         t.Fatal("next")
       }
       v, _ = value1.GetBytes(6)()
       if string(v) != "LenPrefix" {
@@ -58,9 +90,14 @@ func TestMessage(t *testing.T) {
       }
    })
    t.Run("GetI32", func(t *testing.T) {
-      v, _ := value1.GetI32(4)()
+      next := value1.GetI32(4)
+      v, _ := next()
       if v != 2 {
          t.Fatal(v)
+      }
+      _, ok := next()
+      if ok {
+         t.Fatal("next")
       }
    })
    t.Run("GetI64", func(t *testing.T) {
@@ -70,14 +107,17 @@ func TestMessage(t *testing.T) {
       }
    })
    t.Run("GetVarint", func(t *testing.T) {
-      v, _ := value1.GetVarint(2)()
+      m, _ := value1.Get(2)()
+      v, _ := m.GetVarint(2)()
       if v != 2 {
          t.Fatal(v)
       }
    })
    t.Run("Marshal", func(t *testing.T) {
       var m Message
-      m.AddVarint(2, 2)
+      m.Add(2, func(m *Message) {
+         m.AddVarint(2, 2)
+      })
       m.AddI64(3, 2)
       m.AddI32(4, 2)
       m.AddBytes(5, []byte("Bytes"))
@@ -95,18 +135,10 @@ func TestMessage(t *testing.T) {
    })
 }
 
-var value1 = Message{
-   {2, Varint(2)},
-   {3, I64(2)},
-   {4, I32(2)},
-   {5, Bytes("Bytes")},
-   {6, &LenPrefix{
-      Bytes("LenPrefix"), nil,
-   }},
-}
-
 var value = protopack.Message{
-   protopack.Tag{2, protopack.VarintType}, protopack.Varint(2),
+   protopack.Tag{2, protopack.BytesType}, protopack.LengthPrefix{
+      protopack.Tag{2, protopack.VarintType}, protopack.Varint(2),
+   },
    protopack.Tag{3, protopack.Fixed64Type}, protopack.Int64(2),
    protopack.Tag{4, protopack.Fixed32Type}, protopack.Int32(2),
    protopack.Tag{5, protopack.BytesType}, protopack.String("Bytes"),

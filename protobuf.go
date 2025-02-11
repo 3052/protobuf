@@ -7,13 +7,6 @@ import (
    "slices"
 )
 
-// wikipedia.org/wiki/Continuation-passing_style
-func (m *Message) Add(num Number, v func(*Message)) {
-   var m1 Message
-   v(&m1)
-   *m = append(*m, Field{num, m1})
-}
-
 func (m Message) GoString() string {
    data := []byte("protobuf.Message{\n")
    for _, f := range m {
@@ -26,22 +19,6 @@ func (m Message) GoString() string {
 func (p *LenPrefix) Append(data []byte, num Number) []byte {
    data = protowire.AppendTag(data, num, protowire.BytesType)
    return protowire.AppendBytes(data, p.Bytes)
-}
-
-func (m Message) Append(data []byte, num Number) []byte {
-   data = protowire.AppendTag(data, num, protowire.BytesType)
-   return protowire.AppendBytes(data, m.Marshal())
-}
-
-func unmarshal(data []byte) Value {
-   data = slices.Clip(data)
-   if len(data) >= 1 {
-      var m Message
-      if m.Unmarshal(data) == nil {
-         return &LenPrefix{data, m}
-      }
-   }
-   return Bytes(data)
 }
 
 func (m *Message) Unmarshal(data []byte) error {
@@ -189,61 +166,6 @@ func (v Varint) Append(data []byte, num Number) []byte {
    return protowire.AppendVarint(data, uint64(v))
 }
 
-func get[V Value](m Message, num Number) func() (V, bool) {
-   var index int
-   return func() (V, bool) {
-      for index < len(m) {
-         field0 := m[index]
-         index++
-         if field0.Number == num {
-            value0, ok := field0.Value.(V)
-            if ok {
-               return value0, true
-            }
-         }
-      }
-      return *new(V), false
-   }
-}
-
-func (m Message) GetBytes(num Number) func() (Bytes, bool) {
-   var index int
-   return func() (Bytes, bool) {
-      for index < len(m) {
-         field0 := m[index]
-         index++
-         if field0.Number == num {
-            switch value0 := field0.Value.(type) {
-            case Bytes:
-               return value0, true
-            case *LenPrefix:
-               return value0.Bytes, true
-            }
-         }
-      }
-      return nil, false
-   }
-}
-
-func (m Message) Get(num Number) func() (Message, bool) {
-   var index int
-   return func() (Message, bool) {
-      for index < len(m) {
-         field0 := m[index]
-         index++
-         if field0.Number == num {
-            switch value0 := field0.Value.(type) {
-            case Message:
-               return value0, true
-            case *LenPrefix:
-               return value0.Message, true
-            }
-         }
-      }
-      return nil, false
-   }
-}
-
 func (m Message) GetVarint(num Number) func() (Varint, bool) {
    return get[Varint](m, num)
 }
@@ -270,4 +192,82 @@ func (m *Message) AddI32(num Number, v I32) {
 
 func (m *Message) AddBytes(num Number, v Bytes) {
    *m = append(*m, Field{num, v})
+}
+
+// wikipedia.org/wiki/Continuation-passing_style
+func (m *Message) Add(num Number, v func(*Message)) {
+   var m1 Message
+   v(&m1)
+   *m = append(*m, Field{num, m1})
+}
+
+func (m Message) Append(data []byte, num Number) []byte {
+   data = protowire.AppendTag(data, num, protowire.BytesType)
+   return protowire.AppendBytes(data, m.Marshal())
+}
+
+func unmarshal(data []byte) Value {
+   data = slices.Clip(data)
+   if len(data) >= 1 {
+      var m Message
+      if m.Unmarshal(data) == nil {
+         return &LenPrefix{data, m}
+      }
+   }
+   return Bytes(data)
+}
+
+func (m Message) GetBytes(num Number) func() (Bytes, bool) {
+   var index int
+   return func() (Bytes, bool) {
+      for index < len(m) {
+         field0 := m[index]
+         index++
+         if field0.Number == num {
+            switch value0 := field0.Value.(type) {
+            case Bytes:
+               return value0, true
+            case *LenPrefix:
+               return value0.Bytes, true
+            }
+         }
+      }
+      return nil, false
+   }
+}
+
+func get[V Value](m Message, num Number) func() (V, bool) {
+   var index int
+   return func() (V, bool) {
+      for index < len(m) {
+         field0 := m[index]
+         index++
+         if field0.Number == num {
+            value0, ok := field0.Value.(V)
+            if ok {
+               return value0, true
+            }
+         }
+      }
+      return *new(V), false
+   }
+}
+
+func (m Message) Get(num Number) func() (Message, bool) {
+   var index int
+   return func() (Message, bool) {
+      for index < len(m) {
+         field0 := m[index]
+         index++
+         if field0.Number == num {
+            switch value0 := field0.Value.(type) {
+            case Message:
+               return value0, true
+            case *LenPrefix:
+               return value0.Message, true
+            }
+         }
+      }
+      return nil, false
+   }
 }
