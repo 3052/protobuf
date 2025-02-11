@@ -47,18 +47,6 @@ func TestLenPrefix(t *testing.T) {
 }
 
 func TestMessage(t *testing.T) {
-   t.Run("Unmarshal", func(t *testing.T) {
-      var m Message
-      err := m.Unmarshal(value.Marshal())
-      if err != nil {
-         t.Fatal(err)
-      }
-   })
-   t.Run("Marshal", func(t *testing.T) {
-      if !bytes.Equal(value1.Marshal(), value.Marshal()) {
-         t.Fatal(value1.Marshal())
-      }
-   })
    t.Run("GetBytes", func(t *testing.T) {
       v, _ := value1.GetBytes(5)()
       if string(v) != "Bytes" {
@@ -69,14 +57,42 @@ func TestMessage(t *testing.T) {
          t.Fatal(v)
       }
    })
-}
-
-var value = protopack.Message{
-   protopack.Tag{2, protopack.VarintType}, protopack.Varint(2),
-   protopack.Tag{3, protopack.Fixed64Type}, protopack.Int64(2),
-   protopack.Tag{4, protopack.Fixed32Type}, protopack.Int32(2),
-   protopack.Tag{5, protopack.BytesType}, protopack.String("Bytes"),
-   protopack.Tag{6, protopack.BytesType}, protopack.String("LenPrefix"),
+   t.Run("GetI32", func(t *testing.T) {
+      v, _ := value1.GetI32(4)()
+      if v != 2 {
+         t.Fatal(v)
+      }
+   })
+   t.Run("GetI64", func(t *testing.T) {
+      v, _ := value1.GetI64(3)()
+      if v != 2 {
+         t.Fatal(v)
+      }
+   })
+   t.Run("GetVarint", func(t *testing.T) {
+      v, _ := value1.GetVarint(2)()
+      if v != 2 {
+         t.Fatal(v)
+      }
+   })
+   t.Run("Marshal", func(t *testing.T) {
+      var m Message
+      m.AddVarint(2, 2)
+      m.AddI64(3, 2)
+      m.AddI32(4, 2)
+      m.AddBytes(5, []byte("Bytes"))
+      m.AddBytes(6, []byte("LenPrefix"))
+      if !bytes.Equal(m.Marshal(), value.Marshal()) {
+         t.Fatal(value1.Marshal())
+      }
+   })
+   t.Run("Unmarshal", func(t *testing.T) {
+      var m Message
+      err := m.Unmarshal(value.Marshal())
+      if err != nil {
+         t.Fatal(err)
+      }
+   })
 }
 
 var value1 = Message{
@@ -87,4 +103,12 @@ var value1 = Message{
    {6, &LenPrefix{
       Bytes("LenPrefix"), nil,
    }},
+}
+
+var value = protopack.Message{
+   protopack.Tag{2, protopack.VarintType}, protopack.Varint(2),
+   protopack.Tag{3, protopack.Fixed64Type}, protopack.Int64(2),
+   protopack.Tag{4, protopack.Fixed32Type}, protopack.Int32(2),
+   protopack.Tag{5, protopack.BytesType}, protopack.String("Bytes"),
+   protopack.Tag{6, protopack.BytesType}, protopack.String("LenPrefix"),
 }
