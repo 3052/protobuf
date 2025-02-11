@@ -113,6 +113,17 @@ func TestMessage(t *testing.T) {
          t.Fatal(v)
       }
    })
+   t.Run("GoString", func(t *testing.T) {
+      data := "protobuf.Message{\n" +
+         "{2, protobuf.Varint(2)},\n" +
+      "}"
+      data1 := Message{
+         {2, Varint(2)},
+      }.GoString()
+      if data1 != data {
+         t.Fatal(data)
+      }
+   })
    t.Run("Marshal", func(t *testing.T) {
       var m Message
       m.Add(2, func(m *Message) {
@@ -122,7 +133,10 @@ func TestMessage(t *testing.T) {
       m.AddI32(4, 2)
       m.AddBytes(5, []byte("Bytes"))
       m.AddBytes(6, []byte("LenPrefix"))
-      if !bytes.Equal(m.Marshal(), value.Marshal()) {
+      if !bytes.Equal(value.Marshal(), m.Marshal()) {
+         t.Fatal(value1.Marshal())
+      }
+      if !bytes.Equal(value.Marshal(), value1.Marshal()) {
          t.Fatal(value1.Marshal())
       }
    })
@@ -131,6 +145,32 @@ func TestMessage(t *testing.T) {
       err := m.Unmarshal(value.Marshal())
       if err != nil {
          t.Fatal(err)
+      }
+      data := []byte{0x80}
+      err = m.Unmarshal(data)
+      if err == nil {
+         t.Fatal("Unmarshal")
+      }
+      data = protopack.Message{
+         protopack.Tag{4, protopack.Fixed32Type},
+      }.Marshal()
+      err = m.Unmarshal(data)
+      if err == nil {
+         t.Fatal("Unmarshal")
+      }
+      data = protopack.Message{
+         protopack.Tag{4, protopack.Fixed64Type},
+      }.Marshal()
+      err = m.Unmarshal(data)
+      if err == nil {
+         t.Fatal("Unmarshal")
+      }
+      data = protopack.Message{
+         protopack.Tag{4, protopack.VarintType},
+      }.Marshal()
+      err = m.Unmarshal(data)
+      if err == nil {
+         t.Fatal("Unmarshal")
       }
    })
 }
