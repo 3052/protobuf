@@ -11,12 +11,12 @@ func get[V Value](m Message, num Number) func() (V, bool) {
    var index int
    return func() (V, bool) {
       for index < len(m) {
-         field0 := m[index]
+         field1 := m[index]
          index++
-         if field0.Number == num {
-            value0, ok := field0.Value.(V)
+         if field1.Number == num {
+            value1, ok := field1.Value.(V)
             if ok {
-               return value0, true
+               return value1, true
             }
          }
       }
@@ -87,8 +87,8 @@ func (p *LenPrefix) GoString() string {
 
 func (m Message) Marshal() []byte {
    var data []byte
-   for _, field0 := range m {
-      data = field0.Value.Append(data, field0.Number)
+   for _, field1 := range m {
+      data = field1.Value.Append(data, field1.Number)
    }
    return data
 }
@@ -137,14 +137,14 @@ func (m Message) GetBytes(num Number) func() (Bytes, bool) {
    var index int
    return func() (Bytes, bool) {
       for index < len(m) {
-         field0 := m[index]
+         field1 := m[index]
          index++
-         if field0.Number == num {
-            switch value0 := field0.Value.(type) {
+         if field1.Number == num {
+            switch value1 := field1.Value.(type) {
             case Bytes:
-               return value0, true
+               return value1, true
             case *LenPrefix:
-               return value0.Bytes, true
+               return value1.Bytes, true
             }
          }
       }
@@ -156,14 +156,14 @@ func (m Message) Get(num Number) func() (Message, bool) {
    var index int
    return func() (Message, bool) {
       for index < len(m) {
-         field0 := m[index]
+         field1 := m[index]
          index++
-         if field0.Number == num {
-            switch value0 := field0.Value.(type) {
+         if field1.Number == num {
+            switch value1 := field1.Value.(type) {
             case Message:
-               return value0, true
+               return value1, true
             case *LenPrefix:
-               return value0.Message, true
+               return value1.Message, true
             }
          }
       }
