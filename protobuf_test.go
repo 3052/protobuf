@@ -38,8 +38,7 @@ func TestLenPrefix(t *testing.T) {
    var prefix LenPrefix
    data := "&protobuf.LenPrefix{\n" +
       "protobuf.Bytes(\"\"),\n" +
-      "protobuf.Message{\n" +
-      "},\n" +
+      "protobuf.Message{},\n" +
       "}"
    if prefix.GoString() != data {
       t.Fatal(prefix.GoString())

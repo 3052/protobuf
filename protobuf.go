@@ -7,6 +7,26 @@ import (
    "slices"
 )
 
+func (m Message) GoString() string {
+   data := []byte("protobuf.Message{")
+   for index, f := range m {
+      if index == 0 {
+         data = append(data, '\n')
+      }
+      data = fmt.Appendf(data, "{%v, %#v},\n", f.Number, f.Value)
+   }
+   data = append(data, '}')
+   return string(data)
+}
+
+func (p *LenPrefix) GoString() string {
+   data := []byte("&protobuf.LenPrefix{\n")
+   data = fmt.Appendf(data, "%#v,\n", p.Bytes)
+   data = fmt.Appendf(data, "%#v,\n", p.Message)
+   data = append(data, '}')
+   return string(data)
+}
+
 func get[V Value](m Message, num Number) func() (V, bool) {
    var index int
    return func() (V, bool) {
@@ -75,14 +95,6 @@ type LenPrefix struct {
 func (p *LenPrefix) Append(data []byte, num Number) []byte {
    data = protowire.AppendTag(data, num, protowire.BytesType)
    return protowire.AppendBytes(data, p.Bytes)
-}
-
-func (p *LenPrefix) GoString() string {
-   data := []byte("&protobuf.LenPrefix{\n")
-   data = fmt.Appendf(data, "%#v,\n", p.Bytes)
-   data = fmt.Appendf(data, "%#v,\n", p.Message)
-   data = append(data, '}')
-   return string(data)
 }
 
 func (m Message) Marshal() []byte {
@@ -169,15 +181,6 @@ func (m Message) Get(num Number) func() (Message, bool) {
       }
       return nil, false
    }
-}
-
-func (m Message) GoString() string {
-   data := []byte("protobuf.Message{\n")
-   for _, f := range m {
-      data = fmt.Appendf(data, "{%v, %#v},\n", f.Number, f.Value)
-   }
-   data = append(data, '}')
-   return string(data)
 }
 
 func (m *Message) Unmarshal(data []byte) error {
