@@ -18,6 +18,6 @@ This module parses and formats the raw wire encoding.
 ## prior art
 
 - https://github.com/VictoriaMetrics/easyproto/issues/5
-- https://github.com/philpearl/plenc/issues/9
+- https://github.com/philpearl/plenc/issues/12
 - https://github.com/richardartoul/molecule/issues/24
 - https://github.com/segmentio/encoding/issues/135
