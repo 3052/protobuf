@@ -7,6 +7,14 @@ import (
    "slices"
 )
 
+func (p *LenPrefix) GoString() string {
+   data := []byte("&protobuf.LenPrefix{\n")
+   data = fmt.Appendf(data, "%#v,\n", p.Bytes)
+   data = fmt.Appendf(data, "%#v,\n", p.Message)
+   data = append(data, '}')
+   return string(data)
+}
+
 func (m Message) GoString() string {
    data := []byte("protobuf.Message{")
    for index, f := range m {
@@ -15,14 +23,6 @@ func (m Message) GoString() string {
       }
       data = fmt.Appendf(data, "{%v, %#v},\n", f.Number, f.Value)
    }
-   data = append(data, '}')
-   return string(data)
-}
-
-func (p *LenPrefix) GoString() string {
-   data := []byte("&protobuf.LenPrefix{\n")
-   data = fmt.Appendf(data, "%#v,\n", p.Bytes)
-   data = fmt.Appendf(data, "%#v,\n", p.Message)
    data = append(data, '}')
    return string(data)
 }
