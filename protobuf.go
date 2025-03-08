@@ -4,7 +4,7 @@ import (
    "errors"
    "fmt"
    "google.golang.org/protobuf/encoding/protowire"
-   "slices"
+   "iter"
 )
 
 func (p *LenPrefix) GoString() string {
@@ -180,7 +180,6 @@ type Message []Field
 type Number = protowire.Number
 
 func unmarshal(data []byte) Value {
-   data = slices.Clip(data)
    if len(data) >= 1 {
       var m Message
       if m.Unmarshal(data) == nil {
@@ -208,71 +207,70 @@ func (v Varint) Append(data []byte, num Number) []byte {
 // protobuf.dev/programming-guides/encoding#cheat-sheet
 type Varint uint64
 
-///
-
-func get[V Value](m Message, num Number) func() (V, bool) {
-   var index int
-   return func() (V, bool) {
-      for index < len(m) {
-         field1 := m[index]
-         index++
-         if field1.Number == num {
-            value1, ok := field1.Value.(V)
-            if ok {
-               return value1, true
-            }
-         }
-      }
-      return *new(V), false
-   }
-}
-
-func (m Message) GetVarint(num Number) func() (Varint, bool) {
+func (m Message) GetVarint(num Number) iter.Seq[Varint] {
    return get[Varint](m, num)
 }
 
-func (m Message) GetI64(num Number) func() (I64, bool) {
+func (m Message) GetI64(num Number) iter.Seq[I64] {
    return get[I64](m, num)
 }
 
-func (m Message) GetI32(num Number) func() (I32, bool) {
+func (m Message) GetI32(num Number) iter.Seq[I32] {
    return get[I32](m, num)
 }
 
-func (m Message) GetBytes(num Number) func() (Bytes, bool) {
-   var index int
-   return func() (Bytes, bool) {
-      for index < len(m) {
-         field1 := m[index]
-         index++
+func get[V Value](m Message, num Number) iter.Seq[V] {
+   return func(yield func(V) bool) {
+      for _, field1 := range m {
          if field1.Number == num {
-            switch value1 := field1.Value.(type) {
-            case Bytes:
-               return value1, true
-            case *LenPrefix:
-               return value1.Bytes, true
+            value1, ok := field1.Value.(V)
+            if ok {
+               if !yield(value1) {
+                  return
+               }
             }
          }
       }
-      return nil, false
    }
 }
 
-func (m Message) Get(num Number) func() (Message, bool) {
-   var index int
-   return func() (Message, bool) {
-      for index < len(m) {
-         field1 := m[index]
-         index++
+func (m Message) Get(num Number) iter.Seq[Message] {
+   return func(yield func(Message) bool) {
+      for _, field1 := range m {
          if field1.Number == num {
             switch value1 := field1.Value.(type) {
             case Message:
-               return value1, true
+               if !yield(value1) {
+                  return
+               }
             case *LenPrefix:
-               return value1.Message, true
+               if !yield(value1.Message) {
+                  return
+               }
             }
          }
       }
-      return nil, false
+   }
+}
+
+// USE
+// pkg.go.dev/slices#Clip
+// IF YOU NEED TO APPEND TO RESULT
+func (m Message) GetBytes(num Number) iter.Seq[Bytes] {
+   return func(yield func(Bytes) bool) {
+      for _, field1 := range m {
+         if field1.Number == num {
+            switch value1 := field1.Value.(type) {
+            case Bytes:
+               if !yield(value1) {
+                  return
+               }
+            case *LenPrefix:
+               if !yield(value1.Bytes) {
+                  return
+               }
+            }
+         }
+      }
    }
 }

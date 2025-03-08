@@ -61,55 +61,39 @@ var value1 = Message{
 }
 
 func TestMessage(t *testing.T) {
-   t.Run("Get", func(t *testing.T) {
-      next := value1.Get(6)
-      m, _ := next()
-      v, _ := m.GetVarint(2)()
-      if v != 2 {
-         t.Fatal(v)
-      }
-      _, ok := next()
-      if ok {
-         t.Fatal("next")
-      }
-   })
    t.Run("GetBytes", func(t *testing.T) {
-      next := value1.GetBytes(5)
-      v, _ := next()
-      if string(v) != "Bytes" {
-         t.Fatal(v)
+      for v := range value1.GetBytes(5) {
+         if string(v) != "Bytes" {
+            t.Fatal(v)
+         }
+         break
       }
-      _, ok := next()
-      if ok {
-         t.Fatal("next")
-      }
-      v, _ = value1.GetBytes(6)()
-      if string(v) != "LenPrefix" {
-         t.Fatal(v)
-      }
-   })
-   t.Run("GetI32", func(t *testing.T) {
-      next := value1.GetI32(4)
-      v, _ := next()
-      if v != 2 {
-         t.Fatal(v)
-      }
-      _, ok := next()
-      if ok {
-         t.Fatal("next")
+      for v := range value1.GetBytes(6) {
+         if string(v) != "LenPrefix" {
+            t.Fatal(v)
+         }
+         break
       }
    })
-   t.Run("GetI64", func(t *testing.T) {
-      v, _ := value1.GetI64(3)()
-      if v != 2 {
-         t.Fatal(v)
+   t.Run("Get", func(t *testing.T) {
+      for v := range value1.Get(6) {
+         for v := range v.GetVarint(2) {
+            if v != 2 {
+               t.Fatal(v)
+            }
+         }
+         break
       }
    })
    t.Run("GetVarint", func(t *testing.T) {
-      m, _ := value1.Get(2)()
-      v, _ := m.GetVarint(2)()
-      if v != 2 {
-         t.Fatal(v)
+      for v := range value1.Get(2) {
+         for v := range v.GetVarint(2) {
+            if v != 2 {
+               t.Fatal(v)
+            }
+            break
+         }
+         break
       }
    })
    t.Run("GoString", func(t *testing.T) {
@@ -170,6 +154,20 @@ func TestMessage(t *testing.T) {
       err = m.Unmarshal(data)
       if err == nil {
          t.Fatal("Unmarshal")
+      }
+   })
+   t.Run("GetI32", func(t *testing.T) {
+      for v := range value1.GetI32(4) {
+         if v != 2 {
+            t.Fatal(v)
+         }
+      }
+   })
+   t.Run("GetI64", func(t *testing.T) {
+      for v := range value1.GetI64(3) {
+         if v != 2 {
+            t.Fatal(v)
+         }
       }
    })
 }
