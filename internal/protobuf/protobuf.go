@@ -3,8 +3,42 @@ package protobuf
 import (
    "errors"
    "google.golang.org/protobuf/encoding/protowire"
+   "iter"
    "slices"
 )
+
+func get[V Value](m Message, num Number) iter.Seq[V] {
+   return func(yield func(V) bool) {
+      for _, field1 := range m {
+         if field1.Number == num {
+            value1, ok := field1.Value.(V)
+            if ok {
+               if !yield(value1) {
+                  break
+               }
+            }
+         }
+      }
+   }
+}
+
+func (m Message) GetVarint(num Number) iter.Seq[Varint] {
+   return func(yield func(Varint) bool) {
+      for _, field1 := range m {
+         if field1.Number == num {
+            value1, ok := field1.Value.(Varint)
+            if ok {
+               if !yield(value1) {
+                  break
+               }
+            }
+         }
+      }
+   }
+}
+
+// protobuf.dev/programming-guides/encoding#cheat-sheet
+type Message []Field
 
 func (b Bytes) Append(data []byte, num Number) []byte {
    data = protowire.AppendTag(data, num, protowire.BytesType)
@@ -116,9 +150,6 @@ func (m *Message) Unmarshal(data []byte) error {
    }
    return nil
 }
-
-// protobuf.dev/programming-guides/encoding#cheat-sheet
-type Message []Field
 
 // protobuf.dev/programming-guides/encoding#cheat-sheet-key
 type Number = protowire.Number

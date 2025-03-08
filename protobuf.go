@@ -27,23 +27,6 @@ func (m Message) GoString() string {
    return string(data)
 }
 
-func get[V Value](m Message, num Number) func() (V, bool) {
-   var index int
-   return func() (V, bool) {
-      for index < len(m) {
-         field1 := m[index]
-         index++
-         if field1.Number == num {
-            value1, ok := field1.Value.(V)
-            if ok {
-               return value1, true
-            }
-         }
-      }
-      return *new(V), false
-   }
-}
-
 func (b Bytes) Append(data []byte, num Number) []byte {
    data = protowire.AppendTag(data, num, protowire.BytesType)
    return protowire.AppendBytes(data, b)
@@ -105,18 +88,6 @@ func (m Message) Marshal() []byte {
    return data
 }
 
-func (m Message) GetVarint(num Number) func() (Varint, bool) {
-   return get[Varint](m, num)
-}
-
-func (m Message) GetI64(num Number) func() (I64, bool) {
-   return get[I64](m, num)
-}
-
-func (m Message) GetI32(num Number) func() (I32, bool) {
-   return get[I32](m, num)
-}
-
 func (m *Message) AddVarint(num Number, v Varint) {
    *m = append(*m, Field{num, v})
 }
@@ -143,44 +114,6 @@ func (m *Message) Add(num Number, v func(*Message)) {
 func (m Message) Append(data []byte, num Number) []byte {
    data = protowire.AppendTag(data, num, protowire.BytesType)
    return protowire.AppendBytes(data, m.Marshal())
-}
-
-func (m Message) GetBytes(num Number) func() (Bytes, bool) {
-   var index int
-   return func() (Bytes, bool) {
-      for index < len(m) {
-         field1 := m[index]
-         index++
-         if field1.Number == num {
-            switch value1 := field1.Value.(type) {
-            case Bytes:
-               return value1, true
-            case *LenPrefix:
-               return value1.Bytes, true
-            }
-         }
-      }
-      return nil, false
-   }
-}
-
-func (m Message) Get(num Number) func() (Message, bool) {
-   var index int
-   return func() (Message, bool) {
-      for index < len(m) {
-         field1 := m[index]
-         index++
-         if field1.Number == num {
-            switch value1 := field1.Value.(type) {
-            case Message:
-               return value1, true
-            case *LenPrefix:
-               return value1.Message, true
-            }
-         }
-      }
-      return nil, false
-   }
 }
 
 func (m *Message) Unmarshal(data []byte) error {
@@ -274,3 +207,72 @@ func (v Varint) Append(data []byte, num Number) []byte {
 
 // protobuf.dev/programming-guides/encoding#cheat-sheet
 type Varint uint64
+
+///
+
+func get[V Value](m Message, num Number) func() (V, bool) {
+   var index int
+   return func() (V, bool) {
+      for index < len(m) {
+         field1 := m[index]
+         index++
+         if field1.Number == num {
+            value1, ok := field1.Value.(V)
+            if ok {
+               return value1, true
+            }
+         }
+      }
+      return *new(V), false
+   }
+}
+
+func (m Message) GetVarint(num Number) func() (Varint, bool) {
+   return get[Varint](m, num)
+}
+
+func (m Message) GetI64(num Number) func() (I64, bool) {
+   return get[I64](m, num)
+}
+
+func (m Message) GetI32(num Number) func() (I32, bool) {
+   return get[I32](m, num)
+}
+
+func (m Message) GetBytes(num Number) func() (Bytes, bool) {
+   var index int
+   return func() (Bytes, bool) {
+      for index < len(m) {
+         field1 := m[index]
+         index++
+         if field1.Number == num {
+            switch value1 := field1.Value.(type) {
+            case Bytes:
+               return value1, true
+            case *LenPrefix:
+               return value1.Bytes, true
+            }
+         }
+      }
+      return nil, false
+   }
+}
+
+func (m Message) Get(num Number) func() (Message, bool) {
+   var index int
+   return func() (Message, bool) {
+      for index < len(m) {
+         field1 := m[index]
+         index++
+         if field1.Number == num {
+            switch value1 := field1.Value.(type) {
+            case Message:
+               return value1, true
+            case *LenPrefix:
+               return value1.Message, true
+            }
+         }
+      }
+      return nil, false
+   }
+}
