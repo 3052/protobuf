@@ -7,6 +7,18 @@ import (
    "iter"
 )
 
+func (b Bytes) Append(data []byte, num Number) []byte {
+   data = protowire.AppendTag(data, num, protowire.BytesType)
+   return protowire.AppendBytes(data, b)
+}
+
+// protobuf.dev/programming-guides/encoding#cheat-sheet
+type Bytes []byte
+
+func (b Bytes) GoString() string {
+   return fmt.Sprintf("protobuf.Bytes(%q)", []byte(b))
+}
+
 func (p *LenPrefix) GoString() string {
    data := []byte("&protobuf.LenPrefix{\n")
    data = fmt.Appendf(data, "%#v,\n", p.Bytes)
@@ -27,17 +39,7 @@ func (m Message) GoString() string {
    return string(data)
 }
 
-func (b Bytes) Append(data []byte, num Number) []byte {
-   data = protowire.AppendTag(data, num, protowire.BytesType)
-   return protowire.AppendBytes(data, b)
-}
-
-// protobuf.dev/programming-guides/encoding#cheat-sheet
-type Bytes []byte
-
-func (b Bytes) GoString() string {
-   return fmt.Sprintf("protobuf.Bytes(%q)", []byte(b))
-}
+///
 
 // protobuf.dev/programming-guides/encoding#cheat-sheet-key
 type Field struct {
