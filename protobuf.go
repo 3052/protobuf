@@ -39,8 +39,6 @@ func (m Message) GoString() string {
    return string(data)
 }
 
-///
-
 // protobuf.dev/programming-guides/encoding#cheat-sheet-key
 type Field struct {
    Number Number
