@@ -19,6 +19,12 @@ func (b Bytes) GoString() string {
    return fmt.Sprintf("protobuf.Bytes(%q)", []byte(b))
 }
 
+// protobuf.dev/programming-guides/encoding#cheat-sheet-key
+type Field struct {
+   Number Number
+   Value  Value
+}
+
 func (p *LenPrefix) GoString() string {
    data := []byte("&protobuf.LenPrefix{\n")
    data = fmt.Appendf(data, "%#v,\n", p.Bytes)
@@ -39,11 +45,7 @@ func (m Message) GoString() string {
    return string(data)
 }
 
-// protobuf.dev/programming-guides/encoding#cheat-sheet-key
-type Field struct {
-   Number Number
-   Value  Value
-}
+///
 
 // protobuf.dev/programming-guides/encoding#cheat-sheet
 type I32 uint32
