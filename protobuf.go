@@ -25,28 +25,6 @@ type Field struct {
    Value  Value
 }
 
-func (p *LenPrefix) GoString() string {
-   data := []byte("&protobuf.LenPrefix{\n")
-   data = fmt.Appendf(data, "%#v,\n", p.Bytes)
-   data = fmt.Appendf(data, "%#v,\n", p.Message)
-   data = append(data, '}')
-   return string(data)
-}
-
-func (m Message) GoString() string {
-   data := []byte("protobuf.Message{")
-   for index, f := range m {
-      if index == 0 {
-         data = append(data, '\n')
-      }
-      data = fmt.Appendf(data, "{%v, %#v},\n", f.Number, f.Value)
-   }
-   data = append(data, '}')
-   return string(data)
-}
-
-///
-
 // protobuf.dev/programming-guides/encoding#cheat-sheet
 type I32 uint32
 
@@ -70,6 +48,28 @@ func (i I64) Append(data []byte, num Number) []byte {
    data = protowire.AppendTag(data, num, protowire.Fixed64Type)
    return protowire.AppendFixed64(data, uint64(i))
 }
+
+func (p *LenPrefix) GoString() string {
+   data := []byte("&protobuf.LenPrefix{\n")
+   data = fmt.Appendf(data, "%#v,\n", p.Bytes)
+   data = fmt.Appendf(data, "%#v,\n", p.Message)
+   data = append(data, '}')
+   return string(data)
+}
+
+func (m Message) GoString() string {
+   data := []byte("protobuf.Message{")
+   for index, f := range m {
+      if index == 0 {
+         data = append(data, '\n')
+      }
+      data = fmt.Appendf(data, "{%v, %#v},\n", f.Number, f.Value)
+   }
+   data = append(data, '}')
+   return string(data)
+}
+
+///
 
 // protobuf.dev/programming-guides/encoding#cheat-sheet
 type LenPrefix struct {
