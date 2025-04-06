@@ -99,7 +99,7 @@ func TestMessage(t *testing.T) {
    t.Run("GoString", func(t *testing.T) {
       data := "protobuf.Message{\n" +
          "{2, protobuf.Varint(2)},\n" +
-      "}"
+         "}"
       data1 := Message{
          {2, Varint(2)},
       }.GoString()
