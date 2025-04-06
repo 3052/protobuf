@@ -6,58 +6,62 @@ import (
    "iter"
 )
 
-func get[V Value](m Message, num protowire.Number) iter.Seq[V] {
-   return func(yield func(V) bool) {
-      for _, field1 := range m {
-         if field1.Number == num {
-            value1, ok := field1.Value.(V)
-            if ok {
-               if !yield(value1) {
-                  return
-               }
-            }
-         }
-      }
-   }
+// protobuf.dev/programming-guides/encoding#cheat-sheet
+type Value interface {
+   Append([]byte) []byte
+   Consume([]byte) int
 }
 
-func (b Bytes) Append(data []byte, num protowire.Number) []byte {
-   data = protowire.AppendTag(data, num, protowire.BytesType)
+// protobuf.dev/programming-guides/encoding#cheat-sheet
+type Varint [1]uint64
+
+func (v Varint) Append(data []byte) []byte {
+   return protowire.AppendVarint(data, v[0])
+}
+
+func (v *Varint) Consume(data []byte) int {
+   var size int
+   v[0], size = protowire.ConsumeVarint(data)
+   return size
+}
+
+// protobuf.dev/programming-guides/encoding#cheat-sheet
+type I64 [1]uint64
+
+func (i I64) Append(data []byte) []byte {
+   return protowire.AppendFixed64(data, i[0])
+}
+
+func (i *I64) Consume(data []byte) int {
+   var size int
+   i[0], size = protowire.ConsumeFixed64(data)
+   return size
+}
+
+// protobuf.dev/programming-guides/encoding#cheat-sheet
+type I32 [1]uint32
+
+func (i I32) Append(data []byte) []byte {
+   return protowire.AppendFixed32(data, i[0])
+}
+
+func (i *I32) Consume(data []byte) int {
+   var size int
+   i[0], size = protowire.ConsumeFixed32(data)
+   return size
+}
+
+func (b Bytes) Append(data []byte) []byte {
    return protowire.AppendBytes(data, b)
 }
 
 // protobuf.dev/programming-guides/encoding#cheat-sheet
 type Bytes []byte
 
-func (b Bytes) MarshalText() ([]byte, error) {
-   return b, nil
-}
-
-// protobuf.dev/programming-guides/encoding#cheat-sheet-key
-type Field struct {
-   Number protowire.Number
-   Value  Value
-}
-
-// protobuf.dev/programming-guides/encoding#cheat-sheet
-type I32 uint32
-
-func (i I32) Append(data []byte, num protowire.Number) []byte {
-   data = protowire.AppendTag(data, num, protowire.Fixed32Type)
-   return protowire.AppendFixed32(data, uint32(i))
-}
-
-// protobuf.dev/programming-guides/encoding#cheat-sheet
-type I64 uint64
-
-func (i I64) Append(data []byte, num protowire.Number) []byte {
-   data = protowire.AppendTag(data, num, protowire.Fixed64Type)
-   return protowire.AppendFixed64(data, uint64(i))
-}
-
-func (p *LenPrefix) Append(data []byte, num protowire.Number) []byte {
-   data = protowire.AppendTag(data, num, protowire.BytesType)
-   return protowire.AppendBytes(data, p.Bytes)
+func (b *Bytes) Consume(data []byte) int {
+   var size int
+   *b, size = protowire.ConsumeBytes(data)
+   return size
 }
 
 // protobuf.dev/programming-guides/encoding#cheat-sheet
@@ -66,95 +70,40 @@ type LenPrefix struct {
    Message Message
 }
 
+func (p *LenPrefix) Append(data []byte) []byte {
+   return protowire.AppendBytes(data, p.Bytes)
+}
+
+func unmarshal(data []byte) Value {
+   if len(data) >= 1 {
+      var m Message
+      if m.Unmarshal(data) == nil {
+         return &LenPrefix{data, m}
+      }
+   }
+   return &Bytes(data)
+}
+
 // protobuf.dev/programming-guides/encoding#cheat-sheet
 type Message []Field
 
+// protobuf.dev/programming-guides/encoding#cheat-sheet-key
+type Field struct {
+   Number protowire.Number
+   Type protowire.Type
+   Value  Value
+}
+
 func (m Message) Marshal() []byte {
    var data []byte
-   for _, field1 := range m {
-      data = field1.Value.Append(data, field1.Number)
+   for _, f := range m {
+      data = protowire.AppendTag(data, f.Number, f.Type)
+      data = f.Value.Append(data)
    }
    return data
 }
 
-func (m Message) GetVarint(num protowire.Number) iter.Seq[Varint] {
-   return get[Varint](m, num)
-}
-
-func (m Message) GetI64(num protowire.Number) iter.Seq[I64] {
-   return get[I64](m, num)
-}
-
-func (m Message) GetI32(num protowire.Number) iter.Seq[I32] {
-   return get[I32](m, num)
-}
-
-func (m Message) Get(num protowire.Number) iter.Seq[Message] {
-   return func(yield func(Message) bool) {
-      for _, field1 := range m {
-         if field1.Number == num {
-            switch value1 := field1.Value.(type) {
-            case Message:
-               if !yield(value1) {
-                  return
-               }
-            case *LenPrefix:
-               if !yield(value1.Message) {
-                  return
-               }
-            }
-         }
-      }
-   }
-}
-
-// USE
-// pkg.go.dev/slices#Clip
-// IF YOU NEED TO APPEND TO RESULT
-func (m Message) GetBytes(num protowire.Number) iter.Seq[Bytes] {
-   return func(yield func(Bytes) bool) {
-      for _, field1 := range m {
-         if field1.Number == num {
-            switch value1 := field1.Value.(type) {
-            case Bytes:
-               if !yield(value1) {
-                  return
-               }
-            case *LenPrefix:
-               if !yield(value1.Bytes) {
-                  return
-               }
-            }
-         }
-      }
-   }
-}
-
-func (m *Message) AddVarint(num protowire.Number, v Varint) {
-   *m = append(*m, Field{num, v})
-}
-
-func (m *Message) AddI64(num protowire.Number, v I64) {
-   *m = append(*m, Field{num, v})
-}
-
-func (m *Message) AddI32(num protowire.Number, v I32) {
-   *m = append(*m, Field{num, v})
-}
-
-func (m *Message) AddBytes(num protowire.Number, v Bytes) {
-   *m = append(*m, Field{num, v})
-}
-
-// wikipedia.org/wiki/Continuation-passing_style
-func (m *Message) Add(num protowire.Number, v func(*Message)) {
-   var m1 Message
-   v(&m1)
-   *m = append(*m, Field{num, m1})
-}
-
-func (m Message) Append(data []byte, num protowire.Number) []byte {
-   data = protowire.AppendTag(data, num, protowire.BytesType)
+func (m Message) Append(data []byte) []byte {
    return protowire.AppendBytes(data, m.Marshal())
 }
 
@@ -214,26 +163,3 @@ func (m *Message) Unmarshal(data []byte) error {
    }
    return nil
 }
-
-// protobuf.dev/programming-guides/encoding#cheat-sheet
-type Value interface {
-   Append([]byte, protowire.Number) []byte
-}
-
-func unmarshal(data []byte) Value {
-   if len(data) >= 1 {
-      var m Message
-      if m.Unmarshal(data) == nil {
-         return &LenPrefix{data, m}
-      }
-   }
-   return Bytes(data)
-}
-
-func (v Varint) Append(data []byte, num protowire.Number) []byte {
-   data = protowire.AppendTag(data, num, protowire.VarintType)
-   return protowire.AppendVarint(data, uint64(v))
-}
-
-// protobuf.dev/programming-guides/encoding#cheat-sheet
-type Varint uint64
