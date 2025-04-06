@@ -7,6 +7,12 @@ import (
    "iter"
 )
 
+// omit Consume because LenPrefix does not need it
+// protobuf.dev/programming-guides/encoding#cheat-sheet
+type Value interface {
+   Append([]byte, protowire.Number) []byte
+}
+
 func get[V Value](m Message, num protowire.Number) iter.Seq[V] {
    return func(yield func(V) bool) {
       for _, field1 := range m {
@@ -246,11 +252,6 @@ func (m *Message) Unmarshal(data []byte) error {
       }
    }
    return nil
-}
-
-// protobuf.dev/programming-guides/encoding#cheat-sheet
-type Value interface {
-   Append([]byte, protowire.Number) []byte
 }
 
 func unmarshal(data []byte) Value {
