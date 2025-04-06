@@ -2,7 +2,6 @@ package protobuf
 
 import (
    "errors"
-   "fmt"
    "google.golang.org/protobuf/encoding/protowire"
    "iter"
 )
@@ -30,10 +29,6 @@ func (b Bytes) Append(data []byte, num protowire.Number) []byte {
 // protobuf.dev/programming-guides/encoding#cheat-sheet
 type Bytes []byte
 
-func (b Bytes) GoString() string {
-   return fmt.Sprintf("protobuf.Bytes(%q)", []byte(b))
-}
-
 func (b Bytes) MarshalText() ([]byte, error) {
    return b, nil
 }
@@ -46,10 +41,6 @@ type Field struct {
 
 // protobuf.dev/programming-guides/encoding#cheat-sheet
 type I32 uint32
-
-func (i I32) GoString() string {
-   return fmt.Sprintf("protobuf.I32(%v)", i)
-}
 
 func (i I32) Append(data []byte, num protowire.Number) []byte {
    data = protowire.AppendTag(data, num, protowire.Fixed32Type)
@@ -64,10 +55,6 @@ func (i I64) Append(data []byte, num protowire.Number) []byte {
    return protowire.AppendFixed64(data, uint64(i))
 }
 
-func (i I64) GoString() string {
-   return fmt.Sprintf("protobuf.I64(%v)", i)
-}
-
 func (p *LenPrefix) Append(data []byte, num protowire.Number) []byte {
    data = protowire.AppendTag(data, num, protowire.BytesType)
    return protowire.AppendBytes(data, p.Bytes)
@@ -79,28 +66,8 @@ type LenPrefix struct {
    Message Message
 }
 
-func (p *LenPrefix) GoString() string {
-   data := []byte("&protobuf.LenPrefix{\n")
-   data = fmt.Appendf(data, "%#v,\n", p.Bytes)
-   data = fmt.Appendf(data, "%#v,\n", p.Message)
-   data = append(data, '}')
-   return string(data)
-}
-
 // protobuf.dev/programming-guides/encoding#cheat-sheet
 type Message []Field
-
-func (m Message) GoString() string {
-   data := []byte("protobuf.Message{")
-   for index, f := range m {
-      if index == 0 {
-         data = append(data, '\n')
-      }
-      data = fmt.Appendf(data, "{%v, %#v},\n", f.Number, f.Value)
-   }
-   data = append(data, '}')
-   return string(data)
-}
 
 func (m Message) Marshal() []byte {
    var data []byte
@@ -266,10 +233,6 @@ func unmarshal(data []byte) Value {
 func (v Varint) Append(data []byte, num protowire.Number) []byte {
    data = protowire.AppendTag(data, num, protowire.VarintType)
    return protowire.AppendVarint(data, uint64(v))
-}
-
-func (v Varint) GoString() string {
-   return fmt.Sprintf("protobuf.Varint(%v)", v)
 }
 
 // protobuf.dev/programming-guides/encoding#cheat-sheet
