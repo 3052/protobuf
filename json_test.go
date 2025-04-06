@@ -8,7 +8,7 @@ import (
 
 func TestJson(t *testing.T) {
    message := Message{
-      {2, Bytes("hello world")},
+      {2, Bytes("hello\x00world")},
    }
    data, err := json.MarshalIndent(message, "", " ")
    if err != nil {
