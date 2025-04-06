@@ -6,6 +6,21 @@ import (
    "testing"
 )
 
+var value1 = Message{
+   {2, Message{
+      {2, Varint(2)},
+   }},
+   {3, I64(2)},
+   {4, I32(2)},
+   {5, Bytes("Bytes")},
+   {6, &LenPrefix{
+      Bytes("LenPrefix"),
+      Message{
+         {2, Varint(2)},
+      },
+   }},
+}
+
 func TestBytes(t *testing.T) {
    data := Bytes("hello world").GoString()
    if data != `protobuf.Bytes("hello world")` {
@@ -43,21 +58,6 @@ func TestLenPrefix(t *testing.T) {
    if prefix.GoString() != data {
       t.Fatal(prefix.GoString())
    }
-}
-
-var value1 = Message{
-   {2, Message{
-      {2, Varint(2)},
-   }},
-   {3, I64(2)},
-   {4, I32(2)},
-   {5, Bytes("Bytes")},
-   {6, &LenPrefix{
-      Bytes("LenPrefix"),
-      Message{
-         {2, Varint(2)},
-      },
-   }},
 }
 
 func TestMessage(t *testing.T) {
