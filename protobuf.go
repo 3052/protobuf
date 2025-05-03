@@ -7,18 +7,6 @@ import (
    "iter"
 )
 
-func (m Message) GoString() string {
-   data := []byte("protobuf.Message{")
-   for index, r := range m {
-      if index == 0 {
-         data = append(data, '\n')
-      }
-      data = fmt.Appendf(data, "{%v, %#v},\n", r.Number, r.Payload)
-   }
-   data = append(data, '}')
-   return string(data)
-}
-
 func get[P Payload](m Message, num Number) iter.Seq[P] {
    return func(yield func(P) bool) {
       for _, record1 := range m {
@@ -33,6 +21,20 @@ func get[P Payload](m Message, num Number) iter.Seq[P] {
       }
    }
 }
+
+func (m Message) GoString() string {
+   data := []byte("protobuf.Message{")
+   for index, r := range m {
+      if index == 0 {
+         data = append(data, '\n')
+      }
+      data = fmt.Appendf(data, "{%v, %#v},\n", r.Number, r.Payload)
+   }
+   data = append(data, '}')
+   return string(data)
+}
+
+///
 
 func (b Bytes) Append(data []byte, num Number) []byte {
    data = protowire.AppendTag(data, num, protowire.BytesType)
