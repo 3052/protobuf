@@ -37,20 +37,6 @@ func (b Bytes) MarshalText() ([]byte, error) {
    return b, nil
 }
 
-func (m Message) GoString() string {
-   data := []byte("protobuf.Message{")
-   for index, r := range m {
-      if index == 0 {
-         data = append(data, '\n')
-      }
-      data = fmt.Appendf(data, "{%v, %#v},\n", r.Number, r.Payload)
-   }
-   data = append(data, '}')
-   return string(data)
-}
-
-///
-
 func (i I32) Append(data []byte, num Number) []byte {
    data = protowire.AppendTag(data, num, protowire.Fixed32Type)
    return protowire.AppendFixed32(data, uint32(i))
@@ -65,6 +51,20 @@ func (i I32) MarshalText() ([]byte, error) {
 func (i I32) GoString() string {
    return fmt.Sprintf("protobuf.I32(%v)", i)
 }
+
+func (m Message) GoString() string {
+   data := []byte("protobuf.Message{")
+   for index, r := range m {
+      if index == 0 {
+         data = append(data, '\n')
+      }
+      data = fmt.Appendf(data, "{%v, %#v},\n", r.Number, r.Payload)
+   }
+   data = append(data, '}')
+   return string(data)
+}
+
+///
 
 func (i I64) Append(data []byte, num Number) []byte {
    data = protowire.AppendTag(data, num, protowire.Fixed64Type)
