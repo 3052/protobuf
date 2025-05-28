@@ -67,20 +67,6 @@ func (i I64) GoString() string {
    return fmt.Sprintf("protobuf.I64(%v)", i)
 }
 
-func (m Message) GoString() string {
-   data := []byte("protobuf.Message{")
-   for index, r := range m {
-      if index == 0 {
-         data = append(data, '\n')
-      }
-      data = fmt.Appendf(data, "{%v, %#v},\n", r.Number, r.Payload)
-   }
-   data = append(data, '}')
-   return string(data)
-}
-
-///
-
 func (p *LenPrefix) Append(data []byte, num Number) []byte {
    data = protowire.AppendTag(data, num, protowire.BytesType)
    return protowire.AppendBytes(data, p.Bytes)
@@ -98,6 +84,20 @@ func (p *LenPrefix) GoString() string {
    data = append(data, '}')
    return string(data)
 }
+
+func (m Message) GoString() string {
+   data := []byte("protobuf.Message{")
+   for index, r := range m {
+      if index == 0 {
+         data = append(data, '\n')
+      }
+      data = fmt.Appendf(data, "{%v, %#v},\n", r.Number, r.Payload)
+   }
+   data = append(data, '}')
+   return string(data)
+}
+
+///
 
 func (m Message) Marshal() []byte {
    var data []byte
