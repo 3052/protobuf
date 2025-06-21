@@ -1,4 +1,4 @@
-package zero
+package protobuf
 
 import "google.golang.org/protobuf/encoding/protowire"
 
