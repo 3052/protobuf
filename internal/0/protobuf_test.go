@@ -6,7 +6,7 @@ import (
    "testing"
 )
 
-var value = Message{
+var value1 = Message{
    {
       Tag: Tag.Varint(2),
       Bytes: Varint(3),
@@ -26,7 +26,7 @@ var value = Message{
    },
 }
 
-var value1 = protopack.Message{
+var value = protopack.Message{
    protopack.Tag{2, protopack.VarintType},
    protopack.Varint(3),
    protopack.Tag{4, protopack.BytesType},
@@ -39,7 +39,7 @@ var value1 = protopack.Message{
 }
 
 func Test(t *testing.T) {
-   data, data1 := value.Encode(), value1.Marshal()
+   data, data1 := value.Marshal(), value1.Encode()
    if !bytes.Equal(data, data1) {
       t.Fatal("!bytes.Equal")
    }
