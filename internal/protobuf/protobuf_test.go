@@ -25,7 +25,7 @@ var value = protopack.Message{
 }
 
 func Test(t *testing.T) {
-   data, data1 := value.Marshal(), value1.Encode()
+   data, data1 := value.Marshal(), value1.Marshal()
    if !bytes.Equal(data, data1) {
       t.Fatal("!bytes.Equal")
    }
