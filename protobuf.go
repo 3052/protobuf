@@ -7,15 +7,25 @@ import (
    "iter"
 )
 
+func (v Varint) GoString() string {
+   return fmt.Sprintf("protobuf.Varint(%v)", v)
+}
+
+type Varint uint64
+
+func (v Varint) MarshalText() ([]byte, error) {
+   return fmt.Appendf(nil, "Varint(%v)", v), nil
+}
+
+func (v Varint) Append(data []byte, num Number) []byte {
+   data = protowire.AppendTag(data, num, protowire.VarintType)
+   return protowire.AppendVarint(data, uint64(v))
+}
+
 // protobuf.dev/programming-guides/encoding#structure
 type Record struct {
    Number  Number
    Payload Payload
-}
-
-type Payload interface {
-   Append([]byte, Number) []byte
-   fmt.GoStringer
 }
 
 type Message []Record
@@ -27,39 +37,15 @@ func (m *Message) Add(num Number, value func(*Message)) {
    *m = append(*m, Record{num, m1})
 }
 
-func get[P Payload](m Message, num Number) iter.Seq[P] {
-   return func(yield func(P) bool) {
-      for _, record1 := range m {
-         if record1.Number == num {
-            value, ok := record1.Payload.(P)
-            if ok {
-               if !yield(value) {
-                  return
-               }
-            }
-         }
-      }
-   }
-}
-
-func (b Bytes) Append(data []byte, num Number) []byte {
-   data = protowire.AppendTag(data, num, protowire.BytesType)
-   return protowire.AppendBytes(data, b)
+type Payload interface {
+   Append([]byte, Number) []byte
+   fmt.GoStringer
 }
 
 type Bytes []byte
 
 func (b Bytes) GoString() string {
    return fmt.Sprintf("protobuf.Bytes(%q)", []byte(b))
-}
-
-func (b Bytes) MarshalText() ([]byte, error) {
-   return b, nil
-}
-
-func (i I32) Append(data []byte, num Number) []byte {
-   data = protowire.AppendTag(data, num, protowire.Fixed32Type)
-   return protowire.AppendFixed32(data, uint32(i))
 }
 
 type I32 uint32
@@ -70,6 +56,20 @@ func (i I32) MarshalText() ([]byte, error) {
 
 func (i I32) GoString() string {
    return fmt.Sprintf("protobuf.I32(%v)", i)
+}
+
+func (b Bytes) Append(data []byte, num Number) []byte {
+   data = protowire.AppendTag(data, num, protowire.BytesType)
+   return protowire.AppendBytes(data, b)
+}
+
+func (b Bytes) MarshalText() ([]byte, error) {
+   return b, nil
+}
+
+func (i I32) Append(data []byte, num Number) []byte {
+   data = protowire.AppendTag(data, num, protowire.Fixed32Type)
+   return protowire.AppendFixed32(data, uint32(i))
 }
 
 func (i I64) Append(data []byte, num Number) []byte {
@@ -130,6 +130,38 @@ func (m Message) Append(data []byte, num Number) []byte {
    return protowire.AppendBytes(data, m.Marshal())
 }
 
+type Number = protowire.Number
+
+func (m *Message) AddVarint(num Number, value Varint) {
+   *m = append(*m, Record{num, value})
+}
+
+func (m *Message) AddI64(num Number, value I64) {
+   *m = append(*m, Record{num, value})
+}
+
+func (m *Message) AddI32(num Number, value I32) {
+   *m = append(*m, Record{num, value})
+}
+
+func (m *Message) AddBytes(num Number, value Bytes) {
+   *m = append(*m, Record{num, value})
+}
+
+///
+
+func (m Message) GetVarint(num Number) iter.Seq[Varint] {
+   return get[Varint](m, num)
+}
+
+func (m Message) GetI64(num Number) iter.Seq[I64] {
+   return get[I64](m, num)
+}
+
+func (m Message) GetI32(num Number) iter.Seq[I32] {
+   return get[I32](m, num)
+}
+
 func (m Message) Get(num Number) iter.Seq[Message] {
    return func(yield func(Message) bool) {
       for _, record1 := range m {
@@ -149,9 +181,8 @@ func (m Message) Get(num Number) iter.Seq[Message] {
    }
 }
 
-// USE
+// USE CLIP IF YOU NEED TO APPEND TO RESULT
 // pkg.go.dev/slices#Clip
-// IF YOU NEED TO APPEND TO RESULT
 func (m Message) GetBytes(num Number) iter.Seq[Bytes] {
    return func(yield func(Bytes) bool) {
       for _, record1 := range m {
@@ -163,6 +194,21 @@ func (m Message) GetBytes(num Number) iter.Seq[Bytes] {
                }
             case *LenPrefix:
                if !yield(value.Bytes) {
+                  return
+               }
+            }
+         }
+      }
+   }
+}
+
+func get[P Payload](m Message, num Number) iter.Seq[P] {
+   return func(yield func(P) bool) {
+      for _, record1 := range m {
+         if record1.Number == num {
+            value, ok := record1.Payload.(P)
+            if ok {
+               if !yield(value) {
                   return
                }
             }
@@ -226,36 +272,6 @@ func (m *Message) Unmarshal(data []byte) error {
    return nil
 }
 
-func (m Message) GetVarint(num Number) iter.Seq[Varint] {
-   return get[Varint](m, num)
-}
-
-func (m Message) GetI64(num Number) iter.Seq[I64] {
-   return get[I64](m, num)
-}
-
-func (m *Message) AddVarint(num Number, value Varint) {
-   *m = append(*m, Record{num, value})
-}
-
-func (m *Message) AddI64(num Number, value I64) {
-   *m = append(*m, Record{num, value})
-}
-
-func (m *Message) AddI32(num Number, value I32) {
-   *m = append(*m, Record{num, value})
-}
-
-func (m *Message) AddBytes(num Number, value Bytes) {
-   *m = append(*m, Record{num, value})
-}
-
-func (m Message) GetI32(num Number) iter.Seq[I32] {
-   return get[I32](m, num)
-}
-
-type Number = protowire.Number
-
 func unmarshal(data []byte) Payload {
    if len(data) >= 1 {
       var m Message
@@ -264,19 +280,4 @@ func unmarshal(data []byte) Payload {
       }
    }
    return Bytes(data)
-}
-
-func (v Varint) GoString() string {
-   return fmt.Sprintf("protobuf.Varint(%v)", v)
-}
-
-type Varint uint64
-
-func (v Varint) MarshalText() ([]byte, error) {
-   return fmt.Appendf(nil, "Varint(%v)", v), nil
-}
-
-func (v Varint) Append(data []byte, num Number) []byte {
-   data = protowire.AppendTag(data, num, protowire.VarintType)
-   return protowire.AppendVarint(data, uint64(v))
 }

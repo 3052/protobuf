@@ -9,41 +9,41 @@ type Field struct {
    Message Message
 }
 
-type Message []Field
-
-func Varint(n protowire.Number, v uint64) Field {
+func LenPrefix(number protowire.Number, v ...Field) Field {
    return Field{
-      Number: n,
-      Type:   protowire.VarintType,
-      Bytes:  protowire.AppendVarint(nil, v),
-   }
-}
-
-func String(n protowire.Number, v string) Field {
-   return Field{
-      Number: n,
-      Type:   protowire.BytesType,
-      Bytes:  protowire.AppendString(nil, v),
-   }
-}
-
-func LenPrefix(n protowire.Number, v ...Field) Field {
-   return Field{
-      Number:  n,
+      Number:  number,
       Type:    protowire.BytesType,
       Message: v,
    }
 }
 
+func Varint(number protowire.Number, v uint64) Field {
+   return Field{
+      Number: number,
+      Type:   protowire.VarintType,
+      Bytes:  protowire.AppendVarint(nil, v),
+   }
+}
+
+func String(number protowire.Number, v string) Field {
+   return Field{
+      Number: number,
+      Type:   protowire.BytesType,
+      Bytes:  protowire.AppendString(nil, v),
+   }
+}
+
 func (f *Field) Append(data []byte) []byte {
    data = protowire.AppendTag(data, f.Number, f.Type)
-   if f.Bytes != nil {
-      data = append(data, f.Bytes...)
-   } else {
+   if f.Message != nil {
       data = protowire.AppendBytes(data, f.Message.Marshal())
+   } else {
+      data = append(data, f.Bytes...)
    }
    return data
 }
+
+type Message []Field
 
 func (m Message) Marshal() []byte {
    var data []byte
