@@ -7,6 +7,61 @@ import (
    "iter"
 )
 
+func (m *Message) Unmarshal(data []byte) error {
+   for len(data) >= 1 {
+      var (
+         r Record
+         wire_type protowire.Type
+         size int
+      )
+      r.Number, wire_type, size = protowire.ConsumeTag(data)
+      err := protowire.ParseError(size)
+      if err != nil {
+         return err
+      }
+      data = data[size:]
+      // google.golang.org/protobuf/encoding/protowire#ConsumeFieldValue
+      switch wire_type {
+      case protowire.BytesType:
+         value, size := protowire.ConsumeBytes(data)
+         err := protowire.ParseError(size)
+         if err != nil {
+            return err
+         }
+         r.Payload = unmarshal(value)
+         data = data[size:]
+      case protowire.Fixed32Type:
+         value, size := protowire.ConsumeFixed32(data)
+         err := protowire.ParseError(size)
+         if err != nil {
+            return err
+         }
+         r.Payload = I32(value)
+         data = data[size:]
+      case protowire.Fixed64Type:
+         value, size := protowire.ConsumeFixed64(data)
+         err := protowire.ParseError(size)
+         if err != nil {
+            return err
+         }
+         r.Payload = I64(value)
+         data = data[size:]
+      case protowire.VarintType:
+         value, size := protowire.ConsumeVarint(data)
+         err := protowire.ParseError(size)
+         if err != nil {
+            return err
+         }
+         r.Payload = Varint(value)
+         data = data[size:]
+      default:
+         return errors.New("cannot parse reserved wire type")
+      }
+      *m = append(*m, r)
+   }
+   return nil
+}
+
 func (v Varint) GoString() string {
    return fmt.Sprintf("protobuf.Varint(%v)", v)
 }
@@ -148,7 +203,20 @@ func (m *Message) AddBytes(num Number, value Bytes) {
    *m = append(*m, Record{num, value})
 }
 
-///
+func get[P Payload](m Message, num Number) iter.Seq[P] {
+   return func(yield func(P) bool) {
+      for _, record1 := range m {
+         if record1.Number == num {
+            value, ok := record1.Payload.(P)
+            if ok {
+               if !yield(value) {
+                  return
+               }
+            }
+         }
+      }
+   }
+}
 
 func (m Message) GetVarint(num Number) iter.Seq[Varint] {
    return get[Varint](m, num)
@@ -160,25 +228,6 @@ func (m Message) GetI64(num Number) iter.Seq[I64] {
 
 func (m Message) GetI32(num Number) iter.Seq[I32] {
    return get[I32](m, num)
-}
-
-func (m Message) Get(num Number) iter.Seq[Message] {
-   return func(yield func(Message) bool) {
-      for _, record1 := range m {
-         if record1.Number == num {
-            switch value := record1.Payload.(type) {
-            case Message:
-               if !yield(value) {
-                  return
-               }
-            case *LenPrefix:
-               if !yield(value.Message) {
-                  return
-               }
-            }
-         }
-      }
-   }
 }
 
 // USE CLIP IF YOU NEED TO APPEND TO RESULT
@@ -202,74 +251,23 @@ func (m Message) GetBytes(num Number) iter.Seq[Bytes] {
    }
 }
 
-func get[P Payload](m Message, num Number) iter.Seq[P] {
-   return func(yield func(P) bool) {
+func (m Message) Get(num Number) iter.Seq[Message] {
+   return func(yield func(Message) bool) {
       for _, record1 := range m {
          if record1.Number == num {
-            value, ok := record1.Payload.(P)
-            if ok {
+            switch value := record1.Payload.(type) {
+            case Message:
                if !yield(value) {
+                  return
+               }
+            case *LenPrefix:
+               if !yield(value.Message) {
                   return
                }
             }
          }
       }
    }
-}
-
-func (m *Message) Unmarshal(data []byte) error {
-   for len(data) >= 1 {
-      var (
-         r Record
-         wire_type protowire.Type
-         size int
-      )
-      r.Number, wire_type, size = protowire.ConsumeTag(data)
-      err := protowire.ParseError(size)
-      if err != nil {
-         return err
-      }
-      data = data[size:]
-      // google.golang.org/protobuf/encoding/protowire#ConsumeFieldValue
-      switch wire_type {
-      case protowire.BytesType:
-         value, size := protowire.ConsumeBytes(data)
-         err := protowire.ParseError(size)
-         if err != nil {
-            return err
-         }
-         r.Payload = unmarshal(value)
-         data = data[size:]
-      case protowire.Fixed32Type:
-         value, size := protowire.ConsumeFixed32(data)
-         err := protowire.ParseError(size)
-         if err != nil {
-            return err
-         }
-         r.Payload = I32(value)
-         data = data[size:]
-      case protowire.Fixed64Type:
-         value, size := protowire.ConsumeFixed64(data)
-         err := protowire.ParseError(size)
-         if err != nil {
-            return err
-         }
-         r.Payload = I64(value)
-         data = data[size:]
-      case protowire.VarintType:
-         value, size := protowire.ConsumeVarint(data)
-         err := protowire.ParseError(size)
-         if err != nil {
-            return err
-         }
-         r.Payload = Varint(value)
-         data = data[size:]
-      default:
-         return errors.New("cannot parse reserved wire type")
-      }
-      *m = append(*m, r)
-   }
-   return nil
 }
 
 func unmarshal(data []byte) Payload {
