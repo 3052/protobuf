@@ -7,6 +7,13 @@ import (
    "iter"
 )
 
+// wikipedia.org/wiki/Continuation-passing_style
+func (m *Message) Add(num Number, value func(*Message)) {
+   var m1 Message
+   value(&m1)
+   *m = append(*m, Record{num, m1})
+}
+
 func get[P Payload](m Message, num Number) iter.Seq[P] {
    return func(yield func(P) bool) {
       for _, record1 := range m {
@@ -97,8 +104,6 @@ func (m Message) GoString() string {
    return string(data)
 }
 
-///
-
 func (m Message) Marshal() []byte {
    var data []byte
    for _, r := range m {
@@ -110,13 +115,6 @@ func (m Message) Marshal() []byte {
 func (m Message) Append(data []byte, num Number) []byte {
    data = protowire.AppendTag(data, num, protowire.BytesType)
    return protowire.AppendBytes(data, m.Marshal())
-}
-
-// wikipedia.org/wiki/Continuation-passing_style
-func (m *Message) Add(num Number, value func(*Message)) {
-   var m1 Message
-   value(&m1)
-   *m = append(*m, Record{num, m1})
 }
 
 func (m Message) Get(num Number) iter.Seq[Message] {
