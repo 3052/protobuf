@@ -7,6 +7,19 @@ import (
    "iter"
 )
 
+// protobuf.dev/programming-guides/encoding#structure
+type Record struct {
+   Number  Number
+   Payload Payload
+}
+
+type Payload interface {
+   Append([]byte, Number) []byte
+   fmt.GoStringer
+}
+
+type Message []Record
+
 // wikipedia.org/wiki/Continuation-passing_style
 func (m *Message) Add(num Number, value func(*Message)) {
    var m1 Message
@@ -213,8 +226,6 @@ func (m *Message) Unmarshal(data []byte) error {
    return nil
 }
 
-type Message []Record
-
 func (m Message) GetVarint(num Number) iter.Seq[Varint] {
    return get[Varint](m, num)
 }
@@ -253,17 +264,6 @@ func unmarshal(data []byte) Payload {
       }
    }
    return Bytes(data)
-}
-
-type Payload interface {
-   Append([]byte, Number) []byte
-   fmt.GoStringer
-}
-
-// protobuf.dev/programming-guides/encoding#structure
-type Record struct {
-   Number  Number
-   Payload Payload
 }
 
 func (v Varint) GoString() string {
