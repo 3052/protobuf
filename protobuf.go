@@ -244,8 +244,6 @@ func (m Message) Get(num Number) iter.Seq[Message] {
    }
 }
 
-///
-
 func (v Varint) GoString() string {
    return fmt.Sprintf("protobuf.Varint(%v)", v)
 }
@@ -281,4 +279,3 @@ func (m Message) GoString() string {
    data = append(data, '}')
    return string(data)
 }
-

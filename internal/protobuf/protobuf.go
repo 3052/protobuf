@@ -1,19 +1,16 @@
 package protobuf
 
 import (
+   "errors"
    "google.golang.org/protobuf/encoding/protowire"
    "iter"
 )
 
-func (f *Field) Varint() (uint64, error) {
-   value, size := protowire.ConsumeVarint(f.Value)
-   return value, protowire.ParseError(size)
-}
-
 type Field struct {
    Number  protowire.Number
    Type    protowire.Type
-   Value   []byte
+   Varint  uint64
+   Bytes   []byte
    Message Message
 }
 
@@ -29,37 +26,23 @@ func (m Message) Get(number protowire.Number) iter.Seq[*Field] {
    }
 }
 
-func (m *Message) Unmarshal(data []byte) error {
-   for len(data) >= 1 {
-      Number, Type, Size := protowire.ConsumeTag(data)
-      err := protowire.ParseError(Size)
-      if err != nil {
-         return err
-      }
-      data = data[Size:]
-      Size = protowire.ConsumeFieldValue(Number, Type, data)
-      err = protowire.ParseError(Size)
-      if err != nil {
-         return err
-      }
-      field1 := Field{
-         Number: Number,
-         Type: Type,
-         Value: data[:Size],
-      }
-      if Type == protowire.BytesType {
-         data1, size := protowire.ConsumeBytes(field1.Value)
-         if protowire.ParseError(size) == nil {
-            field1.Message.Unmarshal(data1)
-         }
-      }
-      *m = append(*m, field1)
-      data = data[Size:]
+type Message []Field
+
+func Varint(number protowire.Number, v uint64) Field {
+   return Field{
+      Number: number,
+      Type:   protowire.VarintType,
+      Varint: v,
    }
-   return nil
 }
 
-type Message []Field
+func String(number protowire.Number, v string) Field {
+   return Field{
+      Number: number,
+      Type:   protowire.BytesType,
+      Bytes: []byte(v),
+   }
+}
 
 func LenPrefix(number protowire.Number, v ...Field) Field {
    return Field{
@@ -77,43 +60,65 @@ func (m Message) Marshal() []byte {
    return data
 }
 
-func (f *Field) Bytes() ([]byte, error) {
-   value, size := protowire.ConsumeBytes(f.Value)
-   return value, protowire.ParseError(size)
-}
-
-func (f *Field) Fixed32() (uint32, error) {
-   value, size := protowire.ConsumeFixed32(f.Value)
-   return value, protowire.ParseError(size)
-}
-
-func (f *Field) Fixed64() (uint64, error) {
-   value, size := protowire.ConsumeFixed64(f.Value)
-   return value, protowire.ParseError(size)
-}
-
-func Varint(number protowire.Number, v uint64) Field {
-   return Field{
-      Number: number,
-      Type:   protowire.VarintType,
-      Value:  protowire.AppendVarint(nil, v),
-   }
-}
-
-func String(number protowire.Number, v string) Field {
-   return Field{
-      Number: number,
-      Type:   protowire.BytesType,
-      Value:  protowire.AppendString(nil, v),
-   }
-}
-
 func (f *Field) Append(data []byte) []byte {
    data = protowire.AppendTag(data, f.Number, f.Type)
-   if f.Message != nil {
-      data = protowire.AppendBytes(data, f.Message.Marshal())
+   if f.Type == protowire.BytesType {
+      if f.Bytes != nil {
+         data = protowire.AppendBytes(data, f.Bytes)
+      } else {
+         data = protowire.AppendBytes(data, f.Message.Marshal())
+      }
    } else {
-      data = append(data, f.Value...)
+      data = protowire.AppendVarint(data, f.Varint)
    }
    return data
+}
+
+func (m *Message) Unmarshal(data []byte) error {
+   for len(data) >= 1 {
+      var (
+         f Field
+         size int
+      )
+      f.Number, f.Type, size = protowire.ConsumeTag(data)
+      err := protowire.ParseError(size)
+      if err != nil {
+         return err
+      }
+      data = data[size:]
+      switch f.Type {
+      case protowire.VarintType:
+         f.Varint, size = protowire.ConsumeVarint(data)
+         err = protowire.ParseError(size)
+         if err != nil {
+            return err
+         }
+      case protowire.Fixed64Type:
+         f.Varint, size = protowire.ConsumeFixed64(data)
+         err = protowire.ParseError(size)
+         if err != nil {
+            return err
+         }
+      case protowire.Fixed32Type:
+         var fixed32 uint32
+         fixed32, size = protowire.ConsumeFixed32(data)
+         err = protowire.ParseError(size)
+         if err != nil {
+            return err
+         }
+         f.Varint = uint64(fixed32)
+      case protowire.BytesType:
+         f.Bytes, size = protowire.ConsumeBytes(data)
+         err = protowire.ParseError(size)
+         if err != nil {
+            return err
+         }
+         f.Message.Unmarshal(f.Bytes)
+      default:
+         return errors.New("cannot parse reserved wire type")
+      }
+      *m = append(*m, f)
+      data = data[size:]
+   }
+   return nil
 }
