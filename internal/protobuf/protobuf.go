@@ -5,6 +5,18 @@ import (
    "iter"
 )
 
+func (f *Field) Varint() (uint64, error) {
+   value, size := protowire.ConsumeVarint(f.Value)
+   return value, protowire.ParseError(size)
+}
+
+type Field struct {
+   Number  protowire.Number
+   Type    protowire.Type
+   Value   []byte
+   Message Message
+}
+
 func (m Message) Get(number protowire.Number) iter.Seq[*Field] {
    return func(yield func(*Field) bool) {
       for _, field1 := range m {
@@ -15,6 +27,36 @@ func (m Message) Get(number protowire.Number) iter.Seq[*Field] {
          }
       }
    }
+}
+
+func (m *Message) Unmarshal(data []byte) error {
+   for len(data) >= 1 {
+      Number, Type, Size := protowire.ConsumeTag(data)
+      err := protowire.ParseError(Size)
+      if err != nil {
+         return err
+      }
+      data = data[Size:]
+      Size = protowire.ConsumeFieldValue(Number, Type, data)
+      err = protowire.ParseError(Size)
+      if err != nil {
+         return err
+      }
+      field1 := Field{
+         Number: Number,
+         Type: Type,
+         Value: data[:Size],
+      }
+      if Type == protowire.BytesType {
+         data1, size := protowire.ConsumeBytes(field1.Value)
+         if protowire.ParseError(size) == nil {
+            field1.Message.Unmarshal(data1)
+         }
+      }
+      *m = append(*m, field1)
+      data = data[Size:]
+   }
+   return nil
 }
 
 type Message []Field
@@ -40,13 +82,6 @@ func (f *Field) Bytes() ([]byte, error) {
    return value, protowire.ParseError(size)
 }
 
-type Field struct {
-   Number  protowire.Number
-   Type    protowire.Type
-   Value   []byte
-   Message Message
-}
-
 func (f *Field) Fixed32() (uint32, error) {
    value, size := protowire.ConsumeFixed32(f.Value)
    return value, protowire.ParseError(size)
@@ -54,11 +89,6 @@ func (f *Field) Fixed32() (uint32, error) {
 
 func (f *Field) Fixed64() (uint64, error) {
    value, size := protowire.ConsumeFixed64(f.Value)
-   return value, protowire.ParseError(size)
-}
-
-func (f *Field) Varint() (uint64, error) {
-   value, size := protowire.ConsumeVarint(f.Value)
    return value, protowire.ParseError(size)
 }
 

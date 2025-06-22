@@ -22,6 +22,14 @@ func (m *Message) Unmarshal(data []byte) error {
       data = data[size:]
       // google.golang.org/protobuf/encoding/protowire#ConsumeFieldValue
       switch wire_type {
+      case protowire.VarintType:
+         value, size := protowire.ConsumeVarint(data)
+         err := protowire.ParseError(size)
+         if err != nil {
+            return err
+         }
+         r.Payload = Varint(value)
+         data = data[size:]
       case protowire.BytesType:
          value, size := protowire.ConsumeBytes(data)
          err := protowire.ParseError(size)
@@ -46,24 +54,12 @@ func (m *Message) Unmarshal(data []byte) error {
          }
          r.Payload = I64(value)
          data = data[size:]
-      case protowire.VarintType:
-         value, size := protowire.ConsumeVarint(data)
-         err := protowire.ParseError(size)
-         if err != nil {
-            return err
-         }
-         r.Payload = Varint(value)
-         data = data[size:]
       default:
          return errors.New("cannot parse reserved wire type")
       }
       *m = append(*m, r)
    }
    return nil
-}
-
-func (v Varint) GoString() string {
-   return fmt.Sprintf("protobuf.Varint(%v)", v)
 }
 
 type Varint uint64
@@ -99,18 +95,10 @@ type Payload interface {
 
 type Bytes []byte
 
-func (b Bytes) GoString() string {
-   return fmt.Sprintf("protobuf.Bytes(%q)", []byte(b))
-}
-
 type I32 uint32
 
 func (i I32) MarshalText() ([]byte, error) {
    return fmt.Appendf(nil, "I32(%v)", i), nil
-}
-
-func (i I32) GoString() string {
-   return fmt.Sprintf("protobuf.I32(%v)", i)
 }
 
 func (b Bytes) Append(data []byte, num Number) []byte {
@@ -138,10 +126,6 @@ func (i I64) MarshalText() ([]byte, error) {
    return fmt.Appendf(nil, "I64(%v)", i), nil
 }
 
-func (i I64) GoString() string {
-   return fmt.Sprintf("protobuf.I64(%v)", i)
-}
-
 func (p *LenPrefix) Append(data []byte, num Number) []byte {
    data = protowire.AppendTag(data, num, protowire.BytesType)
    return protowire.AppendBytes(data, p.Bytes)
@@ -150,26 +134,6 @@ func (p *LenPrefix) Append(data []byte, num Number) []byte {
 type LenPrefix struct {
    Bytes   Bytes
    Message Message
-}
-
-func (p *LenPrefix) GoString() string {
-   data := []byte("&protobuf.LenPrefix{\n")
-   data = fmt.Appendf(data, "%#v,\n", p.Bytes)
-   data = fmt.Appendf(data, "%#v,\n", p.Message)
-   data = append(data, '}')
-   return string(data)
-}
-
-func (m Message) GoString() string {
-   data := []byte("protobuf.Message{")
-   for index, r := range m {
-      if index == 0 {
-         data = append(data, '\n')
-      }
-      data = fmt.Appendf(data, "{%v, %#v},\n", r.Number, r.Payload)
-   }
-   data = append(data, '}')
-   return string(data)
 }
 
 func (m Message) Marshal() []byte {
@@ -230,6 +194,16 @@ func (m Message) GetI32(num Number) iter.Seq[I32] {
    return get[I32](m, num)
 }
 
+func unmarshal(data []byte) Payload {
+   if len(data) >= 1 {
+      var m Message
+      if m.Unmarshal(data) == nil {
+         return &LenPrefix{data, m}
+      }
+   }
+   return Bytes(data)
+}
+
 // USE CLIP IF YOU NEED TO APPEND TO RESULT
 // pkg.go.dev/slices#Clip
 func (m Message) GetBytes(num Number) iter.Seq[Bytes] {
@@ -270,12 +244,41 @@ func (m Message) Get(num Number) iter.Seq[Message] {
    }
 }
 
-func unmarshal(data []byte) Payload {
-   if len(data) >= 1 {
-      var m Message
-      if m.Unmarshal(data) == nil {
-         return &LenPrefix{data, m}
-      }
-   }
-   return Bytes(data)
+///
+
+func (v Varint) GoString() string {
+   return fmt.Sprintf("protobuf.Varint(%v)", v)
 }
+
+func (b Bytes) GoString() string {
+   return fmt.Sprintf("protobuf.Bytes(%q)", []byte(b))
+}
+
+func (i I32) GoString() string {
+   return fmt.Sprintf("protobuf.I32(%v)", i)
+}
+
+func (i I64) GoString() string {
+   return fmt.Sprintf("protobuf.I64(%v)", i)
+}
+
+func (p *LenPrefix) GoString() string {
+   data := []byte("&protobuf.LenPrefix{\n")
+   data = fmt.Appendf(data, "%#v,\n", p.Bytes)
+   data = fmt.Appendf(data, "%#v,\n", p.Message)
+   data = append(data, '}')
+   return string(data)
+}
+
+func (m Message) GoString() string {
+   data := []byte("protobuf.Message{")
+   for index, r := range m {
+      if index == 0 {
+         data = append(data, '\n')
+      }
+      data = fmt.Appendf(data, "{%v, %#v},\n", r.Number, r.Payload)
+   }
+   data = append(data, '}')
+   return string(data)
+}
+
