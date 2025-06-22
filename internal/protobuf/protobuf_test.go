@@ -9,25 +9,27 @@ import (
    "testing"
 )
 
+const hello = "hello\nworld"
+
 func TestGoString(t *testing.T) {
    fmt.Printf("%#v\n", testMessage)
 }
 
 var testMessage = Message{
    Varint(2, 3),
-   String(4, "sup homie"),
+   String(4, hello),
    LenPrefix(5,
       Varint(6, 7),
-      String(8, "sup homie"),
+      String(8, hello),
    ),
 }
 
 var testProtopack = protopack.Message{
    protopack.Tag{2, protopack.VarintType}, protopack.Varint(3),
-   protopack.Tag{4, protopack.BytesType}, protopack.String("hello world"),
+   protopack.Tag{4, protopack.BytesType}, protopack.String(hello),
    protopack.Tag{5, protopack.BytesType}, protopack.LengthPrefix{
       protopack.Tag{6, protopack.VarintType}, protopack.Varint(7),
-      protopack.Tag{8, protopack.BytesType}, protopack.String("hello world"),
+      protopack.Tag{8, protopack.BytesType}, protopack.String(hello),
    },
 }
 

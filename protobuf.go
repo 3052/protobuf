@@ -244,6 +244,14 @@ func (m Message) Get(num Number) iter.Seq[Message] {
    }
 }
 
+func (i I32) GoString() string {
+   return fmt.Sprintf("protobuf.I32(%v)", i)
+}
+
+func (i I64) GoString() string {
+   return fmt.Sprintf("protobuf.I64(%v)", i)
+}
+
 func (v Varint) GoString() string {
    return fmt.Sprintf("protobuf.Varint(%v)", v)
 }
@@ -252,13 +260,7 @@ func (b Bytes) GoString() string {
    return fmt.Sprintf("protobuf.Bytes(%q)", []byte(b))
 }
 
-func (i I32) GoString() string {
-   return fmt.Sprintf("protobuf.I32(%v)", i)
-}
-
-func (i I64) GoString() string {
-   return fmt.Sprintf("protobuf.I64(%v)", i)
-}
+///
 
 func (p *LenPrefix) GoString() string {
    data := []byte("&protobuf.LenPrefix{\n")

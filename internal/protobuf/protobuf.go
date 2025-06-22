@@ -50,20 +50,6 @@ func (m Message) Marshal() []byte {
    return data
 }
 
-func (f *Field) Append(data []byte) []byte {
-   data = protowire.AppendTag(data, f.Number, f.Type)
-   if f.Type == protowire.BytesType {
-      if f.Bytes != nil {
-         data = protowire.AppendBytes(data, f.Bytes)
-      } else {
-         data = protowire.AppendBytes(data, f.Message.Marshal())
-      }
-   } else {
-      data = protowire.AppendVarint(data, f.Varint)
-   }
-   return data
-}
-
 func (m *Message) Unmarshal(data []byte) error {
    for len(data) >= 1 {
       var (
@@ -84,12 +70,14 @@ func (m *Message) Unmarshal(data []byte) error {
             return err
          }
       case protowire.Fixed64Type:
+         f.Type = protowire.VarintType
          f.Varint, size = protowire.ConsumeFixed64(data)
          err = protowire.ParseError(size)
          if err != nil {
             return err
          }
       case protowire.Fixed32Type:
+         f.Type = protowire.VarintType
          var fixed32 uint32
          fixed32, size = protowire.ConsumeFixed32(data)
          err = protowire.ParseError(size)
@@ -111,4 +99,18 @@ func (m *Message) Unmarshal(data []byte) error {
       data = data[size:]
    }
    return nil
+}
+
+func (f *Field) Append(data []byte) []byte {
+   data = protowire.AppendTag(data, f.Number, f.Type)
+   if f.Type == protowire.BytesType {
+      if f.Bytes != nil {
+         data = protowire.AppendBytes(data, f.Bytes)
+      } else {
+         data = protowire.AppendBytes(data, f.Message.Marshal())
+      }
+   } else {
+      data = protowire.AppendVarint(data, f.Varint)
+   }
+   return data
 }
