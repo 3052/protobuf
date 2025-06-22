@@ -9,6 +9,19 @@ import (
    "testing"
 )
 
+func TestGoString(t *testing.T) {
+   fmt.Printf("%#v\n", testMessage)
+}
+
+var testMessage = Message{
+   Varint(2, 3),
+   String(4, "sup homie"),
+   LenPrefix(5,
+      Varint(6, 7),
+      String(8, "sup homie"),
+   ),
+}
+
 var testProtopack = protopack.Message{
    protopack.Tag{2, protopack.VarintType}, protopack.Varint(3),
    protopack.Tag{4, protopack.BytesType}, protopack.String("hello world"),
@@ -42,15 +55,6 @@ func TestAdd(t *testing.T) {
    var value Message
    value = append(value, Varint(2, 3))
    fmt.Printf("%#v\n", value)
-}
-
-var testMessage = Message{
-   Varint(2, 3),
-   String(4, "hello world"),
-   LenPrefix(5,
-      Varint(6, 7),
-      String(8, "hello world"),
-   ),
 }
 
 func TestGet(t *testing.T) {

@@ -6,14 +6,6 @@ import (
    "iter"
 )
 
-type Field struct {
-   Number  protowire.Number
-   Type    protowire.Type
-   Varint  uint64
-   Bytes   []byte
-   Message Message
-}
-
 func (m Message) Get(number protowire.Number) iter.Seq[*Field] {
    return func(yield func(*Field) bool) {
       for _, field1 := range m {
@@ -25,8 +17,6 @@ func (m Message) Get(number protowire.Number) iter.Seq[*Field] {
       }
    }
 }
-
-type Message []Field
 
 func Varint(number protowire.Number, v uint64) Field {
    return Field{
