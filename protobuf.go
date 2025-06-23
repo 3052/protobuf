@@ -7,6 +7,20 @@ import (
    "iter"
 )
 
+func (f *Field) Append(data []byte) []byte {
+   data = protowire.AppendTag(data, f.Number, f.Type)
+   if f.Type == protowire.BytesType {
+      if f.Bytes != nil {
+         data = protowire.AppendBytes(data, f.Bytes)
+      } else {
+         data = protowire.AppendBytes(data, f.Message.Marshal())
+      }
+   } else {
+      data = protowire.AppendVarint(data, f.Varint)
+   }
+   return data
+}
+
 func (m *Message) Unmarshal(data []byte) error {
    for len(data) >= 1 {
       var (
@@ -56,20 +70,6 @@ func (m *Message) Unmarshal(data []byte) error {
       data = data[size:]
    }
    return nil
-}
-
-func (f *Field) Append(data []byte) []byte {
-   data = protowire.AppendTag(data, f.Number, f.Type)
-   if f.Type == protowire.BytesType {
-      if f.Bytes != nil {
-         data = protowire.AppendBytes(data, f.Bytes)
-      } else {
-         data = protowire.AppendBytes(data, f.Message.Marshal())
-      }
-   } else {
-      data = protowire.AppendVarint(data, f.Varint)
-   }
-   return data
 }
 
 func (m Message) goString(level int) string {
