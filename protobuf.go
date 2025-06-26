@@ -83,33 +83,6 @@ func (m Message) goString(level int) string {
    return string(b)
 }
 
-func (f *Field) goString(level int) string {
-   b := []byte(space(level))
-   b = append(b, "protobuf.Field{\n"...)
-   b = append(b, space(level+1)...)
-   b = fmt.Appendf(b, "Number: %v,\n", f.Number)
-   if f.Type != 0 {
-      b = append(b, space(level+1)...)
-      b = fmt.Appendf(b, "Type: %v,\n", f.Type)
-   }
-   if f.Type == protowire.BytesType {
-      if f.Bytes != nil {
-         b = append(b, space(level+1)...)
-         b = fmt.Appendf(b, "Bytes: []byte(%q),\n", f.Bytes)
-      }
-      if f.Message != nil {
-         b = append(b, space(level+1)...)
-         b = fmt.Appendf(b, "Message: %v,\n", f.Message.goString(level+1))
-      }
-   } else {
-      b = append(b, space(level+1)...)
-      b = fmt.Appendf(b, "Varint: %v,\n", f.Varint)
-   }
-   b = append(b, space(level)...)
-   b = append(b, '}')
-   return string(b)
-}
-
 type Field struct {
    Number  protowire.Number
    Type    protowire.Type
@@ -181,4 +154,31 @@ func (m Message) Marshal() []byte {
       data = field1.Append(data)
    }
    return data
+}
+
+func (f *Field) goString(level int) string {
+   b := []byte(space(level))
+   b = append(b, "&protobuf.Field{\n"...)
+   b = append(b, space(level+1)...)
+   b = fmt.Appendf(b, "Number: %v,\n", f.Number)
+   if f.Type != 0 {
+      b = append(b, space(level+1)...)
+      b = fmt.Appendf(b, "Type: %v,\n", f.Type)
+   }
+   if f.Type == protowire.BytesType {
+      if f.Bytes != nil {
+         b = append(b, space(level+1)...)
+         b = fmt.Appendf(b, "Bytes: []byte(%q),\n", f.Bytes)
+      }
+      if f.Message != nil {
+         b = append(b, space(level+1)...)
+         b = fmt.Appendf(b, "Message: %v,\n", f.Message.goString(level+1))
+      }
+   } else {
+      b = append(b, space(level+1)...)
+      b = fmt.Appendf(b, "Varint: %v,\n", f.Varint)
+   }
+   b = append(b, space(level)...)
+   b = append(b, '}')
+   return string(b)
 }
