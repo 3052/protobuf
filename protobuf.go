@@ -7,6 +7,38 @@ import (
    "iter"
 )
 
+type Field struct {
+   Number  protowire.Number
+   Type    protowire.Type
+   Varint  uint64
+   Bytes   []byte
+   Message Message
+}
+
+func Varint(number protowire.Number, v uint64) *Field {
+   return &Field{
+      Number: number,
+      Type:   protowire.VarintType,
+      Varint: v,
+   }
+}
+
+func Bytes(number protowire.Number, v []byte) *Field {
+   return &Field{
+      Number: number,
+      Type:   protowire.BytesType,
+      Bytes:  v,
+   }
+}
+
+func String(number protowire.Number, v string) *Field {
+   return &Field{
+      Number: number,
+      Type:   protowire.BytesType,
+      Bytes:  []byte(v),
+   }
+}
+
 func (f *Field) Append(data []byte) []byte {
    data = protowire.AppendTag(data, f.Number, f.Type)
    if f.Type == protowire.BytesType {
@@ -83,37 +115,7 @@ func (m Message) goString(level int) string {
    return string(b)
 }
 
-type Field struct {
-   Number  protowire.Number
-   Type    protowire.Type
-   Varint  uint64
-   Bytes   []byte
-   Message Message
-}
-
-func Varint(number protowire.Number, v uint64) *Field {
-   return &Field{
-      Number: number,
-      Type:   protowire.VarintType,
-      Varint: v,
-   }
-}
-
-func Bytes(number protowire.Number, v []byte) *Field {
-   return &Field{
-      Number: number,
-      Type:   protowire.BytesType,
-      Bytes:  v,
-   }
-}
-
-func String(number protowire.Number, v string) *Field {
-   return &Field{
-      Number: number,
-      Type:   protowire.BytesType,
-      Bytes:  []byte(v),
-   }
-}
+///
 
 type Message []*Field
 
