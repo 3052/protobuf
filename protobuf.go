@@ -106,16 +106,14 @@ func (m *Message) Unmarshal(data []byte) error {
 
 func (m Message) goString(level int) string {
    b := []byte("protobuf.Message{\n")
-   for _, field1 := range m {
-      b = append(b, field1.goString(level+1)...)
+   for _, fieldVar := range m {
+      b = append(b, fieldVar.goString(level+1)...)
       b = append(b, ",\n"...)
    }
    b = append(b, space(level)...)
    b = append(b, '}')
    return string(b)
 }
-
-///
 
 type Message []*Field
 
@@ -126,6 +124,7 @@ func LenPrefix(number protowire.Number, v ...*Field) *Field {
       Message: v,
    }
 }
+
 func space(n int) string {
    return "                                                                 "[:n]
 }
@@ -140,9 +139,9 @@ func (m Message) GoString() string {
 
 func (m Message) Get(number protowire.Number) iter.Seq[*Field] {
    return func(yield func(*Field) bool) {
-      for _, field1 := range m {
-         if field1.Number == number {
-            if !yield(field1) {
+      for _, fieldVar := range m {
+         if fieldVar.Number == number {
+            if !yield(fieldVar) {
                return
             }
          }
@@ -152,8 +151,8 @@ func (m Message) Get(number protowire.Number) iter.Seq[*Field] {
 
 func (m Message) Marshal() []byte {
    var data []byte
-   for _, field1 := range m {
-      data = field1.Append(data)
+   for _, fieldVar := range m {
+      data = fieldVar.Append(data)
    }
    return data
 }
