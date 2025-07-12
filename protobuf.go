@@ -7,6 +7,14 @@ import (
    "iter"
 )
 
+func LenPrefix(number protowire.Number, v ...*Field) *Field {
+   return &Field{
+      Number:  number,
+      Type:    protowire.BytesType,
+      Message: v,
+   }
+}
+
 type Field struct {
    Number  protowire.Number
    Type    protowire.Type
@@ -117,13 +125,7 @@ func (m Message) goString(level int) string {
 
 type Message []*Field
 
-func LenPrefix(number protowire.Number, v ...*Field) *Field {
-   return &Field{
-      Number:  number,
-      Type:    protowire.BytesType,
-      Message: v,
-   }
-}
+///
 
 func space(n int) string {
    return "                                                                 "[:n]
