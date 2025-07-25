@@ -7,6 +7,10 @@ import (
    "iter"
 )
 
+func space(n int) string {
+   return "                                                                 "[:n]
+}
+
 func LenPrefix(number protowire.Number, v ...*Field) *Field {
    return &Field{
       Number:  number,
@@ -126,10 +130,6 @@ func (m Message) goString(level int) string {
 type Message []*Field
 
 ///
-
-func space(n int) string {
-   return "                                                                 "[:n]
-}
 
 func (f *Field) GoString() string {
    return f.goString(0)
