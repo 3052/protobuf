@@ -11,6 +11,10 @@ func space(n int) string {
    return "                                                                 "[:n]
 }
 
+func (f *Field) GoString() string {
+   return f.goString(0)
+}
+
 func LenPrefix(number protowire.Number, v ...*Field) *Field {
    return &Field{
       Number:  number,
@@ -130,10 +134,6 @@ func (m Message) goString(level int) string {
 type Message []*Field
 
 ///
-
-func (f *Field) GoString() string {
-   return f.goString(0)
-}
 
 func (m Message) GoString() string {
    return m.goString(0)
