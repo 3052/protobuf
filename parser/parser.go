@@ -10,6 +10,54 @@ type Field struct {
    EmbeddedFields Fields
 }
 
+// --- Field Constructors ---
+
+// NewVarintField creates a new Varint field and returns a pointer to it.
+func NewVarintField(fieldNum int, value uint64) *Field {
+   return &Field{
+      Tag: Tag{
+         FieldNum: fieldNum,
+         WireType: WireVarint,
+      },
+      ValNumeric: value,
+   }
+}
+
+// NewStringField creates a new String (WireBytes) field and returns a pointer to it.
+func NewStringField(fieldNum int, value string) *Field {
+   return &Field{
+      Tag: Tag{
+         FieldNum: fieldNum,
+         WireType: WireBytes,
+      },
+      ValBytes: []byte(value),
+   }
+}
+
+// NewBytesField creates a new Bytes field and returns a pointer to it.
+func NewBytesField(fieldNum int, value []byte) *Field {
+   return &Field{
+      Tag: Tag{
+         FieldNum: fieldNum,
+         WireType: WireBytes,
+      },
+      ValBytes: value,
+   }
+}
+
+// NewEmbeddedField creates a new embedded message field and returns a pointer to it.
+func NewEmbeddedField(fieldNum int, value Fields) *Field {
+   return &Field{
+      Tag: Tag{
+         FieldNum: fieldNum,
+         WireType: WireBytes,
+      },
+      EmbeddedFields: value,
+   }
+}
+
+// --- Parsing Logic ---
+
 // Parse takes a byte slice of protobuf wire format data and returns it as a
 // queryable Fields object.
 func Parse(buf []byte) (Fields, error) {

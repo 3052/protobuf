@@ -12,7 +12,7 @@ func TestParse(t *testing.T) {
    testCases := []struct {
       name     string
       input    []byte
-      expected Fields // Changed to Fields
+      expected Fields
       hasError bool
    }{
       {
@@ -61,7 +61,7 @@ func TestRoundTrip(t *testing.T) {
             t.Fatalf("Parse failed unexpectedly: %v", err)
          }
 
-         encodedBytes, err := parsedFields.Encode() // Use method on Fields
+         encodedBytes, err := parsedFields.Encode()
          if err != nil {
             t.Fatalf("Encode failed unexpectedly: %v", err)
          }
@@ -74,25 +74,16 @@ func TestRoundTrip(t *testing.T) {
 }
 
 func ExampleEncode() {
-   innerMsg := Fields{
-      {
-         Tag:      Tag{FieldNum: 1, WireType: WireBytes},
-         ValBytes: []byte("testing"),
-      },
+   // Build a message structure programmatically using the new constructors.
+   // We dereference the pointers (*) to get the values for the Fields slice.
+   msg := Fields{
+      *NewVarintField(1, 999),
+      *NewEmbeddedField(2, Fields{
+         *NewStringField(1, "testing"),
+      }),
    }
 
-   outerMsg := Fields{
-      {
-         Tag:        Tag{FieldNum: 1, WireType: WireVarint},
-         ValNumeric: 999,
-      },
-      {
-         Tag:            Tag{FieldNum: 2, WireType: WireBytes},
-         EmbeddedFields: innerMsg,
-      },
-   }
-
-   encoded, err := outerMsg.Encode() // Use method
+   encoded, err := msg.Encode()
    if err != nil {
       log.Fatalf("Encode failed: %v", err)
    }

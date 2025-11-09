@@ -7,6 +7,38 @@ import (
    "iter"
 )
 
+func Varint(number protowire.Number, v uint64) *Field {
+   return &Field{
+      Number: number,
+      Type:   protowire.VarintType,
+      Varint: v,
+   }
+}
+
+func LenPrefix(number protowire.Number, v ...*Field) *Field {
+   return &Field{
+      Number:  number,
+      Type:    protowire.BytesType,
+      Message: v,
+   }
+}
+
+func Bytes(number protowire.Number, v []byte) *Field {
+   return &Field{
+      Number: number,
+      Type:   protowire.BytesType,
+      Bytes:  v,
+   }
+}
+
+func String(number protowire.Number, v string) *Field {
+   return &Field{
+      Number: number,
+      Type:   protowire.BytesType,
+      Bytes:  []byte(v),
+   }
+}
+
 func (m Message) Get(number protowire.Number) iter.Seq[*Field] {
    return func(yield func(*Field) bool) {
       for _, fieldVar := range m {
@@ -27,44 +59,12 @@ func (f *Field) GoString() string {
    return f.goString(0)
 }
 
-func LenPrefix(number protowire.Number, v ...*Field) *Field {
-   return &Field{
-      Number:  number,
-      Type:    protowire.BytesType,
-      Message: v,
-   }
-}
-
 type Field struct {
    Number  protowire.Number
    Type    protowire.Type
    Varint  uint64
    Bytes   []byte
    Message Message
-}
-
-func Varint(number protowire.Number, v uint64) *Field {
-   return &Field{
-      Number: number,
-      Type:   protowire.VarintType,
-      Varint: v,
-   }
-}
-
-func Bytes(number protowire.Number, v []byte) *Field {
-   return &Field{
-      Number: number,
-      Type:   protowire.BytesType,
-      Bytes:  v,
-   }
-}
-
-func String(number protowire.Number, v string) *Field {
-   return &Field{
-      Number: number,
-      Type:   protowire.BytesType,
-      Bytes:  []byte(v),
-   }
 }
 
 func (f *Field) Append(data []byte) []byte {
