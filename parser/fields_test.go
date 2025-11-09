@@ -7,83 +7,123 @@ import (
 )
 
 // setupFields creates a common parsed structure for testing the Fields helper.
+// Outer { 1: 150, 2: "top-level", 3: Inner { 1: "nested" }, 4: 99, 4: 100 }
 func setupFields(t *testing.T) Fields {
    input := []byte{
       0x08, 0x96, 0x01, // 1: 150
       0x12, 0x09, 0x74, 0x6f, 0x70, 0x2d, 0x6c, 0x65, 0x76, 0x65, 0x6c, // 2: "top-level"
       0x1a, 0x08, 0x0a, 0x06, 0x6e, 0x65, 0x73, 0x74, 0x65, 0x64, // 3: Inner { 1: "nested" }
-      0x20, 0x63, // 4: 99
-      0x20, 0x64, // 4: 100
+      0x20, 0x63, // 4: 99 (repeated)
+      0x20, 0x64, // 4: 100 (repeated)
    }
    fields, err := Parse(input)
    if err != nil {
       t.Fatalf("Failed to parse test data: %v", err)
    }
-   return NewFields(fields)
+   return Fields(fields)
 }
 
-func TestFields_Queries(t *testing.T) {
+func TestIterator_UnifiedAccess(t *testing.T) {
    msg := setupFields(t)
 
-   // Test GetNumeric
-   if val, ok := msg.GetNumeric(1); !ok || val != 150 {
-      t.Errorf("GetNumeric(1) = %d, %v; want 150, true", val, ok)
+   // Test singular numeric field
+   it1 := msg.IterateByNum(1)
+   if !it1.Next() {
+      t.Fatal("Expected one result for field 1, got none")
    }
-   if _, ok := msg.GetNumeric(2); ok {
-      t.Errorf("GetNumeric(2) should fail for a string field, but it succeeded")
+   if val := it1.Numeric(); val != 150 {
+      t.Errorf("Got %d for field 1, want 150", val)
    }
-
-   // Test GetString
-   if val, ok := msg.GetString(2); !ok || val != "top-level" {
-      t.Errorf("GetString(2) = %s, %v; want 'top-level', true", val, ok)
-   }
-
-   // Test FilterByNum for repeated fields
-   repeated := msg.FilterByNum(4)
-   if len(repeated) != 2 {
-      t.Fatalf("FilterByNum(4) returned %d fields; want 2", len(repeated))
-   }
-   if repeated[0].ValNumeric != 99 || repeated[1].ValNumeric != 100 {
-      t.Errorf("FilterByNum(4) returned values %d, %d; want 99, 100", repeated[0].ValNumeric, repeated[1].ValNumeric)
+   if it1.Next() {
+      t.Fatal("Expected only one result for field 1, got more")
    }
 
-   // Test GetEmbedded
-   innerMsg, ok := msg.GetEmbedded(3)
+   // Test singular string field
+   it2 := msg.IterateByNum(2)
+   if !it2.Next() {
+      t.Fatal("Expected one result for field 2, got none")
+   }
+   if val := it2.String(); val != "top-level" {
+      t.Errorf("Got %s for field 2, want 'top-level'", val)
+   }
+   if it2.Next() {
+      t.Fatal("Expected only one result for field 2, got more")
+   }
+
+   // Test singular embedded field
+   it3 := msg.IterateByNum(3)
+   if !it3.Next() {
+      t.Fatal("Expected one result for field 3, got none")
+   }
+   innerMsg, ok := it3.Embedded()
    if !ok {
-      t.Fatal("GetEmbedded(3) failed to return a helper")
+      t.Fatal("Expected embedded message for field 3")
    }
-   if val, ok := innerMsg.GetString(1); !ok || val != "nested" {
-      t.Errorf("Inner helper GetString(1) = %s, %v; want 'nested', true", val, ok)
+   // Test the inner message
+   innerIt := innerMsg.IterateByNum(1)
+   if !innerIt.Next() {
+      t.Fatal("Expected one result for inner field 1")
+   }
+   if val := innerIt.String(); val != "nested" {
+      t.Errorf("Got %s for inner field 1, want 'nested'", val)
+   }
+   if innerIt.Next() {
+      t.Fatal("Expected only one result for inner field 1")
+   }
+   if it3.Next() {
+      t.Fatal("Expected only one result for field 3")
    }
 }
 
-// ExampleFields demonstrates the convenient query methods.
-func ExampleFields() {
-   // message { 1: "hello", 2: SubMessage { 1: 99 } }
-   // The sub-message {1: 99} is {0x08, 0x63}, which is 2 bytes long.
-   // Therefore, the length prefix for field 2 must be 0x02.
-   data := []byte{0x0a, 0x05, 0x68, 0x65, 0x6c, 0x6c, 0x6f, 0x12, 0x02, 0x08, 0x63}
+func TestIterator_RepeatedFields(t *testing.T) {
+   msg := setupFields(t)
 
+   var results []uint64
+   it := msg.IterateByNum(4) // Field 4 is repeated
+   for it.Next() {
+      results = append(results, it.Numeric())
+   }
+
+   expected := []uint64{99, 100}
+   if len(results) != len(expected) {
+      t.Fatalf("Iterator found %d results; want %d", len(results), len(expected))
+   }
+   for i := range results {
+      if results[i] != expected[i] {
+         t.Errorf("Iterator result at index %d was %d; want %d", i, results[i], expected[i])
+      }
+   }
+}
+
+// Example demonstrating the unified iterator for both singular and repeated field access.
+func ExampleFields() {
+   // message { 1: "report-123", 2: 99, 2: 105, 2: 87 }
+   data := []byte{0x0a, 0x0a, 0x72, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x2d, 0x31, 0x32, 0x33, 0x10, 0x63, 0x10, 0x69, 0x10, 0x57}
    parsed, err := Parse(data)
    if err != nil {
       log.Fatalf("Parse failed: %v", err)
    }
 
-   // Create the helper from the parsed result
-   msg := NewFields(parsed)
+   msg := Fields(parsed)
 
-   // Get a simple string field
-   if greeting, ok := msg.GetString(1); ok {
-      fmt.Printf("Greeting: %s\n", greeting)
+   // Access the singular string field using the iterator
+   fmt.Print("Report ID: ")
+   it1 := msg.IterateByNum(1)
+   if it1.Next() {
+      fmt.Println(it1.String())
    }
 
-   // Get the embedded message and query it
-   if subMsg, ok := msg.GetEmbedded(2); ok {
-      if val, ok := subMsg.GetNumeric(1); ok {
-         fmt.Printf("Sub-message value: %d\n", val)
-      }
+   // Iterate over the repeated numeric fields
+   fmt.Println("Values:")
+   it2 := msg.IterateByNum(2)
+   for it2.Next() {
+      fmt.Printf("- %d\n", it2.Numeric())
    }
+
    // Output:
-   // Greeting: hello
-   // Sub-message value: 99
+   // Report ID: report-123
+   // Values:
+   // - 99
+   // - 105
+   // - 87
 }

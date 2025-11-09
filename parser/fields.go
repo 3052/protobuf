@@ -1,75 +1,70 @@
 package parser
 
-// Fields is a named type for a slice of parsed fields, providing convenient
-// query methods.
+// Fields is a named type for a slice of parsed fields. Its primary purpose
+// is to act as a factory for iterators.
 type Fields []Field
 
-// NewFields creates a queryable helper from a slice of fields.
-// In this implementation, it simply casts the slice to the Fields type.
-func NewFields(fields []Field) Fields {
-   return Fields(fields)
+// RepeatedFieldIterator provides a stateful, memory-efficient way to loop over
+// all occurrences of a specific field number.
+type RepeatedFieldIterator struct {
+   fields   Fields // The original slice of fields
+   fieldNum int    // The field number to iterate over
+   cursor   int    // The current index in the fields slice
 }
 
-// FirstByNum finds the first field with the given field number.
-// The boolean return value indicates if a matching field was found.
-func (f Fields) FirstByNum(fieldNum int) (Field, bool) {
-   for _, field := range f {
-      if field.Tag.FieldNum == fieldNum {
-         return field, true
+// IterateByNum is the single entry point for querying fields. It creates a
+// new iterator to loop over all fields with the given number.
+func (f Fields) IterateByNum(fieldNum int) *RepeatedFieldIterator {
+   return &RepeatedFieldIterator{
+      fields:   f,
+      fieldNum: fieldNum,
+      cursor:   -1, // Start before the first element
+   }
+}
+
+// Next advances the iterator to the next matching field. It returns false
+// when there are no more matching fields.
+func (it *RepeatedFieldIterator) Next() bool {
+   // Start searching from the position after the current cursor
+   for i := it.cursor + 1; i < len(it.fields); i++ {
+      if it.fields[i].Tag.FieldNum == it.fieldNum {
+         // Found a match, update cursor and return true
+         it.cursor = i
+         return true
       }
    }
-   return Field{}, false
+   return false // No more matches found
 }
 
-// FilterByNum returns a new slice containing all fields that match the given field number.
-// This is useful for `repeated` fields.
-func (f Fields) FilterByNum(fieldNum int) []Field {
-   var matches []Field
-   for _, field := range f {
-      if field.Tag.FieldNum == fieldNum {
-         matches = append(matches, field)
-      }
+// Field returns the current field the iterator is pointing to.
+// Call this after Next() returns true.
+func (it *RepeatedFieldIterator) Field() Field {
+   if it.cursor >= 0 && it.cursor < len(it.fields) {
+      return it.fields[it.cursor]
    }
-   return matches
+   return Field{}
 }
 
-// GetNumeric finds the first field with the given number and returns its numeric value.
-// It returns false if the field is not found or is not a numeric type.
-func (f Fields) GetNumeric(fieldNum int) (uint64, bool) {
-   if field, ok := f.FirstByNum(fieldNum); ok {
-      switch field.Tag.WireType {
-      case WireVarint, WireFixed32, WireFixed64:
-         return field.ValNumeric, true
-      }
-   }
-   return 0, false
+// Numeric is a convenience method that returns the numeric value of the current field.
+func (it *RepeatedFieldIterator) Numeric() uint64 {
+   return it.Field().ValNumeric
 }
 
-// GetString finds the first field with the given number and returns its value as a string.
-// It returns false if the field is not found or is not a length-prefixed type.
-func (f Fields) GetString(fieldNum int) (string, bool) {
-   if field, ok := f.FirstByNum(fieldNum); ok && field.Tag.WireType == WireBytes {
-      return string(field.ValBytes), true
-   }
-   return "", false
+// String is a convenience method that returns the string value of the current field.
+func (it *RepeatedFieldIterator) String() string {
+   return string(it.Field().ValBytes)
 }
 
-// GetBytes finds the first field with the given number and returns its value as raw bytes.
-// It returns false if the field is not found or is not a length-prefixed type.
-func (f Fields) GetBytes(fieldNum int) ([]byte, bool) {
-   if field, ok := f.FirstByNum(fieldNum); ok && field.Tag.WireType == WireBytes {
-      return field.ValBytes, true
-   }
-   return nil, false
+// Bytes is a convenience method that returns the raw byte slice of the current field.
+func (it *RepeatedFieldIterator) Bytes() []byte {
+   return it.Field().ValBytes
 }
 
-// GetEmbedded finds the first field with the given number and returns a new Fields helper
-// for its embedded fields.
-// It returns false if the field is not found, is not a length-prefixed type, or
-// could not be parsed as an embedded message.
-func (f Fields) GetEmbedded(fieldNum int) (Fields, bool) {
-   if field, ok := f.FirstByNum(fieldNum); ok && field.EmbeddedFields != nil {
-      // Cast the embedded slice to our helper type
+// Embedded is a convenience method that returns the embedded fields of the current field
+// as a new queryable Fields object.
+func (it *RepeatedFieldIterator) Embedded() (Fields, bool) {
+   field := it.Field()
+   if field.EmbeddedFields != nil {
       return Fields(field.EmbeddedFields), true
    }
    return nil, false

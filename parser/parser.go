@@ -66,7 +66,6 @@ func Parse(buf []byte) ([]Field, error) {
             return nil, fmt.Errorf("field %d data is out of bounds", tag.FieldNum)
          }
 
-         // *** THE FIX IS HERE ***
          // Create a slice that refers *only* to the data for this field.
          messageData := buf[offset : offset+dataLen]
 
