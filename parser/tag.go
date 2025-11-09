@@ -1,6 +1,6 @@
 package parser
 
-import "fmt"
+import "errors"
 
 // WireType represents the type of data encoding on the wire.
 type WireType int
@@ -24,7 +24,7 @@ type Tag struct {
 func ParseTag(buf []byte) (Tag, int, error) {
    tag, n := DecodeVarint(buf)
    if n == 0 {
-      return Tag{}, 0, fmt.Errorf("buffer is too small to contain a valid tag")
+      return Tag{}, 0, errors.New("buffer is too small to contain a valid tag")
    }
    return Tag{
       FieldNum: int(tag >> 3),

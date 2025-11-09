@@ -1,6 +1,6 @@
 package parser
 
-import "fmt"
+import "errors"
 
 // DecodeVarint reads a varint from the buffer and returns the decoded uint64 and the number of bytes read.
 func DecodeVarint(buf []byte) (uint64, int) {
@@ -23,7 +23,7 @@ func DecodeVarint(buf []byte) (uint64, int) {
 func ParseVarint(buf []byte) (uint64, int, error) {
    val, n := DecodeVarint(buf)
    if n <= 0 {
-      return 0, 0, fmt.Errorf("error decoding varint")
+      return 0, 0, errors.New("error decoding varint")
    }
    return val, n, nil
 }
