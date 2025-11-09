@@ -7,6 +7,8 @@ import (
    "iter"
 )
 
+type Message []*Field
+
 func Varint(number protowire.Number, v uint64) *Field {
    return &Field{
       Number: number,
@@ -142,8 +144,6 @@ func (m Message) goString(level int) string {
    b = append(b, '}')
    return string(b)
 }
-
-type Message []*Field
 
 func (m Message) GoString() string {
    return m.goString(0)

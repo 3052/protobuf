@@ -6,37 +6,34 @@ import (
    "fmt"
 )
 
-// Encode serializes the fields into the protobuf wire format.
-func (f Fields) Encode() ([]byte, error) {
+// Encode serializes the message into the protobuf wire format.
+func (m Message) Encode() ([]byte, error) {
    var buf bytes.Buffer
 
-   for _, field := range f {
+   for _, field := range m {
       var valueBytes []byte
       if field.Tag.WireType == WireBytes {
-         // If EmbeddedFields is populated, it takes precedence.
-         if field.EmbeddedFields != nil {
-            encoded, err := field.EmbeddedFields.Encode() // Recursive call is now a method call
+         if field.Message != nil {
+            encoded, err := field.Message.Encode()
             if err != nil {
-               return nil, fmt.Errorf("failed to encode embedded fields for field %d: %w", field.Tag.FieldNum, err)
+               return nil, fmt.Errorf("failed to encode embedded message for field %d: %w", field.Tag.FieldNum, err)
             }
             valueBytes = encoded
          } else {
-            valueBytes = field.ValBytes
+            valueBytes = field.Bytes
          }
       }
 
-      // 1. Encode the Tag (Field Number + Wire Type)
       tagBytes := EncodeVarint(uint64((field.Tag.FieldNum << 3) | int(field.Tag.WireType)))
       buf.Write(tagBytes)
 
-      // 2. Encode the Value
       switch field.Tag.WireType {
       case WireVarint:
-         buf.Write(EncodeVarint(field.ValNumeric))
+         buf.Write(EncodeVarint(field.Numeric))
       case WireFixed32:
-         buf.Write(EncodeFixed32(uint32(field.ValNumeric)))
+         buf.Write(EncodeFixed32(uint32(field.Numeric)))
       case WireFixed64:
-         buf.Write(EncodeFixed64(field.ValNumeric))
+         buf.Write(EncodeFixed64(field.Numeric))
       case WireBytes:
          buf.Write(EncodeVarint(uint64(len(valueBytes))))
          buf.Write(valueBytes)

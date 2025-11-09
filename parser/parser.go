@@ -4,68 +4,68 @@ import "fmt"
 
 // Field represents a single, decoded field in a protobuf message.
 type Field struct {
-   Tag            Tag
-   ValNumeric     uint64
-   ValBytes       []byte
-   EmbeddedFields Fields
+   Tag     Tag
+   Numeric uint64 // Renamed from ValNumeric
+   Bytes   []byte // Renamed from ValBytes
+   Message Message
 }
 
 // --- Field Constructors ---
 
-// NewVarintField creates a new Varint field and returns a pointer to it.
-func NewVarintField(fieldNum int, value uint64) *Field {
+// NewVarint creates a new Varint field and returns a pointer to it.
+func NewVarint(fieldNum int, value uint64) *Field {
    return &Field{
       Tag: Tag{
          FieldNum: fieldNum,
          WireType: WireVarint,
       },
-      ValNumeric: value,
+      Numeric: value,
    }
 }
 
-// NewStringField creates a new String (WireBytes) field and returns a pointer to it.
-func NewStringField(fieldNum int, value string) *Field {
+// NewString creates a new String (WireBytes) field and returns a pointer to it.
+func NewString(fieldNum int, value string) *Field {
    return &Field{
       Tag: Tag{
          FieldNum: fieldNum,
          WireType: WireBytes,
       },
-      ValBytes: []byte(value),
+      Bytes: []byte(value),
    }
 }
 
-// NewBytesField creates a new Bytes field and returns a pointer to it.
-func NewBytesField(fieldNum int, value []byte) *Field {
+// NewBytes creates a new Bytes field and returns a pointer to it.
+func NewBytes(fieldNum int, value []byte) *Field {
    return &Field{
       Tag: Tag{
          FieldNum: fieldNum,
          WireType: WireBytes,
       },
-      ValBytes: value,
+      Bytes: value,
    }
 }
 
-// NewEmbeddedField creates a new embedded message field and returns a pointer to it.
-func NewEmbeddedField(fieldNum int, value Fields) *Field {
+// NewMessage creates a new embedded message field from the provided sub-fields
+// and returns a pointer to it.
+func NewMessage(fieldNum int, value ...*Field) *Field {
    return &Field{
       Tag: Tag{
          FieldNum: fieldNum,
          WireType: WireBytes,
       },
-      EmbeddedFields: value,
+      Message: Message(value),
    }
 }
 
 // --- Parsing Logic ---
 
 // Parse takes a byte slice of protobuf wire format data and returns it as a
-// queryable Fields object.
-func Parse(buf []byte) (Fields, error) {
-   var fields Fields
+// queryable Message object.
+func Parse(buf []byte) (Message, error) {
+   var fields Message
    offset := 0
 
    for offset < len(buf) {
-      // Ignore trailing zero bytes, which some encoders add.
       if len(buf[offset:]) > 0 && buf[offset] == 0 {
          offset++
          continue
@@ -86,28 +86,28 @@ func Parse(buf []byte) (Fields, error) {
          if n <= 0 {
             return nil, fmt.Errorf("failed to parse varint for field %d at offset %d", tag.FieldNum, offset)
          }
-         field.ValNumeric = val
+         field.Numeric = val
          dataLen = n
       case WireFixed32:
          val, n, err := ParseFixed32(buf[offset:])
          if err != nil {
             return nil, fmt.Errorf("failed to parse fixed32 for field %d: %w", tag.FieldNum, err)
          }
-         field.ValNumeric = uint64(val)
+         field.Numeric = uint64(val)
          dataLen = n
       case WireFixed64:
          val, n, err := ParseFixed64(buf[offset:])
          if err != nil {
             return nil, fmt.Errorf("failed to parse fixed64 for field %d: %w", tag.FieldNum, err)
          }
-         field.ValNumeric = val
+         field.Numeric = val
          dataLen = n
       case WireBytes:
          length, n, err := ParseLengthPrefixed(buf[offset:])
          if err != nil {
             return nil, fmt.Errorf("failed to parse length for field %d: %w", tag.FieldNum, err)
          }
-         offset += n // Advance offset past the length varint
+         offset += n
          dataLen = int(length)
 
          if offset+dataLen > len(buf) {
@@ -115,11 +115,11 @@ func Parse(buf []byte) (Fields, error) {
          }
 
          messageData := buf[offset : offset+dataLen]
-         field.ValBytes = make([]byte, dataLen)
-         copy(field.ValBytes, messageData)
+         field.Bytes = make([]byte, dataLen)
+         copy(field.Bytes, messageData)
 
          if embedded, err := Parse(messageData); err == nil && len(embedded) > 0 {
-            field.EmbeddedFields = embedded
+            field.Message = embedded
          }
 
       default:
@@ -127,7 +127,7 @@ func Parse(buf []byte) (Fields, error) {
       }
 
       offset += dataLen
-      fields = append(fields, field)
+      fields = append(fields, &field)
    }
 
    return fields, nil

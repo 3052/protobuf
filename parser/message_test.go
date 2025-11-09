@@ -6,9 +6,7 @@ import (
    "testing"
 )
 
-// setupFields creates a common parsed structure for testing the Fields helper.
-// Outer { 1: 150, 2: "top-level", 3: Inner { 1: "nested" }, 4: 99, 4: 100 }
-func setupFields(t *testing.T) Fields {
+func setupMessage(t *testing.T) Message {
    input := []byte{
       0x08, 0x96, 0x01, // 1: 150
       0x12, 0x09, 0x74, 0x6f, 0x70, 0x2d, 0x6c, 0x65, 0x76, 0x65, 0x6c, // 2: "top-level"
@@ -16,26 +14,22 @@ func setupFields(t *testing.T) Fields {
       0x20, 0x63, // 4: 99 (repeated)
       0x20, 0x64, // 4: 100 (repeated)
    }
-   fields, err := Parse(input)
+   msg, err := Parse(input)
    if err != nil {
       t.Fatalf("Failed to parse test data: %v", err)
    }
-   return fields
+   return msg
 }
 
 func TestFieldIterator_UnifiedAccess(t *testing.T) {
-   msg := setupFields(t)
+   msg := setupMessage(t)
 
    // Test singular numeric field
    it1 := msg.Find(1)
    if !it1.Next() {
       t.Fatal("Expected one result for field 1, got none")
    }
-   field1 := it1.Field()
-   if field1 == nil {
-      t.Fatal("Field() returned nil for field 1")
-   }
-   if val := field1.ValNumeric; val != 150 {
+   if val := it1.Field().Numeric; val != 150 {
       t.Errorf("Got %d for field 1, want 150", val)
    }
    if it1.Next() {
@@ -47,11 +41,7 @@ func TestFieldIterator_UnifiedAccess(t *testing.T) {
    if !it3.Next() {
       t.Fatal("Expected one result for field 3, got none")
    }
-   field3 := it3.Field()
-   if field3 == nil {
-      t.Fatal("Field() returned nil for field 3")
-   }
-   innerMsg := field3.EmbeddedFields
+   innerMsg := it3.Field().Message
    if innerMsg == nil {
       t.Fatal("Expected embedded message for field 3")
    }
@@ -60,26 +50,18 @@ func TestFieldIterator_UnifiedAccess(t *testing.T) {
    if !innerIt.Next() {
       t.Fatal("Expected one result for inner field 1")
    }
-   innerField := innerIt.Field()
-   if innerField == nil {
-      t.Fatal("Field() returned nil for inner field 1")
-   }
-   if val := string(innerField.ValBytes); val != "nested" {
+   if val := string(innerIt.Field().Bytes); val != "nested" {
       t.Errorf("Got %s for inner field 1, want 'nested'", val)
    }
 }
 
 func TestFieldIterator_RepeatedFields(t *testing.T) {
-   msg := setupFields(t)
+   msg := setupMessage(t)
 
    var results []uint64
    it := msg.Find(4) // Field 4 is repeated
    for it.Next() {
-      field := it.Field()
-      if field == nil {
-         t.Fatal("Field() returned nil during repeated iteration")
-      }
-      results = append(results, field.ValNumeric)
+      results = append(results, it.Field().Numeric)
    }
 
    expected := []uint64{99, 100}
@@ -93,8 +75,7 @@ func TestFieldIterator_RepeatedFields(t *testing.T) {
    }
 }
 
-// Example demonstrating the unified iterator for both singular and repeated field access.
-func ExampleFields() {
+func ExampleMessage() {
    // message { 1: "report-123", 2: 99, 2: 105, 2: 87 }
    data := []byte{0x0a, 0x0a, 0x72, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x2d, 0x31, 0x32, 0x33, 0x10, 0x63, 0x10, 0x69, 0x10, 0x57}
    msg, err := Parse(data)
@@ -106,15 +87,14 @@ func ExampleFields() {
    fmt.Print("Report ID: ")
    it1 := msg.Find(1)
    if it1.Next() {
-      // Go automatically dereferences pointers for struct field access
-      fmt.Println(string(it1.Field().ValBytes))
+      fmt.Println(string(it1.Field().Bytes))
    }
 
    // Iterate over the repeated numeric fields
    fmt.Println("Values:")
    it2 := msg.Find(2)
    for it2.Next() {
-      fmt.Printf("- %d\n", it2.Field().ValNumeric)
+      fmt.Printf("- %d\n", it2.Field().Numeric)
    }
 
    // Output:
