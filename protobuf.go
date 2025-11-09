@@ -7,6 +7,18 @@ import (
    "iter"
 )
 
+func (m Message) Get(number protowire.Number) iter.Seq[*Field] {
+   return func(yield func(*Field) bool) {
+      for _, fieldVar := range m {
+         if fieldVar.Number == number {
+            if !yield(fieldVar) {
+               return
+            }
+         }
+      }
+   }
+}
+
 func space(n int) string {
    return "                                                                 "[:n]
 }
@@ -133,22 +145,8 @@ func (m Message) goString(level int) string {
 
 type Message []*Field
 
-///
-
 func (m Message) GoString() string {
    return m.goString(0)
-}
-
-func (m Message) Get(number protowire.Number) iter.Seq[*Field] {
-   return func(yield func(*Field) bool) {
-      for _, fieldVar := range m {
-         if fieldVar.Number == number {
-            if !yield(fieldVar) {
-               return
-            }
-         }
-      }
-   }
 }
 
 func (m Message) Marshal() []byte {

@@ -3,36 +3,28 @@ package parser
 import "fmt"
 
 // Field represents a single, decoded field in a protobuf message.
-// It includes a field to hold sub-fields if the data can be successfully
-// parsed as an embedded message.
 type Field struct {
    Tag            Tag
-   ValNumeric     uint64  // For Varint, Fixed64, and Fixed32 wire types
-   ValBytes       []byte  // For Bytes wire type (always populated)
-   EmbeddedFields []Field // Populated if ValBytes can be parsed as a message
+   ValNumeric     uint64
+   ValBytes       []byte
+   EmbeddedFields []Field
 }
 
 // Parse takes a byte slice of protobuf wire format data and returns a slice of
-// parsed fields. It will recursively try to parse length-prefixed fields as
-
-// embedded messages.
+// all parsed fields.
 func Parse(buf []byte) ([]Field, error) {
    var fields []Field
    offset := 0
 
    for offset < len(buf) {
-      // Prevent parsing zero-length or invalid buffer slices
-      if offset >= len(buf) {
-         break
+      // Ignore trailing zero bytes, which some encoders add.
+      if len(buf[offset:]) > 0 && buf[offset] == 0 {
+         offset++
+         continue
       }
 
       tag, n, err := ParseTag(buf[offset:])
       if err != nil {
-         // This can happen on trailing zero bytes, which is not a hard error.
-         // We just stop parsing.
-         if offset > 0 && len(buf[offset:]) > 0 && buf[offset] == 0 {
-            break
-         }
          return nil, fmt.Errorf("failed to parse tag at offset %d: %w", offset, err)
       }
       offset += n
@@ -51,37 +43,39 @@ func Parse(buf []byte) ([]Field, error) {
       case WireFixed32:
          val, n, err := ParseFixed32(buf[offset:])
          if err != nil {
-            return nil, fmt.Errorf("failed to parse fixed32 for field %d at offset %d: %w", tag.FieldNum, offset, err)
+            return nil, fmt.Errorf("failed to parse fixed32 for field %d: %w", tag.FieldNum, err)
          }
          field.ValNumeric = uint64(val)
          dataLen = n
       case WireFixed64:
          val, n, err := ParseFixed64(buf[offset:])
          if err != nil {
-            return nil, fmt.Errorf("failed to parse fixed64 for field %d at offset %d: %w", tag.FieldNum, offset, err)
+            return nil, fmt.Errorf("failed to parse fixed64 for field %d: %w", tag.FieldNum, err)
          }
          field.ValNumeric = val
          dataLen = n
       case WireBytes:
          length, n, err := ParseLengthPrefixed(buf[offset:])
          if err != nil {
-            return nil, fmt.Errorf("failed to parse length for field %d at offset %d: %w", tag.FieldNum, offset, err)
+            return nil, fmt.Errorf("failed to parse length for field %d: %w", tag.FieldNum, err)
          }
          offset += n // Advance offset past the length varint
-         dataLen = length
+         dataLen = int(length)
 
          if offset+dataLen > len(buf) {
             return nil, fmt.Errorf("field %d data is out of bounds", tag.FieldNum)
          }
 
-         // Always populate the raw bytes field.
-         bytesVal := make([]byte, dataLen)
-         copy(bytesVal, buf[offset:offset+dataLen])
-         field.ValBytes = bytesVal
+         // *** THE FIX IS HERE ***
+         // Create a slice that refers *only* to the data for this field.
+         messageData := buf[offset : offset+dataLen]
 
-         // Now, speculatively try to parse these bytes as an embedded message.
-         // If it fails, we simply ignore the error and EmbeddedFields remains nil.
-         if embedded, err := Parse(field.ValBytes); err == nil {
+         // Always copy this data to ValBytes.
+         field.ValBytes = make([]byte, dataLen)
+         copy(field.ValBytes, messageData)
+
+         // Try to parse the specific sub-slice. If it fails or is empty, ignore it.
+         if embedded, err := Parse(messageData); err == nil && len(embedded) > 0 {
             field.EmbeddedFields = embedded
          }
 

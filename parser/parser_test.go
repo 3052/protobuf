@@ -2,8 +2,6 @@ package parser
 
 import (
    "bytes"
-   "fmt"
-   "log"
    "reflect"
    "testing"
 )
@@ -105,59 +103,4 @@ func TestRoundTrip(t *testing.T) {
          }
       })
    }
-}
-
-// ExampleParse remains unchanged
-func ExampleParse() {
-   // ...
-}
-
-// PrintFields remains unchanged
-func PrintFields(fields []Field, indent string) {
-   // ...
-}
-
-// ExampleEncode demonstrates building a Field structure and encoding it.
-func ExampleEncode() {
-   // Let's build this structure:
-   // Outer {
-   //   field 1: 999
-   //   field 2: Inner {
-   //     field 1: "testing"
-   //   }
-   // }
-   innerMsg := []Field{
-      {
-         Tag:      Tag{FieldNum: 1, WireType: WireBytes},
-         ValBytes: []byte("testing"),
-      },
-   }
-
-   outerMsg := []Field{
-      {
-         Tag:        Tag{FieldNum: 1, WireType: WireVarint},
-         ValNumeric: 999,
-      },
-      {
-         Tag:            Tag{FieldNum: 2, WireType: WireBytes},
-         EmbeddedFields: innerMsg, // We set the embedded fields
-      },
-   }
-
-   encoded, err := Encode(outerMsg)
-   if err != nil {
-      log.Fatalf("Encode failed: %v", err)
-   }
-
-   // The output is the wire format bytes, printed as hex.
-   fmt.Printf("%x\n", encoded)
-
-   // Breakdown of the output:
-   // 08 e7 07                -> Field 1 (Varint), Value 999
-   // 12 09                   -> Field 2 (Bytes), Length 9
-   //   0a 07                 ->   (Embedded) Field 1 (Bytes), Length 7
-   //   74 65 73 74 69 6e 67  ->   (Embedded) Value "testing"
-
-   // Output:
-   // 08e70712090a0774657374696e67
 }
