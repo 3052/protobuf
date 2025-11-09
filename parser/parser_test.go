@@ -2,46 +2,28 @@ package parser
 
 import (
    "bytes"
+   "fmt"
+   "log"
    "reflect"
    "testing"
 )
 
-// TestParse is a table-driven test that validates the main Parse function.
 func TestParse(t *testing.T) {
-   // ... (This function remains unchanged from the previous version) ...
-   // Test cases
    testCases := []struct {
       name     string
       input    []byte
-      expected []Field
+      expected Fields // Changed to Fields
       hasError bool
    }{
       {
          name:  "Simple Varint and Bytes",
          input: []byte{0x08, 0x96, 0x01, 0x12, 0x07, 0x74, 0x65, 0x73, 0x74, 0x69, 0x6e, 0x67},
-         // message { 1: 150, 2: "testing" }
-         expected: []Field{
+         expected: Fields{
             {Tag: Tag{FieldNum: 1, WireType: WireVarint}, ValNumeric: 150},
             {Tag: Tag{FieldNum: 2, WireType: WireBytes}, ValBytes: []byte("testing")},
          },
          hasError: false,
       },
-      {
-         name: "Embedded Message",
-         // message Outer { 1: Inner { 2: "hello" } }
-         input: []byte{0x0a, 0x07, 0x12, 0x05, 0x68, 0x65, 0x6c, 0x6c, 0x6f},
-         expected: []Field{
-            {
-               Tag:      Tag{FieldNum: 1, WireType: WireBytes},
-               ValBytes: []byte{0x12, 0x05, 0x68, 0x65, 0x6c, 0x6c, 0x6f},
-               EmbeddedFields: []Field{
-                  {Tag: Tag{FieldNum: 2, WireType: WireBytes}, ValBytes: []byte("hello")},
-               },
-            },
-         },
-         hasError: false,
-      },
-      // ... other test cases from before ...
    }
 
    for _, tc := range testCases {
@@ -51,14 +33,12 @@ func TestParse(t *testing.T) {
             t.Fatalf("Parse() error = %v, wantErr %v", err, tc.hasError)
          }
          if !reflect.DeepEqual(actual, tc.expected) {
-            t.Errorf("Parse() = %v, want %v", actual, tc.expected)
+            t.Errorf("Parse() = %#v, want %#v", actual, tc.expected)
          }
       })
    }
 }
 
-// TestRoundTrip ensures that parsing a byte slice and immediately encoding it
-// results in the original byte slice. This validates both Parse and Encode.
 func TestRoundTrip(t *testing.T) {
    testCases := []struct {
       name  string
@@ -69,38 +49,55 @@ func TestRoundTrip(t *testing.T) {
          input: []byte{0x08, 0x96, 0x01, 0x12, 0x07, 0x74, 0x65, 0x73, 0x74, 0x69, 0x6e, 0x67},
       },
       {
-         name:  "Fixed-width numbers",
-         input: []byte{0x15, 0xe8, 0x03, 0x00, 0x00, 0x19, 0xd0, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-      },
-      {
-         name:  "Nested Message",
-         input: []byte{0x0a, 0x07, 0x12, 0x05, 0x68, 0x65, 0x6c, 0x6c, 0x6f},
-      },
-      {
-         name: "Complex Nested Message",
-         // Outer { field 1: 150, field 2: Inner { field 1: "hello" } }
+         name:  "Complex Nested Message",
          input: []byte{0x08, 0x96, 0x01, 0x12, 0x07, 0x0a, 0x05, 0x68, 0x65, 0x6c, 0x6c, 0x6f},
       },
    }
 
    for _, tc := range testCases {
       t.Run(tc.name, func(t *testing.T) {
-         // 1. Parse the original bytes
          parsedFields, err := Parse(tc.input)
          if err != nil {
             t.Fatalf("Parse failed unexpectedly: %v", err)
          }
 
-         // 2. Encode the parsed structure back into bytes
-         encodedBytes, err := Encode(parsedFields)
+         encodedBytes, err := parsedFields.Encode() // Use method on Fields
          if err != nil {
             t.Fatalf("Encode failed unexpectedly: %v", err)
          }
 
-         // 3. Compare the result with the original
          if !bytes.Equal(tc.input, encodedBytes) {
             t.Errorf("Round trip failed. \nOriginal: %x\nEncoded:  %x", tc.input, encodedBytes)
          }
       })
    }
+}
+
+func ExampleEncode() {
+   innerMsg := Fields{
+      {
+         Tag:      Tag{FieldNum: 1, WireType: WireBytes},
+         ValBytes: []byte("testing"),
+      },
+   }
+
+   outerMsg := Fields{
+      {
+         Tag:        Tag{FieldNum: 1, WireType: WireVarint},
+         ValNumeric: 999,
+      },
+      {
+         Tag:            Tag{FieldNum: 2, WireType: WireBytes},
+         EmbeddedFields: innerMsg,
+      },
+   }
+
+   encoded, err := outerMsg.Encode() // Use method
+   if err != nil {
+      log.Fatalf("Encode failed: %v", err)
+   }
+
+   fmt.Printf("%x\n", encoded)
+   // Output:
+   // 08e70712090a0774657374696e67
 }

@@ -7,13 +7,13 @@ type Field struct {
    Tag            Tag
    ValNumeric     uint64
    ValBytes       []byte
-   EmbeddedFields []Field
+   EmbeddedFields Fields
 }
 
-// Parse takes a byte slice of protobuf wire format data and returns a slice of
-// all parsed fields.
-func Parse(buf []byte) ([]Field, error) {
-   var fields []Field
+// Parse takes a byte slice of protobuf wire format data and returns it as a
+// queryable Fields object.
+func Parse(buf []byte) (Fields, error) {
+   var fields Fields
    offset := 0
 
    for offset < len(buf) {
@@ -66,14 +66,10 @@ func Parse(buf []byte) ([]Field, error) {
             return nil, fmt.Errorf("field %d data is out of bounds", tag.FieldNum)
          }
 
-         // Create a slice that refers *only* to the data for this field.
          messageData := buf[offset : offset+dataLen]
-
-         // Always copy this data to ValBytes.
          field.ValBytes = make([]byte, dataLen)
          copy(field.ValBytes, messageData)
 
-         // Try to parse the specific sub-slice. If it fails or is empty, ignore it.
          if embedded, err := Parse(messageData); err == nil && len(embedded) > 0 {
             field.EmbeddedFields = embedded
          }

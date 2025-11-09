@@ -25,19 +25,16 @@ func (f Fields) IterateByNum(fieldNum int) *RepeatedFieldIterator {
 // Next advances the iterator to the next matching field. It returns false
 // when there are no more matching fields.
 func (it *RepeatedFieldIterator) Next() bool {
-   // Start searching from the position after the current cursor
    for i := it.cursor + 1; i < len(it.fields); i++ {
       if it.fields[i].Tag.FieldNum == it.fieldNum {
-         // Found a match, update cursor and return true
          it.cursor = i
          return true
       }
    }
-   return false // No more matches found
+   return false
 }
 
 // Field returns the current field the iterator is pointing to.
-// Call this after Next() returns true.
 func (it *RepeatedFieldIterator) Field() Field {
    if it.cursor >= 0 && it.cursor < len(it.fields) {
       return it.fields[it.cursor]
@@ -45,27 +42,26 @@ func (it *RepeatedFieldIterator) Field() Field {
    return Field{}
 }
 
-// Numeric is a convenience method that returns the numeric value of the current field.
+// Numeric returns the numeric value of the current field.
 func (it *RepeatedFieldIterator) Numeric() uint64 {
    return it.Field().ValNumeric
 }
 
-// String is a convenience method that returns the string value of the current field.
+// String returns the string value of the current field.
 func (it *RepeatedFieldIterator) String() string {
    return string(it.Field().ValBytes)
 }
 
-// Bytes is a convenience method that returns the raw byte slice of the current field.
+// Bytes returns the raw byte slice of the current field.
 func (it *RepeatedFieldIterator) Bytes() []byte {
    return it.Field().ValBytes
 }
 
-// Embedded is a convenience method that returns the embedded fields of the current field
-// as a new queryable Fields object.
+// Embedded returns the embedded fields of the current field as a new queryable Fields object.
 func (it *RepeatedFieldIterator) Embedded() (Fields, bool) {
    field := it.Field()
    if field.EmbeddedFields != nil {
-      return Fields(field.EmbeddedFields), true
+      return field.EmbeddedFields, true
    }
    return nil, false
 }

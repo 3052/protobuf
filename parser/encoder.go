@@ -6,25 +6,21 @@ import (
    "fmt"
 )
 
-// Encode takes a slice of Fields and serializes them into the protobuf wire format.
-func Encode(fields []Field) ([]byte, error) {
+// Encode serializes the fields into the protobuf wire format.
+func (f Fields) Encode() ([]byte, error) {
    var buf bytes.Buffer
 
-   for _, field := range fields {
-      // Determine the value bytes for length-prefixed types first.
+   for _, field := range f {
       var valueBytes []byte
-
       if field.Tag.WireType == WireBytes {
          // If EmbeddedFields is populated, it takes precedence.
-         // We recursively encode it to get the bytes.
          if field.EmbeddedFields != nil {
-            encoded, err := Encode(field.EmbeddedFields)
+            encoded, err := field.EmbeddedFields.Encode() // Recursive call is now a method call
             if err != nil {
                return nil, fmt.Errorf("failed to encode embedded fields for field %d: %w", field.Tag.FieldNum, err)
             }
             valueBytes = encoded
          } else {
-            // Otherwise, use the raw ValBytes.
             valueBytes = field.ValBytes
          }
       }
@@ -42,7 +38,6 @@ func Encode(fields []Field) ([]byte, error) {
       case WireFixed64:
          buf.Write(EncodeFixed64(field.ValNumeric))
       case WireBytes:
-         // For Bytes, first encode the length of the data, then the data itself.
          buf.Write(EncodeVarint(uint64(len(valueBytes))))
          buf.Write(valueBytes)
       default:
@@ -55,7 +50,7 @@ func Encode(fields []Field) ([]byte, error) {
 
 // EncodeVarint encodes a uint64 into varint bytes.
 func EncodeVarint(v uint64) []byte {
-   var buf [10]byte // Max 10 bytes for a 64-bit varint
+   var buf [10]byte
    n := binary.PutUvarint(buf[:], v)
    return buf[:n]
 }
