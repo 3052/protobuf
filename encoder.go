@@ -1,4 +1,4 @@
-package parser
+package protobuf
 
 import (
    "bytes"
@@ -24,7 +24,7 @@ func (m Message) Encode() ([]byte, error) {
          }
       }
 
-      tagBytes := EncodeVarint(uint64((field.Tag.FieldNum << 3) | int(field.Tag.WireType)))
+      tagBytes := EncodeVarint(uint64(field.Tag.FieldNum)<<3 | uint64(field.Tag.WireType))
       buf.Write(tagBytes)
 
       switch field.Tag.WireType {

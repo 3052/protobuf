@@ -1,4 +1,4 @@
-package parser
+package protobuf
 
 import (
    "bytes"
@@ -8,7 +8,7 @@ import (
    "testing"
 )
 
-func TestParse(t *testing.T) {
+func TestMessage_Parse(t *testing.T) {
    testCases := []struct {
       name     string
       input    []byte
@@ -28,7 +28,8 @@ func TestParse(t *testing.T) {
 
    for _, tc := range testCases {
       t.Run(tc.name, func(t *testing.T) {
-         actual, err := Parse(tc.input)
+         var actual Message
+         err := actual.Parse(tc.input)
          if (err != nil) != tc.hasError {
             t.Fatalf("Parse() error = %v, wantErr %v", err, tc.hasError)
          }
@@ -61,7 +62,8 @@ func TestRoundTrip(t *testing.T) {
 
    for _, tc := range testCases {
       t.Run(tc.name, func(t *testing.T) {
-         parsedMessage, err := Parse(tc.input)
+         var parsedMessage Message
+         err := parsedMessage.Parse(tc.input)
          if err != nil {
             t.Fatalf("Parse failed unexpectedly: %v", err)
          }

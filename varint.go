@@ -1,8 +1,9 @@
-package parser
+package protobuf
 
 import "errors"
 
 // DecodeVarint reads a varint from the buffer and returns the decoded uint64 and the number of bytes read.
+// A negative number of bytes indicates an overflow. A zero indicates an unterminated varint.
 func DecodeVarint(buf []byte) (uint64, int) {
    var x uint64
    var s uint
