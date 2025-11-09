@@ -1,9 +1,9 @@
-package parser
+package protobuf
 
 import "errors"
 
 // WireType represents the type of data encoding on the wire.
-type WireType int
+type WireType uint8
 
 const (
    WireVarint     WireType = 0
@@ -16,18 +16,18 @@ const (
 
 // Tag represents a field's tag.
 type Tag struct {
-   FieldNum int
+   FieldNum uint32
    WireType WireType
 }
 
 // ParseTag decodes a varint from the input buffer and returns it as a Tag.
 func ParseTag(buf []byte) (Tag, int, error) {
    tag, n := DecodeVarint(buf)
-   if n == 0 {
-      return Tag{}, 0, errors.New("buffer is too small to contain a valid tag")
+   if n <= 0 {
+      return Tag{}, 0, errors.New("buffer is too small or varint is malformed")
    }
    return Tag{
-      FieldNum: int(tag >> 3),
+      FieldNum: uint32(tag >> 3),
       WireType: WireType(tag & 0x7),
    }, n, nil
 }

@@ -1,19 +1,19 @@
-package parser
+package protobuf
 
 import "fmt"
 
 // Field represents a single, decoded field in a protobuf message.
 type Field struct {
    Tag     Tag
-   Numeric uint64 // Renamed from ValNumeric
-   Bytes   []byte // Renamed from ValBytes
+   Numeric uint64
+   Bytes   []byte
    Message Message
 }
 
 // --- Field Constructors ---
 
 // NewVarint creates a new Varint field and returns a pointer to it.
-func NewVarint(fieldNum int, value uint64) *Field {
+func NewVarint(fieldNum uint32, value uint64) *Field {
    return &Field{
       Tag: Tag{
          FieldNum: fieldNum,
@@ -24,7 +24,7 @@ func NewVarint(fieldNum int, value uint64) *Field {
 }
 
 // NewString creates a new String (WireBytes) field and returns a pointer to it.
-func NewString(fieldNum int, value string) *Field {
+func NewString(fieldNum uint32, value string) *Field {
    return &Field{
       Tag: Tag{
          FieldNum: fieldNum,
@@ -35,7 +35,7 @@ func NewString(fieldNum int, value string) *Field {
 }
 
 // NewBytes creates a new Bytes field and returns a pointer to it.
-func NewBytes(fieldNum int, value []byte) *Field {
+func NewBytes(fieldNum uint32, value []byte) *Field {
    return &Field{
       Tag: Tag{
          FieldNum: fieldNum,
@@ -47,7 +47,7 @@ func NewBytes(fieldNum int, value []byte) *Field {
 
 // NewMessage creates a new embedded message field from the provided sub-fields
 // and returns a pointer to it.
-func NewMessage(fieldNum int, value ...*Field) *Field {
+func NewMessage(fieldNum uint32, value ...*Field) *Field {
    return &Field{
       Tag: Tag{
          FieldNum: fieldNum,
