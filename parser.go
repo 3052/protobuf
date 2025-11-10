@@ -8,9 +8,16 @@ type Field struct {
    Message Message
 }
 
-// --- Field Constructors ---
+func NewFixed32(fieldNum uint32, value uint32) *Field {
+   return &Field{
+      Tag: Tag{
+         FieldNum: fieldNum,
+         WireType: WireFixed32,
+      },
+      Numeric: uint64(value),
+   }
+}
 
-// NewVarint creates a new Varint field and returns a pointer to it.
 func NewVarint(fieldNum uint32, value uint64) *Field {
    return &Field{
       Tag: Tag{
