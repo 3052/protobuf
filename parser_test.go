@@ -82,9 +82,9 @@ func TestRoundTrip(t *testing.T) {
 
 func ExampleEncode() {
    msg := Message{
-      NewVarint(1, 999),
-      NewMessage(2,
-         NewString(1, "testing"),
+      Varint(1, 999),
+      Embed(2,
+         String(1, "testing"),
       ),
    }
 
