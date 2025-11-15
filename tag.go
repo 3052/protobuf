@@ -1,6 +1,12 @@
 package protobuf
 
-import "errors"
+import (
+   "errors"
+   "io"
+   "log"
+)
+
+var Debug = log.New(io.Discard, "Debug ", log.Ltime)
 
 // WireType represents the type of data encoding on the wire.
 type WireType uint8
