@@ -20,7 +20,7 @@ type Iterator struct {
 // when there are no more matching fields.
 func (it *Iterator) Next() bool {
    for i := it.cursor + 1; i < len(it.message); i++ {
-      if it.message[i].Tag.FieldNum == it.fieldNum {
+      if it.message[i].Tag.Number == it.fieldNum {
          it.cursor = i
          return true
       }
@@ -39,16 +39,16 @@ func (it *Iterator) Field() *Field {
 
 var Debug = log.New(io.Discard, "Debug ", log.Ltime)
 
-// WireType represents the type of data encoding on the wire.
-type WireType uint8
+// Type represents the type of data encoding on the wire.
+type Type uint8
 
 const (
-   WireVarint     WireType = 0
-   WireFixed64    WireType = 1
-   WireBytes      WireType = 2
-   WireStartGroup WireType = 3 // Deprecated
-   WireEndGroup   WireType = 4 // Deprecated
-   WireFixed32    WireType = 5
+   WireVarint     Type = 0
+   WireFixed64    Type = 1
+   WireBytes      Type = 2
+   WireStartGroup Type = 3 // Deprecated
+   WireEndGroup   Type = 4 // Deprecated
+   WireFixed32    Type = 5
 )
 
 // DecodeVarint reads a varint from the buffer and returns the decoded uint64 and the number of bytes read.

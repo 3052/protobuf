@@ -33,8 +33,8 @@ func TestMessage_Parse(t *testing.T) {
          name:  "Simple Varint and Bytes",
          input: []byte{0x08, 0x96, 0x01, 0x12, 0x07, 0x74, 0x65, 0x73, 0x74, 0x69, 0x6e, 0x67},
          expected: Message{
-            {Tag: Tag{FieldNum: 1, WireType: WireVarint}, Numeric: 150},
-            {Tag: Tag{FieldNum: 2, WireType: WireBytes}, Bytes: []byte("testing")},
+            {Tag: Tag{Number: 1, Type: WireVarint}, Numeric: 150},
+            {Tag: Tag{Number: 2, Type: WireBytes}, Bytes: []byte("testing")},
          },
          hasError: false,
       },

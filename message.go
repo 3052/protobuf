@@ -4,7 +4,6 @@ package protobuf
 // parsed protobuf message.
 type Message []*Field
 
-
 // Field is a convenience method that finds and returns the first field matching
 // the given field number. The boolean return value is false if no matching
 // field is found.

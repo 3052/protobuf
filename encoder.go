@@ -3,31 +3,47 @@ package protobuf
 import (
    "bytes"
    "encoding/binary"
+   "errors"
    "fmt"
 )
+
+// Tag represents a field's tag.
+type Tag struct {
+   Number uint32
+   Type   Type
+}
+
+// ParseTag decodes a varint from the input buffer and returns it as a Tag.
+func ParseTag(buf []byte) (Tag, int, error) {
+   tag, n := DecodeVarint(buf)
+   if n <= 0 {
+      return Tag{}, 0, errors.New("buffer is too small or varint is malformed")
+   }
+   return Tag{
+      Number: uint32(tag >> 3),
+      Type:   Type(tag & 0x7),
+   }, n, nil
+}
 
 // Encode serializes the message into the protobuf wire format.
 func (m Message) Encode() ([]byte, error) {
    var buf bytes.Buffer
-
    for _, field := range m {
       var valueBytes []byte
-      if field.Tag.WireType == WireBytes {
+      if field.Tag.Type == WireBytes {
          if field.Message != nil {
             encoded, err := field.Message.Encode()
             if err != nil {
-               return nil, fmt.Errorf("failed to encode embedded message for field %d: %w", field.Tag.FieldNum, err)
+               return nil, fmt.Errorf("failed to encode embedded message for field %d: %w", field.Tag.Number, err)
             }
             valueBytes = encoded
          } else {
             valueBytes = field.Bytes
          }
       }
-
-      tagBytes := EncodeVarint(uint64(field.Tag.FieldNum)<<3 | uint64(field.Tag.WireType))
+      tagBytes := EncodeVarint(uint64(field.Tag.Number)<<3 | uint64(field.Tag.Type))
       buf.Write(tagBytes)
-
-      switch field.Tag.WireType {
+      switch field.Tag.Type {
       case WireVarint:
          buf.Write(EncodeVarint(field.Numeric))
       case WireFixed32:
@@ -38,10 +54,9 @@ func (m Message) Encode() ([]byte, error) {
          buf.Write(EncodeVarint(uint64(len(valueBytes))))
          buf.Write(valueBytes)
       default:
-         return nil, fmt.Errorf("unsupported wire type for encoding: %d", field.Tag.WireType)
+         return nil, fmt.Errorf("unsupported wire type for encoding: %d", field.Tag.Type)
       }
    }
-
    return buf.Bytes(), nil
 }
 

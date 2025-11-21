@@ -7,73 +7,63 @@ import "fmt"
 func (m *Message) Parse(buf []byte) error {
    var fields Message
    offset := 0
-
    for offset < len(buf) {
       if len(buf[offset:]) > 0 && buf[offset] == 0 {
          offset++
          continue
       }
-
       tag, n, err := ParseTag(buf[offset:])
       if err != nil {
          return fmt.Errorf("failed to parse tag at offset %d: %w", offset, err)
       }
       offset += n
-
       field := Field{Tag: tag}
       var dataLen int
-
-      switch tag.WireType {
+      switch tag.Type {
       case WireVarint:
          val, n := DecodeVarint(buf[offset:])
          if n <= 0 {
-            return fmt.Errorf("failed to parse varint for field %d at offset %d", tag.FieldNum, offset)
+            return fmt.Errorf("failed to parse varint for field %d at offset %d", tag.Number, offset)
          }
          field.Numeric = val
          dataLen = n
       case WireFixed32:
          val, n, err := ParseFixed32(buf[offset:])
          if err != nil {
-            return fmt.Errorf("failed to parse fixed32 for field %d: %w", tag.FieldNum, err)
+            return fmt.Errorf("failed to parse fixed32 for field %d: %w", tag.Number, err)
          }
          field.Numeric = uint64(val)
          dataLen = n
       case WireFixed64:
          val, n, err := ParseFixed64(buf[offset:])
          if err != nil {
-            return fmt.Errorf("failed to parse fixed64 for field %d: %w", tag.FieldNum, err)
+            return fmt.Errorf("failed to parse fixed64 for field %d: %w", tag.Number, err)
          }
          field.Numeric = val
          dataLen = n
       case WireBytes:
          length, n, err := ParseLengthPrefixed(buf[offset:])
          if err != nil {
-            return fmt.Errorf("failed to parse length for field %d: %w", tag.FieldNum, err)
+            return fmt.Errorf("failed to parse length for field %d: %w", tag.Number, err)
          }
          offset += n
          dataLen = int(length)
-
          if offset+dataLen > len(buf) {
-            return fmt.Errorf("field %d data is out of bounds", tag.FieldNum)
+            return fmt.Errorf("field %d data is out of bounds", tag.Number)
          }
-
          messageData := buf[offset : offset+dataLen]
          field.Bytes = make([]byte, dataLen)
          copy(field.Bytes, messageData)
-
          var embedded Message
          if err := embedded.Parse(messageData); err == nil && len(embedded) > 0 {
             field.Message = embedded
          }
-
       default:
-         return fmt.Errorf("unsupported wire type %d for field %d at offset %d", tag.WireType, tag.FieldNum, offset)
+         return fmt.Errorf("unsupported wire type %d for field %d at offset %d", tag.Type, tag.Number, offset)
       }
-
       offset += dataLen
       fields = append(fields, &field)
    }
-
    *m = fields
    return nil
 }
@@ -90,8 +80,8 @@ type Field struct {
 func Fixed32(fieldNum uint32, value uint32) *Field {
    return &Field{
       Tag: Tag{
-         FieldNum: fieldNum,
-         WireType: WireFixed32,
+         Number: fieldNum,
+         Type:   WireFixed32,
       },
       Numeric: uint64(value),
    }
@@ -101,8 +91,8 @@ func Fixed32(fieldNum uint32, value uint32) *Field {
 func Fixed64(fieldNum uint32, value uint64) *Field {
    return &Field{
       Tag: Tag{
-         FieldNum: fieldNum,
-         WireType: WireFixed64,
+         Number: fieldNum,
+         Type:   WireFixed64,
       },
       Numeric: value,
    }
@@ -112,8 +102,8 @@ func Fixed64(fieldNum uint32, value uint64) *Field {
 func Varint(fieldNum uint32, value uint64) *Field {
    return &Field{
       Tag: Tag{
-         FieldNum: fieldNum,
-         WireType: WireVarint,
+         Number: fieldNum,
+         Type:   WireVarint,
       },
       Numeric: value,
    }
@@ -123,8 +113,8 @@ func Varint(fieldNum uint32, value uint64) *Field {
 func String(fieldNum uint32, value string) *Field {
    return &Field{
       Tag: Tag{
-         FieldNum: fieldNum,
-         WireType: WireBytes,
+         Number: fieldNum,
+         Type:   WireBytes,
       },
       Bytes: []byte(value),
    }
@@ -134,8 +124,8 @@ func String(fieldNum uint32, value string) *Field {
 func Bytes(fieldNum uint32, value []byte) *Field {
    return &Field{
       Tag: Tag{
-         FieldNum: fieldNum,
-         WireType: WireBytes,
+         Number: fieldNum,
+         Type:   WireBytes,
       },
       Bytes: value,
    }
@@ -146,8 +136,8 @@ func Bytes(fieldNum uint32, value []byte) *Field {
 func Embed(fieldNum uint32, value ...*Field) *Field {
    return &Field{
       Tag: Tag{
-         FieldNum: fieldNum,
-         WireType: WireBytes,
+         Number: fieldNum,
+         Type:   WireBytes,
       },
       Message: Message(value),
    }
