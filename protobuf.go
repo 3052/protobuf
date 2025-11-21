@@ -7,6 +7,36 @@ import (
    "log"
 )
 
+// Iterator provides a stateful, memory-efficient way to loop over
+// all occurrences of a specific field number within a message.
+// It is created by calling the Iterator() method on a Message.
+type Iterator struct {
+   message  Message // The message being iterated over
+   fieldNum uint32
+   cursor   int // The current index in the message slice
+}
+
+// Next advances the iterator to the next matching field. It returns false
+// when there are no more matching fields.
+func (it *Iterator) Next() bool {
+   for i := it.cursor + 1; i < len(it.message); i++ {
+      if it.message[i].Tag.FieldNum == it.fieldNum {
+         it.cursor = i
+         return true
+      }
+   }
+   return false
+}
+
+// Field returns a pointer to the current field the iterator is pointing to.
+// Call this after Next() returns true.
+func (it *Iterator) Field() *Field {
+   if it.cursor >= 0 && it.cursor < len(it.message) {
+      return it.message[it.cursor]
+   }
+   return nil
+}
+
 var Debug = log.New(io.Discard, "Debug ", log.Ltime)
 
 // WireType represents the type of data encoding on the wire.
@@ -20,24 +50,6 @@ const (
    WireEndGroup   WireType = 4 // Deprecated
    WireFixed32    WireType = 5
 )
-
-// Tag represents a field's tag.
-type Tag struct {
-   FieldNum uint32
-   WireType WireType
-}
-
-// ParseTag decodes a varint from the input buffer and returns it as a Tag.
-func ParseTag(buf []byte) (Tag, int, error) {
-   tag, n := DecodeVarint(buf)
-   if n <= 0 {
-      return Tag{}, 0, errors.New("buffer is too small or varint is malformed")
-   }
-   return Tag{
-      FieldNum: uint32(tag >> 3),
-      WireType: WireType(tag & 0x7),
-   }, n, nil
-}
 
 // DecodeVarint reads a varint from the buffer and returns the decoded uint64 and the number of bytes read.
 // A negative number of bytes indicates an overflow. A zero indicates an unterminated varint.
