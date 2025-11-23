@@ -3,8 +3,6 @@ package protobuf
 import (
    "encoding/binary"
    "errors"
-   "io"
-   "log"
 )
 
 // Iterator provides a stateful, memory-efficient way to loop over
@@ -36,8 +34,6 @@ func (it *Iterator) Field() *Field {
    }
    return nil
 }
-
-var Debug = log.New(io.Discard, "Debug ", log.Ltime)
 
 // Type represents the type of data encoding on the wire.
 type Type uint8
