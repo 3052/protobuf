@@ -45,3 +45,19 @@ func TestIterator(t *testing.T) {
       t.Fatalf("Iterator found %d results; want %d", len(results), len(expected))
    }
 }
+
+func setupMessage(t *testing.T) Message {
+   input := []byte{
+      0x08, 0x96, 0x01, // 1: 150
+      0x12, 0x09, 0x74, 0x6f, 0x70, 0x2d, 0x6c, 0x65, 0x76, 0x65, 0x6c, // 2: "top-level"
+      0x1a, 0x08, 0x0a, 0x06, 0x6e, 0x65, 0x73, 0x74, 0x65, 0x64, // 3: Inner { 1: "nested" }
+      0x20, 0x63, // 4: 99 (repeated)
+      0x20, 0x64, // 4: 100 (repeated)
+   }
+   var msg Message
+   err := msg.Parse(input)
+   if err != nil {
+      t.Fatalf("Failed to parse test data: %v", err)
+   }
+   return msg
+}
