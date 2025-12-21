@@ -4,15 +4,15 @@ import "fmt"
 
 // Parse populates the message by parsing the protobuf wire format data.
 // It will overwrite any existing fields in the message.
-func (m *Message) Parse(buf []byte) error {
+func (m *Message) Parse(data []byte) error {
    var fields Message
    offset := 0
-   for offset < len(buf) {
-      if len(buf[offset:]) > 0 && buf[offset] == 0 {
+   for offset < len(data) {
+      if len(data[offset:]) > 0 && data[offset] == 0 {
          offset++
          continue
       }
-      tag, n, err := ParseTag(buf[offset:])
+      tag, n, err := ParseTag(data[offset:])
       if err != nil {
          return fmt.Errorf("failed to parse tag at offset %d: %w", offset, err)
       }
@@ -21,37 +21,37 @@ func (m *Message) Parse(buf []byte) error {
       var dataLen int
       switch tag.Type {
       case WireVarint:
-         val, n := DecodeVarint(buf[offset:])
+         val, n := DecodeVarint(data[offset:])
          if n <= 0 {
             return fmt.Errorf("failed to parse varint for field %d at offset %d", tag.Number, offset)
          }
          field.Numeric = val
          dataLen = n
       case WireFixed32:
-         val, n, err := ParseFixed32(buf[offset:])
+         val, n, err := ParseFixed32(data[offset:])
          if err != nil {
             return fmt.Errorf("failed to parse fixed32 for field %d: %w", tag.Number, err)
          }
          field.Numeric = uint64(val)
          dataLen = n
       case WireFixed64:
-         val, n, err := ParseFixed64(buf[offset:])
+         val, n, err := ParseFixed64(data[offset:])
          if err != nil {
             return fmt.Errorf("failed to parse fixed64 for field %d: %w", tag.Number, err)
          }
          field.Numeric = val
          dataLen = n
       case WireBytes:
-         length, n, err := ParseLengthPrefixed(buf[offset:])
+         length, n, err := ParseLengthPrefixed(data[offset:])
          if err != nil {
             return fmt.Errorf("failed to parse length for field %d: %w", tag.Number, err)
          }
          offset += n
          dataLen = int(length)
-         if offset+dataLen > len(buf) {
+         if offset+dataLen > len(data) {
             return fmt.Errorf("field %d data is out of bounds", tag.Number)
          }
-         messageData := buf[offset : offset+dataLen]
+         messageData := data[offset : offset+dataLen]
          field.Bytes = make([]byte, dataLen)
          copy(field.Bytes, messageData)
          var embedded Message
