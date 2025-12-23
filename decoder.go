@@ -1,9 +1,6 @@
 package protobuf
 
-import (
-   "errors"
-   "fmt"
-)
+import "errors"
 
 // ParseTag decodes a varint from the input buffer and returns it as a Tag struct.
 func ParseTag(buffer []byte) (Tag, int, error) {
@@ -32,7 +29,7 @@ func (m *Message) Parse(data []byte) error {
 
       tag, bytesRead, err := ParseTag(data[offset:])
       if err != nil {
-         return fmt.Errorf("failed to parse tag at offset %d: %w", offset, err)
+         return fmtErrorAtOffset("failed to parse tag", offset, err)
       }
       offset += bytesRead
 
@@ -43,7 +40,7 @@ func (m *Message) Parse(data []byte) error {
       case WireVarint:
          val, bytesRead := DecodeVarint(data[offset:])
          if bytesRead <= 0 {
-            return fmt.Errorf("failed to parse varint for field %d at offset %d", tag.Number, offset)
+            return fmtErrorForFieldAtOffset("failed to parse varint", tag.Number, offset)
          }
          field.Numeric = val
          dataLength = bytesRead
@@ -51,7 +48,7 @@ func (m *Message) Parse(data []byte) error {
       case WireFixed32:
          val, bytesRead, err := ParseFixed32(data[offset:])
          if err != nil {
-            return fmt.Errorf("failed to parse fixed32 for field %d: %w", tag.Number, err)
+            return fmtErrorForField("failed to parse fixed32", tag.Number, err)
          }
          field.Numeric = uint64(val)
          dataLength = bytesRead
@@ -59,7 +56,7 @@ func (m *Message) Parse(data []byte) error {
       case WireFixed64:
          val, bytesRead, err := ParseFixed64(data[offset:])
          if err != nil {
-            return fmt.Errorf("failed to parse fixed64 for field %d: %w", tag.Number, err)
+            return fmtErrorForField("failed to parse fixed64", tag.Number, err)
          }
          field.Numeric = val
          dataLength = bytesRead
@@ -67,13 +64,13 @@ func (m *Message) Parse(data []byte) error {
       case WireBytes:
          length, bytesRead, err := ParseLengthPrefixed(data[offset:])
          if err != nil {
-            return fmt.Errorf("failed to parse length for field %d: %w", tag.Number, err)
+            return fmtErrorForField("failed to parse length", tag.Number, err)
          }
          offset += bytesRead
          dataLength = int(length)
 
          if offset+dataLength > len(data) {
-            return fmt.Errorf("field %d data is out of bounds", tag.Number)
+            return fmtErrorForField("data is out of bounds", tag.Number, nil)
          }
 
          messageData := data[offset : offset+dataLength]
@@ -87,7 +84,7 @@ func (m *Message) Parse(data []byte) error {
          }
 
       default:
-         return fmt.Errorf("unsupported wire type %d for field %d at offset %d", tag.Type, tag.Number, offset)
+         return fmtErrorInvalidType("unsupported wire type", tag.Type, tag.Number, offset)
       }
 
       offset += dataLength

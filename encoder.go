@@ -1,9 +1,6 @@
 package protobuf
 
-import (
-   "bytes"
-   "fmt"
-)
+import "bytes"
 
 // Encode serializes the message into the protobuf wire format.
 func (m Message) Encode() ([]byte, error) {
@@ -16,7 +13,7 @@ func (m Message) Encode() ([]byte, error) {
          if field.Message != nil {
             encoded, err := field.Message.Encode()
             if err != nil {
-               return nil, fmt.Errorf("failed to encode embedded message for field %d: %w", field.Tag.Number, err)
+               return nil, fmtErrorForField("failed to encode embedded message", field.Tag.Number, err)
             }
             valueBytes = encoded
          } else {
@@ -40,7 +37,7 @@ func (m Message) Encode() ([]byte, error) {
          buffer.Write(EncodeVarint(uint64(len(valueBytes))))
          buffer.Write(valueBytes)
       default:
-         return nil, fmt.Errorf("unsupported wire type for encoding: %d", field.Tag.Type)
+         return nil, fmtErrorSimpleType("unsupported wire type for encoding", field.Tag.Type)
       }
    }
    return buffer.Bytes(), nil
