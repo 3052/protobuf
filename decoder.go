@@ -2,18 +2,6 @@ package protobuf
 
 import "errors"
 
-// ParseTag decodes a varint from the input buffer and returns it as a Tag struct.
-func ParseTag(buffer []byte) (Tag, int, error) {
-   tagValue, bytesRead := DecodeVarint(buffer)
-   if bytesRead <= 0 {
-      return Tag{}, 0, errors.New("buffer is too small or varint is malformed")
-   }
-   return Tag{
-      Number: uint32(tagValue >> 3),
-      Type:   Type(tagValue & 0x7),
-   }, bytesRead, nil
-}
-
 // Parse populates the message by parsing the protobuf wire format data.
 // It will overwrite any existing fields in the message.
 func (m *Message) Parse(data []byte) error {
@@ -93,4 +81,16 @@ func (m *Message) Parse(data []byte) error {
 
    *m = fields
    return nil
+}
+
+// ParseTag decodes a varint from the input buffer and returns it as a Tag struct.
+func ParseTag(buffer []byte) (Tag, int, error) {
+   tagValue, bytesRead := DecodeVarint(buffer)
+   if bytesRead <= 0 {
+      return Tag{}, 0, errors.New("buffer is too small or varint is malformed")
+   }
+   return Tag{
+      Number: uint32(tagValue >> 3),
+      Type:   Type(tagValue & 0x7),
+   }, bytesRead, nil
 }
