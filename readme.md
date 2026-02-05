@@ -21,3 +21,7 @@ This module parses and formats the raw wire encoding.
 - https://github.com/philpearl/plenc/issues/12
 - https://github.com/richardartoul/molecule/issues/24
 - https://github.com/segmentio/encoding/issues/135
+
+## Discord
+
+https://discord.com/invite/rMFzDRQhSx
