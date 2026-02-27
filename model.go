@@ -1,11 +1,5 @@
 package protobuf
 
-// Tag represents a field's tag (Field Number + Wire Type).
-type Tag struct {
-   Number uint32
-   Type   Type
-}
-
 // Field represents a single, decoded field in a protobuf message.
 type Field struct {
    Tag     Tag
@@ -13,6 +7,14 @@ type Field struct {
    Bytes   []byte
    Message Message
 }
+
+// Tag represents a field's tag (Field Number + Wire Type).
+type Tag struct {
+   Number uint32
+   Type   Type
+}
+
+///
 
 // Message is a named type for a slice of field pointers, representing a
 // parsed protobuf message.
