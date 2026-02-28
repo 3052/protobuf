@@ -8,14 +8,6 @@ type Field struct {
    Message Message
 }
 
-// Tag represents a field's tag (Field Number + Wire Type).
-type Tag struct {
-   Number uint32
-   Type   Type
-}
-
-///
-
 // Message is a named type for a slice of field pointers, representing a
 // parsed protobuf message.
 type Message []*Field
@@ -29,6 +21,14 @@ func (m Message) Field(fieldNum uint32) (*Field, bool) {
    }
    return nil, false
 }
+
+// Tag represents a field's tag (Field Number + Wire Type).
+type Tag struct {
+   Number uint32
+   Type   Type
+}
+
+///
 
 // Iterator provides a stateful, memory-efficient way to loop over
 // all occurrences of a specific field number within a message.
