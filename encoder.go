@@ -5,6 +5,47 @@ import (
    "errors"
 )
 
+// Encode serializes the message into the protobuf wire format.
+func (m Message) Encode() ([]byte, error) {
+   var buffer bytes.Buffer
+
+   for _, field := range m {
+      var valueBytes []byte
+
+      if field.Tag.Type == WireBytes {
+         if field.Message != nil {
+            encoded, err := field.Message.Encode()
+            if err != nil {
+               return nil, fmtErrorForField("failed to encode embedded message", field.Tag.Number, err)
+            }
+            valueBytes = encoded
+         } else {
+            valueBytes = field.Bytes
+         }
+      }
+
+      // Create tag: (Field Number << 3) | Wire Type
+      tagValue := uint64(field.Tag.Number)<<3 | uint64(field.Tag.Type)
+      tagBytes := EncodeVarint(tagValue)
+      buffer.Write(tagBytes)
+
+      switch field.Tag.Type {
+      case WireVarint:
+         buffer.Write(EncodeVarint(field.Numeric))
+      case WireFixed32:
+         buffer.Write(EncodeFixed32(uint32(field.Numeric)))
+      case WireFixed64:
+         buffer.Write(EncodeFixed64(field.Numeric))
+      case WireBytes:
+         buffer.Write(EncodeVarint(uint64(len(valueBytes))))
+         buffer.Write(valueBytes)
+      default:
+         return nil, fmtErrorSimpleType("unsupported wire type for encoding", field.Tag.Type)
+      }
+   }
+   return buffer.Bytes(), nil
+}
+
 // Parse populates the message by parsing the protobuf wire format data.
 // It will overwrite any existing fields in the message.
 func (m *Message) Parse(data []byte) error {
@@ -96,45 +137,4 @@ func ParseTag(buffer []byte) (Tag, int, error) {
       Number: uint32(tagValue >> 3),
       Type:   Type(tagValue & 0x7),
    }, bytesRead, nil
-}
-
-// Encode serializes the message into the protobuf wire format.
-func (m Message) Encode() ([]byte, error) {
-   var buffer bytes.Buffer
-
-   for _, field := range m {
-      var valueBytes []byte
-
-      if field.Tag.Type == WireBytes {
-         if field.Message != nil {
-            encoded, err := field.Message.Encode()
-            if err != nil {
-               return nil, fmtErrorForField("failed to encode embedded message", field.Tag.Number, err)
-            }
-            valueBytes = encoded
-         } else {
-            valueBytes = field.Bytes
-         }
-      }
-
-      // Create tag: (Field Number << 3) | Wire Type
-      tagValue := uint64(field.Tag.Number)<<3 | uint64(field.Tag.Type)
-      tagBytes := EncodeVarint(tagValue)
-      buffer.Write(tagBytes)
-
-      switch field.Tag.Type {
-      case WireVarint:
-         buffer.Write(EncodeVarint(field.Numeric))
-      case WireFixed32:
-         buffer.Write(EncodeFixed32(uint32(field.Numeric)))
-      case WireFixed64:
-         buffer.Write(EncodeFixed64(field.Numeric))
-      case WireBytes:
-         buffer.Write(EncodeVarint(uint64(len(valueBytes))))
-         buffer.Write(valueBytes)
-      default:
-         return nil, fmtErrorSimpleType("unsupported wire type for encoding", field.Tag.Type)
-      }
-   }
-   return buffer.Bytes(), nil
 }
