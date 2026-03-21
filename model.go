@@ -8,6 +8,14 @@ type Field struct {
    Message Message
 }
 
+// Iterator provides a stateful, memory-efficient way to loop over
+// all occurrences of a specific field number within a message.
+type Iterator struct {
+   message  Message // The message being iterated over
+   fieldNum uint32
+   cursor   int // The current index in the message slice
+}
+
 // Message is a named type for a slice of field pointers, representing a
 // parsed protobuf message.
 type Message []*Field
@@ -29,14 +37,6 @@ type Tag struct {
 }
 
 ///
-
-// Iterator provides a stateful, memory-efficient way to loop over
-// all occurrences of a specific field number within a message.
-type Iterator struct {
-   message  Message // The message being iterated over
-   fieldNum uint32
-   cursor   int // The current index in the message slice
-}
 
 // Iterator creates a new iterator to loop over all fields with the given number.
 func (m Message) Iterator(fieldNum uint32) *Iterator {
