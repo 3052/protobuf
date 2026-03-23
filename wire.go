@@ -1,3 +1,4 @@
+// wire.go
 package protobuf
 
 import (

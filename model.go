@@ -1,3 +1,4 @@
+// model.go
 package protobuf
 
 // Field represents a single, decoded field in a protobuf message.
