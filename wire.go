@@ -3,7 +3,6 @@ package protobuf
 
 import (
    "encoding/binary"
-   "errors"
 )
 
 // Type represents the type of data encoding on the wire.
@@ -57,28 +56,28 @@ func EncodeFixed64(value uint64) []byte {
    return buffer[:]
 }
 
-// ParseFixed32 parses a 32-bit little-endian integer from the buffer.
-func ParseFixed32(buffer []byte) (uint32, int, error) {
+// DecodeFixed32 decodes a 32-bit little-endian integer from the buffer.
+func DecodeFixed32(buffer []byte) (uint32, int, error) {
    if len(buffer) < 4 {
-      return 0, 0, errors.New("buffer is too small for a fixed32")
+      return 0, 0, ErrBufferTooSmall
    }
    return binary.LittleEndian.Uint32(buffer), 4, nil
 }
 
-// ParseFixed64 parses a 64-bit little-endian integer from the buffer.
-func ParseFixed64(buffer []byte) (uint64, int, error) {
+// DecodeFixed64 decodes a 64-bit little-endian integer from the buffer.
+func DecodeFixed64(buffer []byte) (uint64, int, error) {
    if len(buffer) < 8 {
-      return 0, 0, errors.New("buffer is too small for a fixed64")
+      return 0, 0, ErrBufferTooSmall
    }
    return binary.LittleEndian.Uint64(buffer), 8, nil
 }
 
-// ParseLengthPrefixed parses a length-prefixed field from the buffer.
+// DecodeLengthPrefixed decodes a length-prefixed field from the buffer.
 // It returns the length of the data, the number of bytes read for the length header, and an error if any.
-func ParseLengthPrefixed(buffer []byte) (uint64, int, error) {
+func DecodeLengthPrefixed(buffer []byte) (uint64, int, error) {
    length, bytesRead := DecodeVarint(buffer)
    if bytesRead <= 0 {
-      return 0, 0, errors.New("error decoding length prefix")
+      return 0, 0, ErrMalformedVarint
    }
    return length, bytesRead, nil
 }

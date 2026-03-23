@@ -3,7 +3,7 @@ package protobuf
 
 import (
    "bytes"
-   "errors"
+   "fmt"
 )
 
 // Encode serializes the message into the protobuf wire format.
@@ -17,7 +17,7 @@ func (m Message) Encode() ([]byte, error) {
          if field.Message != nil {
             encoded, err := field.Message.Encode()
             if err != nil {
-               return nil, fmtErrorForField("failed to encode embedded message", field.Tag.Number, err)
+               return nil, fmt.Errorf("failed to encode embedded message for field %d: %w", field.Tag.Number, err)
             }
             valueBytes = encoded
          } else {
@@ -41,14 +41,14 @@ func (m Message) Encode() ([]byte, error) {
          buffer.Write(EncodeVarint(uint64(len(valueBytes))))
          buffer.Write(valueBytes)
       default:
-         return nil, fmtErrorSimpleType("unsupported wire type for encoding", field.Tag.Type)
+         return nil, fmt.Errorf("%w %d for encoding field %d", ErrInvalidWireType, field.Tag.Type, field.Tag.Number)
       }
    }
    return buffer.Bytes(), nil
 }
 
-// Parse populates a message by parsing the protobuf wire format data.
-func Parse(data []byte) (Message, error) {
+// DecodeMessage populates a message by decoding the protobuf wire format data.
+func DecodeMessage(data []byte) (Message, error) {
    var fields Message
    offset := 0
 
@@ -59,9 +59,9 @@ func Parse(data []byte) (Message, error) {
          continue
       }
 
-      tag, bytesRead, err := ParseTag(data[offset:])
+      tag, bytesRead, err := DecodeTag(data[offset:])
       if err != nil {
-         return nil, fmtErrorAtOffset("failed to parse tag", offset, err)
+         return nil, fmt.Errorf("failed to decode tag at offset %d: %w", offset, err)
       }
       offset += bytesRead
 
@@ -72,50 +72,50 @@ func Parse(data []byte) (Message, error) {
       case WireVarint:
          val, bytesRead := DecodeVarint(data[offset:])
          if bytesRead <= 0 {
-            return nil, fmtErrorForFieldAtOffset("failed to parse varint", tag.Number, offset)
+            return nil, fmt.Errorf("failed to decode varint for field %d at offset %d: %w", tag.Number, offset, ErrMalformedVarint)
          }
          field.Numeric = val
          dataLength = bytesRead
 
       case WireFixed32:
-         val, bytesRead, err := ParseFixed32(data[offset:])
+         val, bytesRead, err := DecodeFixed32(data[offset:])
          if err != nil {
-            return nil, fmtErrorForField("failed to parse fixed32", tag.Number, err)
+            return nil, fmt.Errorf("failed to decode fixed32 for field %d: %w", tag.Number, err)
          }
          field.Numeric = uint64(val)
          dataLength = bytesRead
 
       case WireFixed64:
-         val, bytesRead, err := ParseFixed64(data[offset:])
+         val, bytesRead, err := DecodeFixed64(data[offset:])
          if err != nil {
-            return nil, fmtErrorForField("failed to parse fixed64", tag.Number, err)
+            return nil, fmt.Errorf("failed to decode fixed64 for field %d: %w", tag.Number, err)
          }
          field.Numeric = val
          dataLength = bytesRead
 
       case WireBytes:
-         length, bytesRead, err := ParseLengthPrefixed(data[offset:])
+         length, bytesRead, err := DecodeLengthPrefixed(data[offset:])
          if err != nil {
-            return nil, fmtErrorForField("failed to parse length", tag.Number, err)
+            return nil, fmt.Errorf("failed to decode length for field %d: %w", tag.Number, err)
          }
          offset += bytesRead
          dataLength = int(length)
 
          if offset+dataLength > len(data) {
-            return nil, fmtErrorForField("data is out of bounds", tag.Number, nil)
+            return nil, fmt.Errorf("failed to read data for field %d: %w", tag.Number, ErrOutOfBounds)
          }
 
          messageData := data[offset : offset+dataLength]
          field.Bytes = make([]byte, dataLength)
          copy(field.Bytes, messageData)
 
-         // Attempt to recursively parse as an embedded message
-         if embedded, err := Parse(messageData); err == nil && len(embedded) > 0 {
+         // Attempt to recursively decode as an embedded message
+         if embedded, err := DecodeMessage(messageData); err == nil && len(embedded) > 0 {
             field.Message = embedded
          }
 
       default:
-         return nil, fmtErrorInvalidType("unsupported wire type", tag.Type, tag.Number, offset)
+         return nil, fmt.Errorf("%w %d for field %d at offset %d", ErrInvalidWireType, tag.Type, tag.Number, offset)
       }
 
       offset += dataLength
@@ -125,11 +125,11 @@ func Parse(data []byte) (Message, error) {
    return fields, nil
 }
 
-// ParseTag decodes a varint from the input buffer and returns it as a Tag struct.
-func ParseTag(buffer []byte) (Tag, int, error) {
+// DecodeTag decodes a varint from the input buffer and returns it as a Tag struct.
+func DecodeTag(buffer []byte) (Tag, int, error) {
    tagValue, bytesRead := DecodeVarint(buffer)
    if bytesRead <= 0 {
-      return Tag{}, 0, errors.New("buffer is too small or varint is malformed")
+      return Tag{}, 0, ErrMalformedVarint
    }
    return Tag{
       Number: uint32(tagValue >> 3),

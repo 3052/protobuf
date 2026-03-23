@@ -18,7 +18,7 @@ type Iterator struct {
 }
 
 // Message is a named type for a slice of field pointers, representing a
-// parsed protobuf message.
+// decoded protobuf message.
 type Message []*Field
 
 // Field finds and returns the first field matching the given field number.
