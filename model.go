@@ -31,14 +31,6 @@ func (m Message) Field(fieldNum uint32) (*Field, bool) {
    return nil, false
 }
 
-// Tag represents a field's tag (Field Number + Wire Type).
-type Tag struct {
-   Number uint32
-   Type   Type
-}
-
-///
-
 // Iterator creates a new iterator to loop over all fields with the given number.
 func (m Message) Iterator(fieldNum uint32) *Iterator {
    return &Iterator{
@@ -47,6 +39,14 @@ func (m Message) Iterator(fieldNum uint32) *Iterator {
       cursor:   -1,
    }
 }
+
+// Tag represents a field's tag (Field Number + Wire Type).
+type Tag struct {
+   Number uint32
+   Type   Type
+}
+
+///
 
 // Next advances the iterator to the next matching field. It returns false
 // when there are no more matching fields.
