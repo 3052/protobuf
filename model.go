@@ -17,6 +17,26 @@ type Iterator struct {
    cursor   int // The current index in the message slice
 }
 
+// Next advances the iterator to the next matching field. It returns false
+// when there are no more matching fields.
+func (it *Iterator) Next() bool {
+   for i := it.cursor + 1; i < len(it.message); i++ {
+      if it.message[i].Tag.Number == it.fieldNum {
+         it.cursor = i
+         return true
+      }
+   }
+   return false
+}
+
+// Field returns a pointer to the current field the iterator is pointing to.
+func (it *Iterator) Field() *Field {
+   if it.cursor >= 0 && it.cursor < len(it.message) {
+      return it.message[it.cursor]
+   }
+   return nil
+}
+
 // Message is a named type for a slice of field pointers, representing a
 // decoded protobuf message.
 type Message []*Field
@@ -47,26 +67,6 @@ type Tag struct {
 }
 
 ///
-
-// Next advances the iterator to the next matching field. It returns false
-// when there are no more matching fields.
-func (it *Iterator) Next() bool {
-   for i := it.cursor + 1; i < len(it.message); i++ {
-      if it.message[i].Tag.Number == it.fieldNum {
-         it.cursor = i
-         return true
-      }
-   }
-   return false
-}
-
-// Field returns a pointer to the current field the iterator is pointing to.
-func (it *Iterator) Field() *Field {
-   if it.cursor >= 0 && it.cursor < len(it.message) {
-      return it.message[it.cursor]
-   }
-   return nil
-}
 
 // --- Field Constructors ---
 
