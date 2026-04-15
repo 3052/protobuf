@@ -125,7 +125,8 @@ func DecodeMessage(data []byte) (Message, error) {
    return fields, nil
 }
 
-// DecodeTag decodes a varint from the input buffer and returns it as a Tag struct.
+// DecodeTag decodes a varint from the input buffer and returns it as a Tag
+// struct
 func DecodeTag(buffer []byte) (Tag, int, error) {
    tagValue, bytesRead := DecodeVarint(buffer)
    if bytesRead <= 0 {
