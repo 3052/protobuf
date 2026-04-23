@@ -49,9 +49,10 @@ func (m Message) Encode() ([]byte, error) {
 
 // DecodeMessage populates a message by decoding the protobuf wire format data.
 func DecodeMessage(data []byte) (Message, error) {
-   var fields Message
-   offset := 0
-
+   var (
+      fields Message
+      offset int
+   )
    for offset < len(data) {
       // Skip null padding if present
       if len(data[offset:]) > 0 && data[offset] == 0 {
