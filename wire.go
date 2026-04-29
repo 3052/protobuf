@@ -1,21 +1,7 @@
 // wire.go
 package protobuf
 
-import (
-   "encoding/binary"
-)
-
-// Type represents the type of data encoding on the wire.
-type Type uint8
-
-const (
-   WireVarint     Type = 0
-   WireFixed64    Type = 1
-   WireBytes      Type = 2
-   WireStartGroup Type = 3 // Deprecated
-   WireEndGroup   Type = 4 // Deprecated
-   WireFixed32    Type = 5
-)
+import "encoding/binary"
 
 // DecodeVarint reads a varint from the buffer and returns the decoded uint64 and the number of bytes read.
 // A negative number of bytes indicates an overflow. A zero indicates an unterminated varint.
@@ -34,6 +20,20 @@ func DecodeVarint(buffer []byte) (uint64, int) {
    }
    return 0, 0 // Unterminated varint
 }
+
+// Type represents the type of data encoding on the wire.
+type Type uint8
+
+const (
+   WireVarint     Type = 0
+   WireFixed64    Type = 1
+   WireBytes      Type = 2
+   WireStartGroup Type = 3 // Deprecated
+   WireEndGroup   Type = 4 // Deprecated
+   WireFixed32    Type = 5
+)
+
+///
 
 // EncodeVarint encodes a uint64 into varint bytes.
 func EncodeVarint(value uint64) []byte {
