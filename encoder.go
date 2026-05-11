@@ -100,11 +100,12 @@ func DecodeMessage(data []byte) (Message, error) {
             return nil, fmt.Errorf("failed to decode length for field %d: %w", tag.Number, err)
          }
          offset += bytesRead
-         dataLength = int(length)
 
-         if offset+dataLength > len(data) {
+         // Fix: Prevent integer overflow and safely check buffer bounds
+         if length > uint64(len(data)-offset) {
             return nil, fmt.Errorf("failed to read data for field %d: %w", tag.Number, ErrOutOfBounds)
          }
+         dataLength = int(length)
 
          messageData := data[offset : offset+dataLength]
          field.Bytes = make([]byte, dataLength)
