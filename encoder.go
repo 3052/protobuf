@@ -3,6 +3,7 @@ package protobuf
 
 import (
    "bytes"
+   "errors"
    "fmt"
 )
 
@@ -54,11 +55,7 @@ func DecodeMessage(data []byte) (Message, error) {
       offset int
    )
    for offset < len(data) {
-      // Skip null padding if present
-      if len(data[offset:]) > 0 && data[offset] == 0 {
-         offset++
-         continue
-      }
+      // Removed the null-padding skip block from here
 
       tag, bytesRead, err := DecodeTag(data[offset:])
       if err != nil {
@@ -66,7 +63,7 @@ func DecodeMessage(data []byte) (Message, error) {
       }
       offset += bytesRead
 
-      field := Field{Tag: tag}
+      field := Field{Tag: *tag} // Dereference pointer to store in the Field struct
       var dataLength int
 
       switch tag.Type {
@@ -101,7 +98,7 @@ func DecodeMessage(data []byte) (Message, error) {
          }
          offset += bytesRead
 
-         // Fix: Prevent integer overflow and safely check buffer bounds
+         // Prevent integer overflow and safely check buffer bounds
          if length > uint64(len(data)-offset) {
             return nil, fmt.Errorf("failed to read data for field %d: %w", tag.Number, ErrOutOfBounds)
          }
@@ -127,15 +124,20 @@ func DecodeMessage(data []byte) (Message, error) {
    return fields, nil
 }
 
-// DecodeTag decodes a varint from the input buffer and returns it as a Tag
-// struct
-func DecodeTag(buffer []byte) (Tag, int, error) {
+// DecodeTag decodes a varint from the input buffer and returns it as a pointer to a Tag struct
+func DecodeTag(buffer []byte) (*Tag, int, error) {
    tagValue, bytesRead := DecodeVarint(buffer)
    if bytesRead <= 0 {
-      return Tag{}, 0, ErrMalformedVarint
+      return nil, 0, ErrMalformedVarint
    }
-   return Tag{
-      Number: uint32(tagValue >> 3),
+
+   fieldNum := uint32(tagValue >> 3)
+   if fieldNum == 0 {
+      return nil, 0, errors.New("invalid field number: 0")
+   }
+
+   return &Tag{
+      Number: fieldNum,
       Type:   Type(tagValue & 0x7),
    }, bytesRead, nil
 }
