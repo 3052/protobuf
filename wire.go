@@ -18,6 +18,9 @@ var (
 
    // ErrInvalidWireType is returned when an unknown or unsupported wire type is encountered.
    ErrInvalidWireType = errors.New("invalid wire type")
+
+   // ErrMaxDepthExceeded is returned when message nesting is too deep, preventing stack overflows.
+   ErrMaxDepthExceeded = errors.New("maximum recursion depth exceeded")
 )
 
 // DecodeVarint reads a varint from the buffer and returns the decoded uint64 and the number of bytes read.

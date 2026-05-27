@@ -50,13 +50,20 @@ func (m Message) Encode() ([]byte, error) {
 
 // DecodeMessage populates a message by decoding the protobuf wire format data.
 func DecodeMessage(data []byte) (Message, error) {
+   return decodeMessageLimit(data, 0)
+}
+
+func decodeMessageLimit(data []byte, depth int) (Message, error) {
+   // Prevent stack overflow from deeply nested messages
+   if depth > 100 {
+      return nil, ErrMaxDepthExceeded
+   }
+
    var (
       fields Message
       offset int
    )
    for offset < len(data) {
-      // Removed the null-padding skip block from here
-
       tag, bytesRead, err := DecodeTag(data[offset:])
       if err != nil {
          return nil, fmt.Errorf("failed to decode tag at offset %d: %w", offset, err)
@@ -109,7 +116,7 @@ func DecodeMessage(data []byte) (Message, error) {
          copy(field.Bytes, messageData)
 
          // Attempt to recursively decode as an embedded message
-         if embedded, err := DecodeMessage(messageData); err == nil && len(embedded) > 0 {
+         if embedded, err := decodeMessageLimit(messageData, depth+1); err == nil && len(embedded) > 0 {
             field.Message = embedded
          }
 
