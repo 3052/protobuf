@@ -3,6 +3,7 @@ package protobuf
 
 import (
    "bytes"
+   "encoding/binary"
    "errors"
    "fmt"
 )
@@ -75,7 +76,7 @@ func decodeMessageLimit(data []byte, depth int) (Message, error) {
 
       switch tag.Type {
       case WireVarint:
-         val, bytesRead := DecodeVarint(data[offset:])
+         val, bytesRead := binary.Uvarint(data[offset:])
          if bytesRead <= 0 {
             return nil, fmt.Errorf("failed to decode varint for field %d at offset %d: %w", tag.Number, offset, ErrMalformedVarint)
          }
@@ -133,7 +134,7 @@ func decodeMessageLimit(data []byte, depth int) (Message, error) {
 
 // DecodeTag decodes a varint from the input buffer and returns it as a pointer to a Tag struct
 func DecodeTag(buffer []byte) (*Tag, int, error) {
-   tagValue, bytesRead := DecodeVarint(buffer)
+   tagValue, bytesRead := binary.Uvarint(buffer)
    if bytesRead <= 0 {
       return nil, 0, ErrMalformedVarint
    }
