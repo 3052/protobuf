@@ -25,23 +25,17 @@ var (
 
 // EncodeVarint encodes a uint64 into varint bytes.
 func EncodeVarint(value uint64) []byte {
-   var buffer [10]byte
-   bytesWritten := binary.PutUvarint(buffer[:], value)
-   return buffer[:bytesWritten]
+   return binary.AppendUvarint(nil, value)
 }
 
 // EncodeFixed32 encodes a uint32 into 4 bytes (little-endian).
 func EncodeFixed32(value uint32) []byte {
-   var buffer [4]byte
-   binary.LittleEndian.PutUint32(buffer[:], value)
-   return buffer[:]
+   return binary.LittleEndian.AppendUint32(nil, value)
 }
 
 // EncodeFixed64 encodes a uint64 into 8 bytes (little-endian).
 func EncodeFixed64(value uint64) []byte {
-   var buffer [8]byte
-   binary.LittleEndian.PutUint64(buffer[:], value)
-   return buffer[:]
+   return binary.LittleEndian.AppendUint64(nil, value)
 }
 
 // DecodeFixed32 decodes a 32-bit little-endian integer from the buffer.
