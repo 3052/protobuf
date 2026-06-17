@@ -11,6 +11,8 @@ import (
 // Encode serializes the message into the protobuf wire format.
 func (m Message) Encode() ([]byte, error) {
    var buffer bytes.Buffer
+   // Allocate a small buffer on the stack to prevent heap allocations inside the loop
+   var scratch [binary.MaxVarintLen64]byte
 
    for _, field := range m {
       var valueBytes []byte
@@ -29,18 +31,22 @@ func (m Message) Encode() ([]byte, error) {
 
       // Create tag: (Field Number << 3) | Wire Type
       tagValue := uint64(field.Tag.Number)<<3 | uint64(field.Tag.Type)
-      tagBytes := EncodeVarint(tagValue)
-      buffer.Write(tagBytes)
+      n := binary.PutUvarint(scratch[:], tagValue)
+      buffer.Write(scratch[:n])
 
       switch field.Tag.Type {
       case WireVarint:
-         buffer.Write(EncodeVarint(field.Numeric))
+         n := binary.PutUvarint(scratch[:], field.Numeric)
+         buffer.Write(scratch[:n])
       case WireFixed32:
-         buffer.Write(EncodeFixed32(uint32(field.Numeric)))
+         binary.LittleEndian.PutUint32(scratch[:4], uint32(field.Numeric))
+         buffer.Write(scratch[:4])
       case WireFixed64:
-         buffer.Write(EncodeFixed64(field.Numeric))
+         binary.LittleEndian.PutUint64(scratch[:8], field.Numeric)
+         buffer.Write(scratch[:8])
       case WireBytes:
-         buffer.Write(EncodeVarint(uint64(len(valueBytes))))
+         n := binary.PutUvarint(scratch[:], uint64(len(valueBytes)))
+         buffer.Write(scratch[:n])
          buffer.Write(valueBytes)
       default:
          return nil, fmt.Errorf("%w %d for encoding field %d", ErrInvalidWireType, field.Tag.Type, field.Tag.Number)
