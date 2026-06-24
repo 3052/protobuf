@@ -123,7 +123,14 @@ func decodeMessageLimit(data []byte, depth int) (Message, error) {
          copy(field.Bytes, messageData)
 
          // Attempt to recursively decode as an embedded message
-         if embedded, err := decodeMessageLimit(messageData, depth+1); err == nil && len(embedded) > 0 {
+         embedded, err := decodeMessageLimit(messageData, depth+1)
+         if err != nil {
+            // If we hit the recursion limit, abort the whole decoding process
+            if errors.Is(err, ErrMaxDepthExceeded) {
+               return nil, err
+            }
+            // Otherwise, it's just raw bytes/string (not a sub-message), so we ignore the error
+         } else if len(embedded) > 0 {
             field.Message = embedded
          }
 
