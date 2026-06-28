@@ -23,21 +23,6 @@ var (
    ErrMaxDepthExceeded = errors.New("maximum recursion depth exceeded")
 )
 
-// EncodeVarint encodes a uint64 into varint bytes.
-func EncodeVarint(value uint64) []byte {
-   return binary.AppendUvarint(nil, value)
-}
-
-// EncodeFixed32 encodes a uint32 into 4 bytes (little-endian).
-func EncodeFixed32(value uint32) []byte {
-   return binary.LittleEndian.AppendUint32(nil, value)
-}
-
-// EncodeFixed64 encodes a uint64 into 8 bytes (little-endian).
-func EncodeFixed64(value uint64) []byte {
-   return binary.LittleEndian.AppendUint64(nil, value)
-}
-
 // DecodeFixed32 decodes a 32-bit little-endian integer from the buffer.
 func DecodeFixed32(buffer []byte) (uint32, int, error) {
    if len(buffer) < 4 {
@@ -62,6 +47,21 @@ func DecodeLengthPrefixed(buffer []byte) (uint64, int, error) {
       return 0, 0, ErrMalformedVarint
    }
    return length, bytesRead, nil
+}
+
+// EncodeFixed32 encodes a uint32 into 4 bytes (little-endian).
+func EncodeFixed32(value uint32) []byte {
+   return binary.LittleEndian.AppendUint32(nil, value)
+}
+
+// EncodeFixed64 encodes a uint64 into 8 bytes (little-endian).
+func EncodeFixed64(value uint64) []byte {
+   return binary.LittleEndian.AppendUint64(nil, value)
+}
+
+// EncodeVarint encodes a uint64 into varint bytes.
+func EncodeVarint(value uint64) []byte {
+   return binary.AppendUvarint(nil, value)
 }
 
 // Type represents the type of data encoding on the wire

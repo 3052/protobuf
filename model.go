@@ -9,50 +9,6 @@ type Field struct {
    Message Message
 }
 
-// Fixed32 creates a new Fixed32 field and returns a pointer to it.
-func Fixed32(fieldNum uint32, value uint32) *Field {
-   return &Field{
-      Tag: Tag{
-         Number: fieldNum,
-         Type:   WireFixed32,
-      },
-      Numeric: uint64(value),
-   }
-}
-
-// Fixed64 creates a new Fixed64 field and returns a pointer to it.
-func Fixed64(fieldNum uint32, value uint64) *Field {
-   return &Field{
-      Tag: Tag{
-         Number: fieldNum,
-         Type:   WireFixed64,
-      },
-      Numeric: value,
-   }
-}
-
-// Varint creates a new Varint field and returns a pointer to it.
-func Varint(fieldNum uint32, value uint64) *Field {
-   return &Field{
-      Tag: Tag{
-         Number: fieldNum,
-         Type:   WireVarint,
-      },
-      Numeric: value,
-   }
-}
-
-// String creates a new String (WireBytes) field and returns a pointer to it.
-func String(fieldNum uint32, value string) *Field {
-   return &Field{
-      Tag: Tag{
-         Number: fieldNum,
-         Type:   WireBytes,
-      },
-      Bytes: []byte(value),
-   }
-}
-
 // Bytes creates a new Bytes field and returns a pointer to it.
 func Bytes(fieldNum uint32, value []byte) *Field {
    return &Field{
@@ -75,12 +31,64 @@ func Embed(fieldNum uint32, value ...*Field) *Field {
    }
 }
 
+// Fixed32 creates a new Fixed32 field and returns a pointer to it.
+func Fixed32(fieldNum uint32, value uint32) *Field {
+   return &Field{
+      Tag: Tag{
+         Number: fieldNum,
+         Type:   WireFixed32,
+      },
+      Numeric: uint64(value),
+   }
+}
+
+// Fixed64 creates a new Fixed64 field and returns a pointer to it.
+func Fixed64(fieldNum uint32, value uint64) *Field {
+   return &Field{
+      Tag: Tag{
+         Number: fieldNum,
+         Type:   WireFixed64,
+      },
+      Numeric: value,
+   }
+}
+
+// String creates a new String (WireBytes) field and returns a pointer to it.
+func String(fieldNum uint32, value string) *Field {
+   return &Field{
+      Tag: Tag{
+         Number: fieldNum,
+         Type:   WireBytes,
+      },
+      Bytes: []byte(value),
+   }
+}
+
+// Varint creates a new Varint field and returns a pointer to it.
+func Varint(fieldNum uint32, value uint64) *Field {
+   return &Field{
+      Tag: Tag{
+         Number: fieldNum,
+         Type:   WireVarint,
+      },
+      Numeric: value,
+   }
+}
+
 // Iterator provides a stateful, memory-efficient way to loop over
 // all occurrences of a specific field number within a message.
 type Iterator struct {
    message  Message // The message being iterated over
    fieldNum uint32
    cursor   int // The current index in the message slice
+}
+
+// Field returns a pointer to the current field the iterator is pointing to.
+func (it *Iterator) Field() *Field {
+   if it.cursor >= 0 && it.cursor < len(it.message) {
+      return it.message[it.cursor]
+   }
+   return nil
 }
 
 // Next advances the iterator to the next matching field. It returns false
@@ -93,14 +101,6 @@ func (it *Iterator) Next() bool {
       }
    }
    return false
-}
-
-// Field returns a pointer to the current field the iterator is pointing to.
-func (it *Iterator) Field() *Field {
-   if it.cursor >= 0 && it.cursor < len(it.message) {
-      return it.message[it.cursor]
-   }
-   return nil
 }
 
 // Message is a named type for a slice of field pointers, representing a
