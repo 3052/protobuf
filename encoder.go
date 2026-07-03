@@ -75,17 +75,15 @@ func decodeMessageLimit(data []byte, depth int) (Message, error) {
          field.Bytes = make([]byte, dataLength)
          copy(field.Bytes, messageData)
 
-         // Attempt to recursively decode as an embedded message
+         // Attempt to recursively decode as an embedded message.
+         // Because this is schemaless, we don't know if this is a sub-message or just raw string/bytes.
          embedded, err := decodeMessageLimit(messageData, depth+1)
-         if err != nil {
-            // If we hit the recursion limit, abort the whole decoding process
-            if errors.Is(err, ErrMaxDepthExceeded) {
-               return nil, err
-            }
-            // Otherwise, it's just raw bytes/string (not a sub-message), so we ignore the error
-         } else if len(embedded) > 0 {
+         if err == nil && len(embedded) > 0 {
             field.Message = embedded
          }
+         // If err != nil (including ErrMaxDepthExceeded), we just ignore it.
+         // It means the payload is either invalid as a sub-message or it hit the depth limit,
+         // in which case falling back to raw bytes (field.Bytes) is the correct behavior.
 
       default:
          return nil, fmt.Errorf("%w %d for field %d at offset %d", ErrInvalidWireType, tag.Type, tag.Number, offset)
