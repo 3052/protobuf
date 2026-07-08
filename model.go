@@ -3,7 +3,7 @@ package protobuf
 
 // Field represents a single, decoded field in a protobuf message.
 type Field struct {
-   Tag     Tag
+   Tag     *Tag
    Numeric uint64
    Bytes   []byte
    Message Message
@@ -12,7 +12,7 @@ type Field struct {
 // Bytes creates a new Bytes field and returns a pointer to it.
 func Bytes(fieldNum uint32, value []byte) *Field {
    return &Field{
-      Tag: Tag{
+      Tag: &Tag{
          Number: fieldNum,
          Type:   WireBytes,
       },
@@ -23,7 +23,7 @@ func Bytes(fieldNum uint32, value []byte) *Field {
 // Embed creates a new embedded message field from the provided sub-fields.
 func Embed(fieldNum uint32, value ...*Field) *Field {
    return &Field{
-      Tag: Tag{
+      Tag: &Tag{
          Number: fieldNum,
          Type:   WireBytes,
       },
@@ -34,7 +34,7 @@ func Embed(fieldNum uint32, value ...*Field) *Field {
 // Fixed32 creates a new Fixed32 field and returns a pointer to it.
 func Fixed32(fieldNum uint32, value uint32) *Field {
    return &Field{
-      Tag: Tag{
+      Tag: &Tag{
          Number: fieldNum,
          Type:   WireFixed32,
       },
@@ -45,7 +45,7 @@ func Fixed32(fieldNum uint32, value uint32) *Field {
 // Fixed64 creates a new Fixed64 field and returns a pointer to it.
 func Fixed64(fieldNum uint32, value uint64) *Field {
    return &Field{
-      Tag: Tag{
+      Tag: &Tag{
          Number: fieldNum,
          Type:   WireFixed64,
       },
@@ -56,7 +56,7 @@ func Fixed64(fieldNum uint32, value uint64) *Field {
 // String creates a new String (WireBytes) field and returns a pointer to it.
 func String(fieldNum uint32, value string) *Field {
    return &Field{
-      Tag: Tag{
+      Tag: &Tag{
          Number: fieldNum,
          Type:   WireBytes,
       },
@@ -67,7 +67,7 @@ func String(fieldNum uint32, value string) *Field {
 // Varint creates a new Varint field and returns a pointer to it.
 func Varint(fieldNum uint32, value uint64) *Field {
    return &Field{
-      Tag: Tag{
+      Tag: &Tag{
          Number: fieldNum,
          Type:   WireVarint,
       },

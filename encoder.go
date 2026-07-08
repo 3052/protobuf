@@ -30,7 +30,7 @@ func decodeMessageLimit(data []byte, depth int) (Message, error) {
       }
       offset += bytesRead
 
-      field := Field{Tag: *tag} // Dereference pointer to store in the Field struct
+      field := Field{Tag: tag} // Store the pointer directly
       var dataLength int
 
       switch tag.Type {
