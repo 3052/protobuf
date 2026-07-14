@@ -4,7 +4,6 @@ package protobuf
 import (
    "bytes"
    "encoding/binary"
-   "errors"
    "fmt"
 )
 
@@ -105,7 +104,7 @@ func DecodeTag(buffer []byte) (*Tag, int, error) {
 
    fieldNum := uint32(tagValue >> 3)
    if fieldNum == 0 {
-      return nil, 0, errors.New("invalid field number: 0")
+      return nil, 0, ErrInvalidFieldNumber
    }
 
    return &Tag{

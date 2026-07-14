@@ -21,6 +21,9 @@ var (
 
    // ErrMaxDepthExceeded is returned when message nesting is too deep, preventing stack overflows.
    ErrMaxDepthExceeded = errors.New("maximum recursion depth exceeded")
+
+   // ErrInvalidFieldNumber is returned when a tag has field number 0, which is invalid per the protobuf spec.
+   ErrInvalidFieldNumber = errors.New("invalid field number")
 )
 
 // DecodeFixed32 decodes a 32-bit little-endian integer from the buffer.
