@@ -49,6 +49,9 @@ func DecodeLengthPrefixed(buffer []byte) (uint64, int, error) {
    if bytesRead <= 0 {
       return 0, 0, ErrMalformedVarint
    }
+   if uint64(len(buffer)-bytesRead) < length {
+      return 0, 0, ErrOutOfBounds
+   }
    return length, bytesRead, nil
 }
 
